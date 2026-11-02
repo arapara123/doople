@@ -1003,3 +1003,67 @@ body { height: var(--tg-viewport-stable-height, 100dvh); }
   .game-wrapper .icon-btn { box-shadow: 0 3px 0 var(--ink); }
   .game-wrapper .arena-toast { box-shadow: 0 3px 0 var(--ink); }
 }
+
+/* ==========================================================
+   НАСТРОЙКИ + положение/размер кнопки выстрела
+   ========================================================== */
+.menu-card { position: relative; }
+.menu-gear {
+  position: absolute; top: 10px; right: 10px; z-index: 6;
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 2px solid var(--ink); background: linear-gradient(180deg, #fffdf6, #f1ead2);
+  font-size: 19px; line-height: 1; cursor: pointer; color: var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
+}
+.menu-gear:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+
+.settings-body { gap: 12px; }
+.set-section {
+  background: linear-gradient(180deg, #fffdf6, #f3eddb);
+  border: 2px solid var(--ink); border-radius: 14px;
+  padding: 10px 10px 12px; text-align: left; flex-shrink: 0;
+  box-shadow: 0 3px 0 rgba(31, 34, 51, 0.2);
+}
+.set-title { font-weight: 800; font-size: 14px; margin-bottom: 4px; }
+.set-section .modal-sub { margin-bottom: 8px; }
+.set-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; margin: 8px 0; }
+.set-row span { width: 86px; flex-shrink: 0; }
+.set-row input[type=range] { flex: 1; min-width: 0; accent-color: #3b82f6; }
+.set-row b { width: 38px; text-align: right; }
+
+.sb-preview {
+  position: relative; width: 150px; margin: 6px auto 10px;
+  border: 3px solid var(--ink); border-radius: 16px; overflow: hidden;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 11px, rgba(100, 150, 190, 0.25) 11px 12px),
+    repeating-linear-gradient(90deg, transparent 0 11px, rgba(100, 150, 190, 0.25) 11px 12px),
+    #fdfaf2;
+  touch-action: none; cursor: grab;
+}
+.sb-preview-btn {
+  position: absolute; transform: translate(-50%, -50%); pointer-events: none;
+  border-radius: 50%; border: 2px solid var(--ink);
+  background: radial-gradient(circle at 35% 30%, #ff8a80, #e53935);
+  box-shadow: 0 3px 0 var(--ink); padding: 0; line-height: 1;
+}
+
+.seg { display: flex; gap: 6px; }
+.seg-btn {
+  flex: 1; padding: 8px 4px; font-size: 13px; font-weight: 800; cursor: pointer;
+  border: 2px solid var(--ink); border-radius: 10px; background: #fff; color: var(--ink);
+  box-shadow: 0 2px 0 var(--ink);
+}
+.seg-btn.active { background: linear-gradient(180deg, #6fd860, #3d9f3f); color: #fff; text-shadow: 0 1px 0 rgba(0,0,0,0.25); }
+
+/* Кнопка выстрела: положение, размер и прозрачность берутся из настроек */
+.game-wrapper .shoot-btn {
+  right: auto; bottom: auto;
+  left: calc(var(--sb-x, 0.84) * 100%);
+  top: calc(var(--sb-y, 0.9) * 100%);
+  width: var(--sb-size, 64px); height: var(--sb-size, 64px);
+  font-size: calc(var(--sb-size, 64px) * 0.45);
+  opacity: var(--sb-op, 0.9);
+  transform: translate(-50%, -50%);
+  padding: 0; line-height: 1;
+}
+.game-wrapper .shoot-btn:active { transform: translate(-50%, calc(-50% + 3px)); }

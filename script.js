@@ -1,4 +1,23 @@
 'use strict';
+// Подстраховка для старых iOS/Safari, где нет ctx.roundRect
+if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+    const R = Array.isArray(r) ? r.slice() : [r || 0];
+    let tl, tr, br, bl;
+    if (R.length === 1) { tl = tr = br = bl = R[0]; }
+    else if (R.length === 2) { tl = br = R[0]; tr = bl = R[1]; }
+    else if (R.length === 3) { tl = R[0]; tr = bl = R[1]; br = R[2]; }
+    else { tl = R[0]; tr = R[1]; br = R[2]; bl = R[3]; }
+    const m = Math.min(Math.abs(w), Math.abs(h)) / 2;
+    tl = Math.min(tl, m); tr = Math.min(tr, m); br = Math.min(br, m); bl = Math.min(bl, m);
+    this.moveTo(x + tl, y);
+    this.lineTo(x + w - tr, y); this.arcTo(x + w, y, x + w, y + tr, tr);
+    this.lineTo(x + w, y + h - br); this.arcTo(x + w, y + h, x + w - br, y + h, br);
+    this.lineTo(x + bl, y + h); this.arcTo(x, y + h, x, y + h - bl, bl);
+    this.lineTo(x, y + tl); this.arcTo(x, y, x + tl, y, tl);
+    this.closePath();
+  };
+}
 // ==========================================================
 // 1. ЗВУКОВОЙ ДВИЖОК (Web Audio API: слои, шум, фильтры, огибающие)
 // ==========================================================
@@ -237,7 +256,7 @@ const ARENAS = [
     ambient: null, monsters: ['blot', 'eraser'], monsterRate: 1, diff: 0.6, platSpeed: 1.6, wind: 0, slip: 0, hazard: null
   },
   {
-    id: 2, name: 'Изумрудный лес', minXP: 50000, icon: '🌲', scene: 'forest',
+    id: 2, name: 'Изумрудный лес', minXP: 120000, icon: '🌲', scene: 'forest',
     desc: 'Древняя чаща со светлячками и мшистыми плитами',
     twist: 'Порывы ветра сносят в сторону. Летучие мыши летают волнами, грибы-споровики.',
     bgTop: '#dcedc8', bgBottom: '#a5d6a7', gridColor: 'rgba(56,142,60,0.16)',
@@ -246,7 +265,7 @@ const ARENAS = [
     ambient: { type: 'fireflies', color: '#f4ff81' }, monsters: ['bat', 'shroom'], monsterRate: 1.15, diff: 0.75, platSpeed: 1.8, wind: 0.9, slip: 0, hazard: null
   },
   {
-    id: 3, name: 'Ледяной пик', minXP: 150000, icon: '❄️', scene: 'ice',
+    id: 3, name: 'Ледяной пик', minXP: 350000, icon: '❄️', scene: 'ice',
     desc: 'Заснеженная вершина с северным сиянием',
     twist: 'Скользкий лёд: герой скользит по инерции. Ледяные големы (2 попадания) и снежные духи.',
     bgTop: '#e1f5fe', bgBottom: '#b3e5fc', gridColor: 'rgba(2,136,209,0.18)',
@@ -255,7 +274,7 @@ const ARENAS = [
     ambient: { type: 'snow', color: '#ffffff' }, monsters: ['icegolem', 'snowspirit'], monsterRate: 1.2, diff: 0.85, platSpeed: 1.9, wind: 0.5, slip: 0.085, hazard: null
   },
   {
-    id: 4, name: 'Пещера кристаллов', minXP: 300000, icon: '💎', scene: 'crystal',
+    id: 4, name: 'Пещера кристаллов', minXP: 800000, icon: '💎', scene: 'crystal',
     desc: 'Подземный грот с неоновыми самоцветами',
     twist: 'С потолка падают кристаллы: следи за красными метками. Кристальные жуки и пещерные летучки.',
     bgTop: '#1a1026', bgBottom: '#2d1946', gridColor: 'rgba(186,104,200,0.16)',
@@ -264,7 +283,7 @@ const ARENAS = [
     ambient: { type: 'dust', color: '#e040fb' }, monsters: ['crystalbug', 'cavebat'], monsterRate: 1.2, diff: 0.95, platSpeed: 2.0, wind: 0, slip: 0, hazard: 'faller'
   },
   {
-    id: 5, name: 'Цитадель Дайр', minXP: 500000, icon: '🌋', scene: 'volcano',
+    id: 5, name: 'Цитадель Дайр', minXP: 1500000, icon: '🌋', scene: 'volcano',
     desc: 'Вулканическая крепость Тьмы с пеплом и лавой',
     twist: 'Огненные бесы стреляют шарами вниз, горящие черепа. Платформы быстрее.',
     bgTop: '#2a0e0e', bgBottom: '#5a1a12', gridColor: 'rgba(255,87,34,0.16)',
@@ -273,7 +292,7 @@ const ARENAS = [
     ambient: { type: 'embers', color: '#ff7a2a' }, monsters: ['imp', 'skull'], monsterRate: 1.25, diff: 1.05, platSpeed: 2.3, wind: 0, slip: 0, hazard: null
   },
   {
-    id: 6, name: 'Неоновый Киберполис', minXP: 800000, icon: '🌆', scene: 'city',
+    id: 6, name: 'Неоновый Киберполис', minXP: 2800000, icon: '🌆', scene: 'city',
     desc: 'Ночной мегаполис будущего с синтвейв-сеткой',
     twist: 'Дроны-стрелки сканируют экран и бьют лазером вниз. Платформы-глитчи едут очень быстро.',
     bgTop: '#090a1a', bgBottom: '#1c1136', gridColor: 'rgba(0,229,255,0.2)',
@@ -282,7 +301,7 @@ const ARENAS = [
     ambient: { type: 'rain', color: '#7df9ff' }, monsters: ['drone', 'bot'], monsterRate: 1.3, diff: 1.15, platSpeed: 2.8, wind: 0, slip: 0, hazard: null
   },
   {
-    id: 7, name: 'Божественный Олимп', minXP: 1200000, icon: '👑', scene: 'olympus',
+    id: 7, name: 'Божественный Олимп', minXP: 4800000, icon: '👑', scene: 'olympus',
     desc: 'Золотая арена среди звёзд и мраморных облаков',
     twist: 'Молнии Зевса бьют по золотым меткам, сильный ветер, гарпии и мраморные стражи.',
     bgTop: '#1c1635', bgBottom: '#3a2b63', gridColor: 'rgba(255,213,79,0.22)',
@@ -291,7 +310,7 @@ const ARENAS = [
     ambient: { type: 'motes', color: '#ffe082' }, monsters: ['harpy', 'wraith'], monsterRate: 1.35, diff: 1.25, platSpeed: 2.4, wind: 1.1, slip: 0, hazard: 'lightning'
   },
   {
-    id: 8, name: 'Подводное царство', minXP: 1800000, icon: '🌊', scene: 'ocean',
+    id: 8, name: 'Подводное царство', minXP: 7500000, icon: '🌊', scene: 'ocean',
     desc: 'Коралловый риф с лучами света и пузырьками',
     twist: 'Течение сносит в стороны, всё немного скользит. Медузы, пираньи.',
     bgTop: '#b3ecff', bgBottom: '#0a5a8c', gridColor: 'rgba(255,255,255,0.14)',
@@ -300,13 +319,49 @@ const ARENAS = [
     ambient: { type: 'dust', color: '#e1f8ff' }, monsters: ['jelly', 'piranha'], monsterRate: 1.25, diff: 1.1, platSpeed: 2.1, wind: 0.7, slip: 0.05, hazard: null
   },
   {
-    id: 9, name: 'Космическая станция', minXP: 2500000, icon: '🪐', scene: 'space',
+    id: 9, name: 'Космическая станция', minXP: 11000000, icon: '🪐', scene: 'space',
     desc: 'Орбита далёкой планеты, кольца и туманности',
     twist: 'Слабая гравитация: скольжение как в невесомости. Метеориты падают по меткам, НЛО стреляют вниз.',
     bgTop: '#05040f', bgBottom: '#1a1245', gridColor: 'rgba(140,120,255,0.15)',
     marginColor: 'rgba(0,229,255,0.4)', margin: false,
     platNormal: '#7c4dff', platMoving: '#00e5ff', platBreak: '#90a4ae', platVanish: '#ffffff', platBorder: '#e0e0ff', glow: true,
-    ambient: { type: 'motes', color: '#ffffff' }, monsters: ['ufo', 'meteor'], monsterRate: 1.35, diff: 1.3, platSpeed: 2.6, wind: 0, slip: 0.06, hazard: 'faller'
+    ambient: { type: 'motes', color: '#ffffff' }, monsters: ['ufo', 'meteor'], monsterRate: 1.35, diff: 1.3, platSpeed: 2.6, wind: 0, slip: 0.06, hazard: 'faller', hazardLook: 'rock'
+  },
+  {
+    id: 10, name: 'Пустыня Миражей', minXP: 15500000, icon: '🏜️', scene: 'desert',
+    desc: 'Раскалённые дюны, пирамиды и марево',
+    twist: 'Песчаные бури сильно сносят в стороны. Скорпионы и стервятники, а с неба падают валуны по меткам.',
+    bgTop: '#ffe6b0', bgBottom: '#f6b866', gridColor: 'rgba(160,100,40,0.17)',
+    marginColor: 'rgba(160,100,40,0.4)', margin: false,
+    platNormal: '#c98b4b', platMoving: '#26a69a', platBreak: '#8d6e63', platVanish: '#fff3e0', platBorder: '#5d3a12', glow: false,
+    ambient: { type: 'dust', color: '#fff1c1' }, monsters: ['scorpion', 'vulture'], monsterRate: 1.35, diff: 1.3, platSpeed: 2.4, wind: 1.25, slip: 0, hazard: 'faller', hazardLook: 'rock'
+  },
+  {
+    id: 11, name: 'Конфетное королевство', minXP: 21000000, icon: '🍭', scene: 'candy',
+    desc: 'Сладкие холмы, леденцы и карамельные трости',
+    twist: 'Глазурь скользкая, как лёд, а платформы быстрые. Мармеладки и летающие леденцы.',
+    bgTop: '#ffeaf5', bgBottom: '#ffc1e0', gridColor: 'rgba(255,105,180,0.2)',
+    marginColor: 'rgba(255,105,180,0.4)', margin: false,
+    platNormal: '#ff7eb6', platMoving: '#6fd8ff', platBreak: '#c39a6b', platVanish: '#ffffff', platBorder: '#8e2a62', glow: false,
+    ambient: { type: 'snow', color: '#ffffff' }, monsters: ['gumdrop', 'lolli'], monsterRate: 1.4, diff: 1.35, platSpeed: 2.7, wind: 0.3, slip: 0.075, hazard: null
+  },
+  {
+    id: 12, name: 'Проклятое кладбище', minXP: 29000000, icon: '🪦', scene: 'graveyard',
+    desc: 'Лунная ночь, туман и покосившиеся надгробия',
+    twist: 'Молнии бьют по меткам, призраки парят волнами, зомби-шатуны выдерживают 2 попадания.',
+    bgTop: '#171b2c', bgBottom: '#3a3f5e', gridColor: 'rgba(150,170,220,0.13)',
+    marginColor: 'rgba(150,170,220,0.3)', margin: false,
+    platNormal: '#6d7a8c', platMoving: '#9575cd', platBreak: '#5d4037', platVanish: '#cfd8dc', platBorder: '#c5cae9', glow: true,
+    ambient: { type: 'fireflies', color: '#b9f6ca' }, monsters: ['ghost', 'zombie'], monsterRate: 1.45, diff: 1.45, platSpeed: 2.7, wind: 0.6, slip: 0, hazard: 'lightning'
+  },
+  {
+    id: 13, name: 'Часовая цитадель', minXP: 40000000, icon: '⚙️', scene: 'clockwork',
+    desc: 'Паровой механизм из шестерён, труб и огромных часов',
+    twist: 'Самые быстрые платформы. Шестерёнки падают по меткам, паровые дроны стреляют, шестерни-стражи выдерживают 2 удара.',
+    bgTop: '#4a3320', bgBottom: '#7a5230', gridColor: 'rgba(255,193,7,0.15)',
+    marginColor: 'rgba(255,193,7,0.4)', margin: false,
+    platNormal: '#b8860b', platMoving: '#26c6da', platBreak: '#5d4037', platVanish: '#ffe082', platBorder: '#2e1b0a', glow: false,
+    ambient: { type: 'dust', color: '#ffcc80' }, monsters: ['gear', 'steambot'], monsterRate: 1.5, diff: 1.55, platSpeed: 3.1, wind: 0, slip: 0, hazard: 'faller', hazardLook: 'gear'
   }
 ];
 
@@ -329,7 +384,15 @@ const MONSTER_TYPES = {
   jelly:      { w: 44, h: 44, hp: 1, move: 'sine', speed: 1.1, amp: 38 },
   piranha:    { w: 46, h: 32, hp: 1, move: 'patrol', speed: 2.0, range: 50 },
   ufo:        { w: 52, h: 30, hp: 1, move: 'sweep', speed: 2.2, shoots: true, cd: 200, fire: '#76ff03' },
-  meteor:     { w: 44, h: 44, hp: 2, move: 'patrol', speed: 1.0, range: 30 }
+  meteor:     { w: 44, h: 44, hp: 2, move: 'patrol', speed: 1.0, range: 30 },
+  scorpion:   { w: 48, h: 34, hp: 1, move: 'patrol', speed: 1.5, range: 46 },
+  vulture:    { w: 52, h: 38, hp: 1, move: 'sine', speed: 1.6, amp: 50 },
+  gumdrop:    { w: 42, h: 40, hp: 1, move: 'patrol', speed: 1.2, range: 34 },
+  lolli:      { w: 40, h: 46, hp: 1, move: 'sine', speed: 1.9, amp: 40 },
+  ghost:      { w: 42, h: 46, hp: 1, move: 'sine', speed: 1.4, amp: 46 },
+  zombie:     { w: 44, h: 50, hp: 2, move: 'patrol', speed: 0.9, range: 28 },
+  gear:       { w: 46, h: 46, hp: 2, move: 'patrol', speed: 1.4, range: 36 },
+  steambot:   { w: 46, h: 40, hp: 1, move: 'sweep', speed: 2.0, shoots: true, cd: 190, fire: '#ffcc80' }
 };
 
 // ==========================================================
@@ -337,7 +400,9 @@ const MONSTER_TYPES = {
 // ==========================================================
 const OUT = '#1a1a1a';
 // На телефонах размытые тени (shadowBlur) на канвасе — главный источник лагов, отключаем
-const LOW_FX = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+const COARSE = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+let LOW_FX = COARSE;   // экономный режим (см. настройки «Графика»)
+let autoLow = false;   // включается сам, если игра тормозит
 
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 function hash(n) { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); }
@@ -1323,6 +1388,110 @@ function drawMonster(c, m, t) {
       c.beginPath(); c.moveTo(-5, 6); c.lineTo(6, 6); c.stroke();
       break;
     }
+    case 'scorpion': {
+      const tw = Math.sin(ph * 4) * 3;
+      c.lineWidth = 7; c.strokeStyle = OUT;
+      c.beginPath(); c.moveTo(-8, 2); c.quadraticCurveTo(-27, 0, -22, -15 + tw); c.quadraticCurveTo(-19, -22, -10, -19 + tw); c.stroke();
+      c.lineWidth = 4; c.strokeStyle = '#ef6c00';
+      c.beginPath(); c.moveTo(-8, 2); c.quadraticCurveTo(-27, 0, -22, -15 + tw); c.quadraticCurveTo(-19, -22, -10, -19 + tw); c.stroke();
+      c.strokeStyle = OUT; c.lineWidth = 2;
+      pg(c, [[-10, -22 + tw], [-5, -17 + tw], [-12, -15 + tw]], '#ffd54f');
+      for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(-4 + i * 7, 9); c.lineTo(-7 + i * 7 + Math.sin(ph * 6 + i) * 2, 16); c.stroke(); }
+      ell(c, 0, 3, 17, 10, '#e65100');
+      ell(c, 3, 0, 9, 4, 'rgba(255,255,255,0.25)', false);
+      ell(c, 19, -4, 6, 4, '#bf360c'); ell(c, 19, 9, 6, 4, '#bf360c');
+      ci(c, 10, -1, 2.6, '#fff', false); ci(c, 14, 3, 2.2, '#fff', false);
+      ci(c, 10.6, -1, 1.1, '#111', false); ci(c, 14.4, 3, 1, '#111', false);
+      break;
+    }
+    case 'vulture': {
+      const fl = Math.sin(ph * 4) * 9;
+      pg(c, [[-7, 0], [-27, -12 - fl], [-24, 5], [-15, 2 + fl * 0.4], [-10, 10]], '#4e342e');
+      pg(c, [[7, 0], [27, -12 - fl], [24, 5], [15, 2 + fl * 0.4], [10, 10]], '#4e342e');
+      ell(c, 0, 6, 10, 12, '#6d4c41');
+      pg(c, [[-8, -4], [0, 3], [8, -4], [4, -9], [-4, -9]], '#efe3d0');
+      ci(c, 0, -13, 7, '#e8a58a');
+      pg(c, [[3, -14], [13, -10], [4, -7]], '#ffb300');
+      ci(c, -1, -15, 2, '#fff', false); ci(c, -1, -15, 0.9, '#111', false);
+      c.beginPath(); c.moveTo(-6, -19); c.lineTo(-2, -17); c.stroke();
+      pg(c, [[-5, 16], [-9, 21], [-1, 18]], '#ffb300'); pg(c, [[5, 16], [9, 21], [1, 18]], '#ffb300');
+      break;
+    }
+    case 'gumdrop': {
+      const sq = Math.sin(ph * 3) * 1.5;
+      c.beginPath(); c.moveTo(-20, 15); c.bezierCurveTo(-24, -22 + sq, 24, -22 + sq, 20, 15); c.quadraticCurveTo(0, 20, -20, 15); c.closePath();
+      c.fillStyle = '#ff5252'; c.fill(); c.stroke();
+      for (const p of [[-9, -10], [6, -12], [12, -3], [-14, 0], [0, -4]]) ci(c, p[0], p[1], 1.6, '#fff', false);
+      ell(c, -8, -12, 5, 3, 'rgba(255,255,255,0.4)', false, -0.5);
+      ci(c, -6, 2, 4, '#fff'); ci(c, 7, 2, 4, '#fff');
+      ci(c, -6 + lk * 0.5, 2.4, 1.8, '#111', false); ci(c, 7 + lk * 0.5, 2.4, 1.8, '#111', false);
+      c.beginPath(); c.arc(0, 8, 4, 0.2, Math.PI - 0.2); c.stroke();
+      break;
+    }
+    case 'lolli': {
+      const fl = Math.sin(ph * 6) * 4;
+      pg(c, [[-10, -6], [-24, -14 - fl], [-18, 0]], 'rgba(255,255,255,0.85)');
+      pg(c, [[10, -6], [24, -14 - fl], [18, 0]], 'rgba(255,255,255,0.85)');
+      rr(c, -2.5, 8, 5, 16, 2, '#fff');
+      ci(c, 0, -6, 15, '#ff80ab');
+      c.save(); c.beginPath(); c.arc(0, -6, 14, 0, 6.283); c.clip();
+      c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = 3;
+      c.beginPath(); for (let a2 = 0; a2 < 12; a2 += 0.25) { const r = a2 * 1.2; c.lineTo(Math.cos(a2 + ph * 2) * r, -6 + Math.sin(a2 + ph * 2) * r); } c.stroke();
+      c.restore();
+      c.strokeStyle = OUT; c.lineWidth = 2;
+      ci(c, -5, -6, 3, '#fff'); ci(c, 5, -6, 3, '#fff'); ci(c, -5, -5.5, 1.3, '#111', false); ci(c, 5, -5.5, 1.3, '#111', false);
+      break;
+    }
+    case 'ghost': {
+      const w2 = Math.sin(ph * 3) * 2;
+      c.beginPath(); c.moveTo(-17, 20); c.bezierCurveTo(-22, -26, 22, -26, 17, 20);
+      c.quadraticCurveTo(11, 14 + w2, 6, 22); c.quadraticCurveTo(0, 14 - w2, -6, 22); c.quadraticCurveTo(-11, 14 + w2, -17, 20);
+      c.closePath(); c.fillStyle = 'rgba(232,238,255,0.93)'; c.fill(); c.stroke();
+      pg(c, [[-17, 6], [-27, 12 + w2], [-15, 12]], 'rgba(232,238,255,0.93)');
+      pg(c, [[17, 6], [27, 12 - w2], [15, 12]], 'rgba(232,238,255,0.93)');
+      ell(c, -6, -5, 3.4, 5, '#1b1b2e', false); ell(c, 6, -5, 3.4, 5, '#1b1b2e', false);
+      ci(c, -6, -4, 1.3, '#69f0ae', false); ci(c, 6, -4, 1.3, '#69f0ae', false);
+      ell(c, 0, 7, 3.4, 4.4 + Math.sin(ph * 3), '#1b1b2e', false);
+      break;
+    }
+    case 'zombie': {
+      const st = Math.sin(ph * 3) * 2;
+      rr(c, -10, 14, 8, 11, 3, '#455a64'); rr(c, 2, 14, 8, 11, 3, '#455a64');
+      rr(c, -13, -4, 26, 20, 5, '#6d4c41');
+      rr(c, 11, -3 + st, 17, 7, 3, '#8bc34a'); rr(c, 11, 7 - st, 17, 7, 3, '#8bc34a');
+      ci(c, 0, -14, 11, '#8bc34a');
+      pg(c, [[-8, -24], [-3, -29], [0, -24], [4, -28], [8, -23]], '#33691e', false);
+      ci(c, -4, -15, 3.4, '#fff'); ci(c, 5, -14, 2.4, '#fff');
+      ci(c, -3.4, -15, 1.4, '#b71c1c', false); ci(c, 5.4, -14, 1.1, '#111', false);
+      c.beginPath(); c.moveTo(-5, -8); c.lineTo(6, -8); c.moveTo(-3, -10); c.lineTo(-3, -6); c.moveTo(1, -10); c.lineTo(1, -6); c.moveTo(5, -10); c.lineTo(5, -6); c.stroke();
+      if (m.hp < m.maxHp) { c.beginPath(); c.moveTo(-6, -24); c.lineTo(-2, -18); c.lineTo(-7, -13); c.stroke(); }
+      break;
+    }
+    case 'gear': {
+      c.save(); c.rotate(ph * 0.6);
+      gearPath(c, 22, 17, 10, 0); c.fillStyle = '#b8860b'; c.fill(); c.stroke();
+      c.restore();
+      ci(c, 0, 0, 13, '#d7a53a');
+      ci(c, -5, -2, 3.8, '#fff'); ci(c, 5, -2, 3.8, '#fff');
+      ci(c, -5 + lk * 0.5, -1.6, 1.7, '#111', false); ci(c, 5 + lk * 0.5, -1.6, 1.7, '#111', false);
+      c.beginPath(); c.moveTo(-4, 6); c.lineTo(4, 6); c.stroke();
+      if (m.hp < m.maxHp) { c.beginPath(); c.moveTo(-14, -14); c.lineTo(-6, -4); c.lineTo(-10, 6); c.stroke(); }
+      break;
+    }
+    case 'steambot': {
+      const spin = ph * 10;
+      c.strokeStyle = '#8d6e63'; c.lineWidth = 3; c.beginPath(); c.moveTo(0, -12); c.lineTo(0, -17); c.stroke();
+      c.strokeStyle = OUT; c.lineWidth = 2;
+      ell(c, 0, -18, Math.max(4, 15 * Math.abs(Math.cos(spin))), 2, 'rgba(215,170,110,0.9)');
+      rr(c, -19, -12, 38, 26, 10, '#a1662f');
+      rr(c, -19, 4, 38, 10, [0, 0, 10, 10], '#7b4a1e');
+      for (const rx of [-12, 0, 12]) ci(c, rx, 9, 1.5, '#ffd180', false);
+      ci(c, 5, -2, 7, '#fff8e1'); ci(c, 5, -2, 3.2, m.charge > 0 ? '#ffca28' : '#d84315', false);
+      rr(c, -15, -8, 8, 5, 2, '#5d4037');
+      for (let i = 0; i < 2; i++) { const pp = (ph * 2 + i * 0.5) % 1; ci(c, -11 + pp * 4, -22 - pp * 12, 2 + pp * 3, 'rgba(255,255,255,' + (0.7 - pp * 0.7) + ')', false); }
+      if (m.charge > 0) ci(c, 0, 20, 3 + m.charge * 5, '#ffcc80', false);
+      break;
+    }
     case 'harpy': {
       const fl = Math.sin(ph * 5) * 8;
       pg(c, [[-8, 0], [-27, -12 - fl], [-23, 4], [-15, 2 + fl * 0.4], [-11, 10]], '#d4a82a');
@@ -1388,7 +1557,28 @@ function layerBuildings(c, w, base, minH, rngH, color, seed, windows, t) {
   }
 }
 
-function drawArenaScene(c, a, w, h, scroll, t) {
+function gearPath(c, r1, r2, n, rot) {
+  c.beginPath();
+  const step = Math.PI * 2 / n;
+  for (let i = 0; i < n; i++) {
+    const a0 = rot + i * step;
+    const pts = [[a0, r2], [a0 + step * 0.18, r1], [a0 + step * 0.32, r1], [a0 + step * 0.5, r2]];
+    for (let k = 0; k < 4; k++) {
+      const x = Math.cos(pts[k][0]) * pts[k][1], y = Math.sin(pts[k][0]) * pts[k][1];
+      if (i === 0 && k === 0) c.moveTo(x, y); else c.lineTo(x, y);
+    }
+  }
+  c.closePath();
+}
+function layerDunes(c, w, base, amp, len, color, ph) {
+  c.beginPath(); c.moveTo(0, base + 260);
+  for (let x = 0; x <= w; x += 14) c.lineTo(x, base - amp * Math.sin(x / len + ph) - amp * 0.5 * Math.sin(x / (len * 0.47) + ph * 1.7));
+  c.lineTo(w, base + 260); c.closePath();
+  c.fillStyle = color; c.fill();
+}
+
+// Фон арены разделён: основа (градиент + клетка) рисуется каждый кадр, декорации кэшируются в отдельный слой
+function drawArenaBase(c, a, w, h, scroll) {
   const g = c.createLinearGradient(0, 0, 0, h);
   g.addColorStop(0, a.bgTop); g.addColorStop(1, a.bgBottom);
   c.fillStyle = g; c.fillRect(0, 0, w, h);
@@ -1400,7 +1590,9 @@ function drawArenaScene(c, a, w, h, scroll, t) {
   for (let x = 0; x < w; x += gs) { c.moveTo(x, 0); c.lineTo(x, h); }
   for (let y = offY; y < h; y += gs) { c.moveTo(0, y); c.lineTo(w, y); }
   c.stroke();
+}
 
+function drawArenaDeco(c, a, w, h, scroll, t) {
   const sink = Math.min(scroll * 0.12, h * 0.5);
   const base = h + sink;
   const fl = scroll * 0.25 + t * 0.012;
@@ -1560,6 +1752,121 @@ function drawArenaScene(c, a, w, h, scroll, t) {
       }
       break;
     }
+    case 'desert': {
+      const sx = w * 0.74, sy = 74 + sink * 0.3;
+      const sg = c.createRadialGradient(sx, sy, 8, sx, sy, 80);
+      sg.addColorStop(0, 'rgba(255,250,200,0.95)'); sg.addColorStop(1, 'rgba(255,214,120,0)');
+      c.fillStyle = sg; c.fillRect(sx - 90, sy - 90, 180, 180);
+      ci(c, sx, sy, 26, '#fff6c2', false);
+      for (const px of [w * 0.18, w * 0.36]) {
+        const pyh = 58 + (px % 3) * 10;
+        pg(c, [[px - pyh, base - 70], [px, base - 70 - pyh], [px + pyh, base - 70]], '#e3a35a', false);
+        pg(c, [[px, base - 70 - pyh], [px + pyh, base - 70], [px + 8, base - 70]], '#c98a43', false);
+      }
+      layerDunes(c, w, base - 52, 16, 52, '#f3c27a', 0.6);
+      for (let i = 0; i < 5; i++) {
+        const x = 30 + i * 85 + hash(i + 2) * 30, y = base - 42 - hash(i + 9) * 8;
+        rr(c, x - 4, y - 34, 8, 36, 4, '#5f8f3e', false);
+        rr(c, x - 14, y - 24, 6, 14, 3, '#5f8f3e', false); rr(c, x - 14, y - 12, 14, 5, 2, '#5f8f3e', false);
+        rr(c, x + 8, y - 28, 6, 12, 3, '#5f8f3e', false); rr(c, x, y - 18, 14, 5, 2, '#5f8f3e', false);
+      }
+      layerDunes(c, w, base - 26, 20, 44, '#e7a653', 2.1);
+      layerDunes(c, w, base, 24, 38, '#d68a3c', 4.0);
+      c.strokeStyle = 'rgba(255,255,255,0.15)'; c.lineWidth = 2;
+      for (let k = 0; k < 4; k++) {
+        c.beginPath();
+        for (let x = 0; x <= w; x += 16) c.lineTo(x, base - 118 - k * 22 + Math.sin(x * 0.05 + t * 0.003 + k) * 3);
+        c.stroke();
+      }
+      break;
+    }
+    case 'candy': {
+      for (let i = 0; i < 4; i++) {
+        const cx = ((i * 140 + t * 0.008 * (1 + i * 0.3)) % (w + 160)) - 80, cy = 60 + i * 55 + sink * 0.2;
+        const cc = i % 2 ? 'rgba(173,216,255,0.5)' : 'rgba(255,255,255,0.55)';
+        ell(c, cx, cy, 44, 15, cc, false); ell(c, cx + 20, cy - 10, 26, 12, cc, false);
+      }
+      layerDunes(c, w, base - 50, 14, 70, '#ffc4e1', 0.3);
+      const cols = ['#ff5c8a', '#4fc3f7', '#ffd54f', '#b388ff', '#69f0ae'];
+      for (let i = 0; i < 5; i++) {
+        const x = 40 + i * 80 + hash(i) * 20, hh = 80 + hash(i + 4) * 60, y = base - 30 - hh;
+        c.fillStyle = '#fff'; c.fillRect(x - 3, y, 6, hh);
+        ci(c, x, y, 17, cols[i], false);
+        c.strokeStyle = 'rgba(255,255,255,0.85)'; c.lineWidth = 3;
+        c.beginPath(); c.arc(x, y, 10, 0, 4.4); c.stroke();
+        c.beginPath(); c.arc(x, y, 4, 0, 4.4); c.stroke();
+      }
+      for (let i = 0; i < 3; i++) {
+        const x = 70 + i * 140 + hash(i + 11) * 20, y = base - 30;
+        c.lineWidth = 9; c.strokeStyle = '#fff';
+        c.beginPath(); c.moveTo(x, y); c.lineTo(x, y - 60); c.arc(x + 10, y - 60, 10, Math.PI, 0); c.stroke();
+        c.strokeStyle = '#ff5252'; c.setLineDash([7, 9]);
+        c.beginPath(); c.moveTo(x, y); c.lineTo(x, y - 60); c.arc(x + 10, y - 60, 10, Math.PI, 0); c.stroke();
+        c.setLineDash([]);
+      }
+      layerDunes(c, w, base - 8, 16, 52, '#ff9ccc', 2.2);
+      break;
+    }
+    case 'graveyard': {
+      const mx = w * 0.72, my = 78 + sink * 0.3;
+      const mg = c.createRadialGradient(mx, my, 10, mx, my, 90);
+      mg.addColorStop(0, 'rgba(255,248,210,0.4)'); mg.addColorStop(1, 'rgba(255,248,210,0)');
+      c.fillStyle = mg; c.fillRect(mx - 100, my - 100, 200, 200);
+      ci(c, mx, my, 28, '#fff3c4', false); ci(c, mx - 8, my - 6, 5, '#e6d79c', false); ci(c, mx + 9, my + 8, 3.5, '#e6d79c', false);
+      for (let i = 0; i < 3; i++) {
+        const bx = ((t * 0.03 * (1 + i * 0.4) + i * 150) % (w + 80)) - 40;
+        const by = 120 + i * 70 + Math.sin(t * 0.004 + i) * 14 + sink * 0.2;
+        const f = Math.sin(t * 0.02 + i) * 5;
+        pg(c, [[bx, by], [bx - 12, by - 6 - f], [bx - 6, by + 2], [bx, by + 1], [bx + 6, by + 2], [bx + 12, by - 6 - f]], 'rgba(10,10,20,0.7)', false);
+      }
+      c.strokeStyle = '#141826';
+      for (const tr of [[40, 130], [w - 50, 150], [w * 0.5, 100]]) {
+        const tx = tr[0], th = tr[1];
+        c.lineWidth = 7; c.beginPath(); c.moveTo(tx, base); c.lineTo(tx, base - th); c.stroke();
+        c.lineWidth = 4;
+        for (let k = 0; k < 3; k++) {
+          c.beginPath(); c.moveTo(tx, base - th * (0.4 + k * 0.2));
+          c.lineTo(tx + (k % 2 ? 1 : -1) * (26 - k * 4), base - th * (0.55 + k * 0.2)); c.stroke();
+        }
+      }
+      for (let x = 20; x < w; x += 58) {
+        const i = Math.round(x / 58), hh = 30 + hash(i + 2) * 18;
+        rr(c, x, base - hh - 22, 26, hh + 22, [13, 13, 0, 0], '#2b3148', false);
+        c.fillStyle = '#4a5275'; c.fillRect(x + 11, base - hh - 12, 4, 14); c.fillRect(x + 7, base - hh - 8, 12, 4);
+      }
+      for (let i = 0; i < 3; i++) {
+        const fx = ((t * 0.012 * (i + 1) + i * 150) % (w + 260)) - 130;
+        ell(c, fx, base - 50 - i * 40, 140, 24, 'rgba(190,200,235,0.1)', false);
+      }
+      break;
+    }
+    case 'clockwork': {
+      const gears = [[w * 0.18, 110, 62, 0.00028], [w * 0.84, 250, 78, -0.00022], [w * 0.4, 420, 54, 0.00034], [w * 0.9, 560, 46, -0.0004]];
+      for (const gr of gears) {
+        c.save(); c.translate(gr[0], gr[1] + sink * 0.4); c.rotate(t * gr[3]);
+        gearPath(c, gr[2], gr[2] - 10, 12, 0); c.fillStyle = 'rgba(40,22,8,0.28)'; c.fill();
+        ci(c, 0, 0, gr[2] * 0.3, 'rgba(0,0,0,0.18)', false);
+        c.restore();
+      }
+      const fx = w * 0.55, fy = 150 + sink * 0.3;
+      c.fillStyle = 'rgba(255,236,179,0.35)'; c.beginPath(); c.arc(fx, fy, 44, 0, 6.283); c.fill();
+      c.strokeStyle = 'rgba(60,36,12,0.6)'; c.lineWidth = 3; c.stroke();
+      for (let i = 0; i < 12; i++) {
+        const an = i * Math.PI / 6;
+        c.beginPath(); c.moveTo(fx + Math.cos(an) * 36, fy + Math.sin(an) * 36); c.lineTo(fx + Math.cos(an) * 41, fy + Math.sin(an) * 41); c.stroke();
+      }
+      const ma = t * 0.0006 - Math.PI / 2, ha = t * 0.00005 - Math.PI / 2;
+      c.lineWidth = 3; c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx + Math.cos(ma) * 34, fy + Math.sin(ma) * 34); c.stroke();
+      c.lineWidth = 4; c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx + Math.cos(ha) * 22, fy + Math.sin(ha) * 22); c.stroke();
+      c.fillStyle = 'rgba(60,35,15,0.5)';
+      for (let i = 0; i < 3; i++) {
+        const px = 20 + i * 150, pH = 90 + hash(i + 5) * 60;
+        c.fillStyle = 'rgba(60,35,15,0.5)'; c.fillRect(px, base - pH, 22, pH); c.fillRect(px - 4, base - pH - 6, 30, 8);
+        const sp = (t * 0.03 + i * 40) % 90;
+        ci(c, px + 11 + Math.sin(sp * 0.1) * 6, base - pH - 12 - sp, 7 + sp * 0.1, 'rgba(255,255,255,' + (0.35 - sp / 300) + ')', false);
+      }
+      break;
+    }
   }
   c.restore();
 
@@ -1567,6 +1874,11 @@ function drawArenaScene(c, a, w, h, scroll, t) {
     c.strokeStyle = a.marginColor; c.lineWidth = 2;
     c.beginPath(); c.moveTo(36, 0); c.lineTo(36, h); c.stroke();
   }
+}
+
+function drawArenaScene(c, a, w, h, scroll, t) {
+  drawArenaBase(c, a, w, h, scroll);
+  drawArenaDeco(c, a, w, h, scroll, t);
 }
 
 function makeAmbient(w, h, n) {
@@ -1634,6 +1946,15 @@ function drawPlatformShape(c, a, p, t) {
       c.fillStyle = '#e1f5fe'; for (let k = 0; k < 4; k++) pg(c, [[p.x + 10 + k * 14, p.y + p.h], [p.x + 15 + k * 14, p.y + p.h], [p.x + 12.5 + k * 14, p.y + p.h + 6 + (k % 2) * 3]], '#e1f5fe');
     } else if (a.scene === 'olympus') {
       c.fillStyle = 'rgba(255,255,255,0.6)'; c.fillRect(p.x + 10, p.y + 7, p.w - 20, 2);
+    } else if (a.scene === 'desert') {
+      c.fillStyle = 'rgba(255,230,170,0.55)'; for (let k = 0; k < 5; k++) c.fillRect(p.x + 8 + k * 11, p.y + 8, 6, 2);
+    } else if (a.scene === 'candy') {
+      const sc = ['#ffffff', '#ffeb3b', '#4fc3f7'];
+      for (let k = 0; k < 6; k++) { c.fillStyle = sc[k % 3]; c.fillRect(p.x + 8 + k * 9, p.y + 6 + (k % 2) * 3, 4, 2); }
+    } else if (a.scene === 'graveyard') {
+      c.fillStyle = '#7cb342'; for (let k = 0; k < 4; k++) c.fillRect(p.x + 6 + k * 15, p.y - 1, 8, 3);
+    } else if (a.scene === 'clockwork') {
+      for (let k = 0; k < 4; k++) ci(c, p.x + 10 + k * (p.w - 20) / 3, p.y + p.h / 2 + 1, 1.5, '#ffe082', false);
     }
   } else if (p.type === 'moving') {
     c.fillStyle = 'rgba(0,0,0,0.38)';
@@ -1656,6 +1977,7 @@ function drawPlatformShape(c, a, p, t) {
 const defaultSave = {
   bestScore: 0, coins: 300, totalXP: 0, selectedArena: 1, highestUnlockedArena: 1,
   ownedSkins: ['classic'], selectedSkin: 'classic', savedAt: 0, promos: [], arenaBest: {},
+  settings: { shootSize: 64, shootX: 0.84, shootY: 0.9, shootOpacity: 90, quality: 'auto', fpsCap: 0 },
   stats: { gamesPlayed: 0, totalScore: 0, totalJumps: 0, springJumps: 0, brokenPlatforms: 0, monstersKilled: 0, shotsFired: 0, totalCoinsCollected: 0, powerupsUsed: 0, timePlayedSec: 0 }
 };
 let saveData = JSON.parse(JSON.stringify(defaultSave));
@@ -1675,6 +1997,15 @@ function normalizeSave(parsed) {
   const srcAb = parsed && parsed.arenaBest && typeof parsed.arenaBest === 'object' ? parsed.arenaBest : {};
   for (const a of ARENAS) { const v = Number(srcAb[a.id]); if (Number.isFinite(v) && v > 0) ab[a.id] = Math.floor(v); }
   out.arenaBest = ab;
+  const st = { ...defaultSave.settings, ...((parsed && parsed.settings) || {}) };
+  st.shootSize = clamp(Number(st.shootSize) || 64, 44, 110);
+  st.shootX = clamp(Number.isFinite(Number(st.shootX)) ? Number(st.shootX) : 0.84, 0.05, 0.95);
+  st.shootY = clamp(Number.isFinite(Number(st.shootY)) ? Number(st.shootY) : 0.9, 0.05, 0.95);
+  st.shootOpacity = clamp(Number(st.shootOpacity) || 90, 30, 100);
+  if (!['auto', 'low', 'high'].includes(st.quality)) st.quality = 'auto';
+  if (![0, 30, 60].includes(Number(st.fpsCap))) st.fpsCap = 0;
+  st.fpsCap = Number(st.fpsCap);
+  out.settings = st;
   out.promos = Array.isArray(out.promos) ? out.promos.filter((x) => typeof x === 'string') : [];
   if (!out.ownedSkins.includes(out.selectedSkin)) out.selectedSkin = 'classic';
   for (const k of ['bestScore', 'coins', 'totalXP', 'savedAt']) if (!Number.isFinite(out[k]) || out[k] < 0) out[k] = defaultSave[k];
@@ -1731,6 +2062,7 @@ function loadFromCloud() {
         const remote = normalizeSave(JSON.parse(value));
         if (remote.savedAt > saveData.savedAt && gameState !== 'PLAYING') {
           saveData = remote;
+          applySettings();
           try { localStorage.setItem(SAVE_KEY, JSON.stringify(saveData)); } catch (e) {}
           syncUnlockedArenas(false);
           previewIdx = saveData.selectedArena;
@@ -1751,17 +2083,20 @@ function syncUnlockedArenas(showNotification) {
   for (const a of ARENAS) if (saveData.totalXP >= a.minXP) maxId = a.id;
   const selA = ARENAS[saveData.selectedArena - 1];
   if (!selA || saveData.totalXP < selA.minXP) { saveData.selectedArena = maxId; previewIdx = maxId; }
-  if (maxId > saveData.highestUnlockedArena) {
+  if (maxId !== saveData.highestUnlockedArena) {
+    const up = maxId > saveData.highestUnlockedArena;
     saveData.highestUnlockedArena = maxId;
     writeSaveData();
-    if (showNotification) {
+    if (up && showNotification) {
       showArenaToast(ARENAS[maxId - 1].name);
       playSound('arena_up');
     }
   }
 }
-function getCurrentArena() { return ARENAS.find((a) => a.id === saveData.selectedArena) || ARENAS[0]; }
-function getSkin() { return SKINS.find((s) => s.id === saveData.selectedSkin) || SKINS[0]; }
+function getCurrentArena() { return ARENAS[saveData.selectedArena - 1] || ARENAS[0]; }
+const SKIN_MAP = {};
+SKINS.forEach((sk) => { SKIN_MAP[sk.id] = sk; });
+function getSkin() { return SKIN_MAP[saveData.selectedSkin] || SKINS[0]; }
 
 let toastTimer = null;
 function showArenaToast(title) { showToastText(`🏆 НОВАЯ АРЕНА ОТКРЫТА: ${title}!`); }
@@ -2025,7 +2360,11 @@ function updateTouchUI() {
 // ==========================================================
 // 12. ОБНОВЛЕНИЕ
 // ==========================================================
+// Чем выше арена, тем больше опыта за всё (×1.0, ×1.3, ×1.6 ...)
+function xpMult(a) { return 1 + 0.3 * (a.id - 1); }
+function fmtXP(n) { return n >= 1e6 ? (n / 1e6).toFixed(n % 1e6 ? 1 : 0).replace('.', ',') + ' млн' : formatNum(n); }
 function addXP(n) {
+  n *= xpMult(getCurrentArena());
   saveData.totalXP += n;
   matchBonusXP += n;
   syncUnlockedArenas(true);
@@ -2047,7 +2386,7 @@ function killMonster(i, reward) {
 function updateHazards(dt, arena) {
   hazardTimer -= dt;
   if (arena.hazard === 'faller' && hazardTimer <= 0) {
-    hazards.push({ kind: 'faller', x: clamp(player.x + player.w / 2 + (Math.random() - 0.5) * 220, 24, W - 24), y: -40, warn: 70, falling: false });
+    hazards.push({ kind: 'faller', look: arena.hazardLook || 'crystal', x: clamp(player.x + player.w / 2 + (Math.random() - 0.5) * 220, 24, W - 24), y: -40, warn: 70, falling: false });
     hazardTimer = (190 + Math.random() * 120) / (1 + hardLevel() * 0.6);
     playSound('warn');
   }
@@ -2261,6 +2600,7 @@ function update(dt) {
   updateHazards(dt, arena);
   if (gameState !== 'PLAYING') return;
 
+  if (particles.length > 150) particles.splice(0, particles.length - 150);
   for (let i = particles.length - 1; i >= 0; i--) {
     const pt = particles[i];
     pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.life -= dt;
@@ -2311,6 +2651,7 @@ function drawEntities(t) {
   const arena = getCurrentArena();
 
   for (const p of platforms) {
+    if (p.y < -40) continue;
     drawPlatformShape(ctx, arena, p, t);
     if (p.broken) continue;
     const cx = p.x + p.w / 2;
@@ -2331,6 +2672,7 @@ function drawEntities(t) {
   }
 
   for (const m of monsters) {
+    if (m.y > H + 60 || m.y < -70) continue;
     if (m.flash > 0) { m.flash -= drawDt; ctx.globalAlpha = 0.55; }
     drawMonster(ctx, m, t);
     ctx.globalAlpha = 1;
@@ -2357,8 +2699,19 @@ function drawHazards(t) {
       } else {
         ctx.save(); ctx.translate(hz.x, hz.y);
         ctx.strokeStyle = '#4a148c'; ctx.lineWidth = 2;
-        pg(ctx, [[0, 24], [-12, -10], [-5, -26], [5, -26], [12, -10]], '#26c6da');
-        pg(ctx, [[0, 24], [12, -10], [5, -26], [0, -10]], 'rgba(255,255,255,0.35)', false);
+        if (hz.look === 'rock') {
+          ctx.strokeStyle = OUT; ctx.rotate(hz.y * 0.02);
+          pg(ctx, [[-15, -6], [-8, -17], [6, -18], [16, -5], [12, 11], [-4, 15], [-14, 8]], '#8d6e63');
+          pg(ctx, [[-8, -17], [6, -18], [2, -6], [-9, -4]], 'rgba(255,255,255,0.25)', false);
+          ci(ctx, 5, 4, 3, '#6d4c41', false); ci(ctx, -6, 7, 2, '#6d4c41', false);
+        } else if (hz.look === 'gear') {
+          ctx.strokeStyle = OUT; ctx.rotate(hz.y * 0.05);
+          gearPath(ctx, 21, 16, 9, 0); ctx.fillStyle = '#b8860b'; ctx.fill(); ctx.stroke();
+          ci(ctx, 0, 0, 7, '#5d4037');
+        } else {
+          pg(ctx, [[0, 24], [-12, -10], [-5, -26], [5, -26], [12, -10]], '#26c6da');
+          pg(ctx, [[0, 24], [12, -10], [5, -26], [0, -10]], 'rgba(255,255,255,0.35)', false);
+        }
         ctx.restore();
       }
     } else if (hz.kind === 'bolt') {
@@ -2388,9 +2741,22 @@ function drawHazards(t) {
   }
 }
 
+const decoCanvas = document.createElement('canvas');
+const decoCtx = decoCanvas.getContext('2d');
+let decoT = -1e9, decoKey = '';
 function draw(t) {
   const arena = getCurrentArena();
-  drawArenaScene(ctx, arena, W, H, cameraY, t);
+  drawArenaBase(ctx, arena, W, H, cameraY);
+  // декорации фона (горы, здания, облака...) тяжёлые, а двигаются медленно — обновляем их реже и просто копируем слой
+  const key = arena.id + ':' + W + 'x' + H;
+  const interval = autoLow ? 66 : (LOW_FX ? 45 : 33);
+  if (decoKey !== key || t - decoT >= interval) {
+    if (decoCanvas.width !== W || decoCanvas.height !== H) { decoCanvas.width = W; decoCanvas.height = H; }
+    else decoCtx.clearRect(0, 0, W, H);
+    drawArenaDeco(decoCtx, arena, W, H, cameraY, t);
+    decoKey = key; decoT = t;
+  }
+  ctx.drawImage(decoCanvas, 0, 0);
   stepAmbient(ctx, arena, gameAmbient, W, H, drawDt, windNow);
   drawEntities(t);
   drawHazards(t);
@@ -2473,7 +2839,7 @@ function updateAllUI() {
 
   document.getElementById('menuSkinName').textContent = getSkin().name;
   document.getElementById('menuPlayArena').textContent = `${sel.icon} ${sel.name}`;
-  document.getElementById('menuArenaNum').textContent = `АРЕНА ${pv.id} ИЗ ${ARENAS.length}`;
+  document.getElementById('menuArenaNum').textContent = `АРЕНА ${pv.id} ИЗ ${ARENAS.length} • ОПЫТ ×${xpMult(pv).toFixed(1)}`;
   document.getElementById('menuArenaTitle').textContent = `${pv.icon} ${pv.name}`;
   document.getElementById('menuArenaTwist').textContent = pv.twist;
 
@@ -2481,7 +2847,7 @@ function updateAllUI() {
   const selBtn = document.getElementById('arenaSelectBtn');
   if (!unlocked) {
     lockEl.classList.remove('hidden');
-    lockEl.innerHTML = `🔒<br>Нужно ${formatNum(pv.minXP)} XP`;
+    lockEl.innerHTML = `🔒<br>Нужно ${fmtXP(pv.minXP)} XP`;
     selBtn.textContent = '🔒 Закрыта';
     selBtn.className = 'btn btn-sm btn-locked';
   } else if (sel.id === pv.id) {
@@ -2508,7 +2874,7 @@ function updateAllUI() {
     const span = next.minXP - ha.minXP;
     const pct = Math.min(100, (Math.max(0, saveData.totalXP - ha.minXP) / span) * 100);
     document.getElementById('menuXpFill').style.width = `${pct}%`;
-    document.getElementById('menuXpText').textContent = `${formatNum(saveData.totalXP)} / ${formatNum(next.minXP)} XP до Арены ${next.id}`;
+    document.getElementById('menuXpText').textContent = `${formatNum(saveData.totalXP)} / ${fmtXP(next.minXP)} XP до Арены ${next.id}`;
   } else {
     document.getElementById('menuXpFill').style.width = '100%';
     document.getElementById('menuXpText').textContent = `${formatNum(saveData.totalXP)} XP • Все арены открыты!`;
@@ -2616,7 +2982,7 @@ function renderArenas() {
     const isSelected = saveData.selectedArena === arena.id;
     const card = document.createElement('div');
     card.className = `list-card ${unlocked ? '' : 'locked'}`;
-    let btnClass = 'locked-btn', btnText = `🔒 ${formatNum(arena.minXP)} XP`;
+    let btnClass = 'locked-btn', btnText = `🔒 ${fmtXP(arena.minXP)} XP`;
     if (isSelected) { btnClass = 'equipped'; btnText = 'Активна ✓'; }
     else if (unlocked) { btnClass = 'select'; btnText = 'Выбрать'; }
     card.innerHTML = `
@@ -2624,7 +2990,7 @@ function renderArenas() {
         <canvas class="arena-thumb" width="128" height="96"></canvas>
         <div>
           <div class="card-title">Арена ${arena.id}: ${arena.name}</div>
-          <div class="card-desc">${arena.twist}<br><strong>${formatNum(arena.minXP)} XP</strong><br>🏆 Рекорд: <strong>${unlocked ? formatNum(saveData.arenaBest[arena.id] || 0) : '—'}</strong></div>
+          <div class="card-desc">${arena.twist}<br><strong>${fmtXP(arena.minXP)} XP</strong> • опыт ×${xpMult(arena).toFixed(1)}<br>🏆 Рекорд: <strong>${unlocked ? formatNum(saveData.arenaBest[arena.id] || 0) : '—'}</strong></div>
         </div>
       </div>
       <button class="action-btn ${btnClass}">${btnText}</button>`;
@@ -2669,7 +3035,7 @@ function renderStats() {
 }
 
 function hideAllModals() {
-  [mainMenuEl, shopMenuEl, arenasMenuEl, statsMenuEl, gameOverMenuEl, promoMenuEl, document.getElementById('pauseMenu')].forEach((el) => el.classList.add('hidden'));
+  [mainMenuEl, shopMenuEl, arenasMenuEl, statsMenuEl, gameOverMenuEl, promoMenuEl, document.getElementById('settingsMenu'), document.getElementById('pauseMenu')].forEach((el) => el.classList.add('hidden'));
 }
 
 function showMainMenu() {
@@ -2763,6 +3129,101 @@ function openPromo() {
   });
 }
 
+// ==========================================================
+// НАСТРОЙКИ: кнопка выстрела, графика, FPS
+// ==========================================================
+const settingsMenuEl = document.getElementById('settingsMenu');
+const sbPrev = document.getElementById('sbPreview');
+const sbBtn = document.getElementById('sbPreviewBtn');
+
+function applySettings() {
+  const st = saveData.settings;
+  shootBtnEl.style.setProperty('--sb-x', st.shootX.toFixed(4));
+  shootBtnEl.style.setProperty('--sb-y', st.shootY.toFixed(4));
+  shootBtnEl.style.setProperty('--sb-size', st.shootSize + 'px');
+  shootBtnEl.style.setProperty('--sb-op', (st.shootOpacity / 100).toFixed(2));
+  if (st.quality !== 'auto') autoLow = false;
+  LOW_FX = st.quality === 'low' || (st.quality === 'auto' && (COARSE || autoLow));
+}
+
+function clampShootPos() {
+  const st = saveData.settings;
+  const wrapW = canvas.clientWidth || 390, wrapH = canvas.clientHeight || 844;
+  const hx = (st.shootSize / 2) / wrapW, hy = (st.shootSize / 2) / wrapH;
+  st.shootX = clamp(st.shootX, hx, 1 - hx);
+  st.shootY = clamp(st.shootY, hy, 1 - hy);
+}
+
+function renderSettings() {
+  const st = saveData.settings;
+  sbPrev.style.aspectRatio = W + ' / ' + H;
+  const wrapW = canvas.clientWidth || 390;
+  const k = (sbPrev.clientWidth || 150) / wrapW;
+  const px = Math.max(20, st.shootSize * k);
+  sbBtn.style.width = px + 'px'; sbBtn.style.height = px + 'px';
+  sbBtn.style.fontSize = (px * 0.45) + 'px';
+  sbBtn.style.left = (st.shootX * 100) + '%';
+  sbBtn.style.top = (st.shootY * 100) + '%';
+  sbBtn.style.opacity = st.shootOpacity / 100;
+  document.getElementById('sbSize').value = st.shootSize;
+  document.getElementById('sbSizeVal').textContent = st.shootSize;
+  document.getElementById('sbOpacity').value = st.shootOpacity;
+  document.getElementById('sbOpacityVal').textContent = st.shootOpacity + '%';
+  document.querySelectorAll('#qualitySeg .seg-btn').forEach((b) => b.classList.toggle('active', b.dataset.v === st.quality));
+  document.querySelectorAll('#fpsSeg .seg-btn').forEach((b) => b.classList.toggle('active', b.dataset.v === String(st.fpsCap)));
+}
+
+let sbDragging = false;
+function sbMove(e) {
+  const st = saveData.settings;
+  const r = sbPrev.getBoundingClientRect();
+  st.shootX = (e.clientX - r.left) / r.width;
+  st.shootY = (e.clientY - r.top) / r.height;
+  clampShootPos();
+  applySettings(); renderSettings();
+}
+sbPrev.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  sbDragging = true;
+  try { sbPrev.setPointerCapture(e.pointerId); } catch (err) {}
+  sbMove(e);
+});
+sbPrev.addEventListener('pointermove', (e) => { if (sbDragging) sbMove(e); });
+function sbEnd() { if (sbDragging) { sbDragging = false; writeSaveData(); } }
+sbPrev.addEventListener('pointerup', sbEnd);
+sbPrev.addEventListener('pointercancel', sbEnd);
+
+document.getElementById('sbSize').addEventListener('input', (e) => {
+  saveData.settings.shootSize = Number(e.target.value);
+  clampShootPos(); applySettings(); renderSettings();
+});
+document.getElementById('sbOpacity').addEventListener('input', (e) => {
+  saveData.settings.shootOpacity = Number(e.target.value);
+  applySettings(); renderSettings();
+});
+['sbSize', 'sbOpacity'].forEach((id) => document.getElementById(id).addEventListener('change', () => writeSaveData()));
+document.getElementById('sbResetBtn').addEventListener('click', () => {
+  Object.assign(saveData.settings, { shootSize: 64, shootX: 0.84, shootY: 0.9, shootOpacity: 90 });
+  clampShootPos(); applySettings(); renderSettings(); writeSaveData(); playSound('click');
+});
+document.getElementById('qualitySeg').addEventListener('click', (e) => {
+  const b = e.target.closest('.seg-btn'); if (!b) return;
+  saveData.settings.quality = b.dataset.v; autoLow = false;
+  applySettings(); renderSettings(); writeSaveData(); playSound('click');
+});
+document.getElementById('fpsSeg').addEventListener('click', (e) => {
+  const b = e.target.closest('.seg-btn'); if (!b) return;
+  saveData.settings.fpsCap = Number(b.dataset.v);
+  renderSettings(); writeSaveData(); playSound('click');
+});
+function openSettings() { playSound('click'); openModal(settingsMenuEl, renderSettings); }
+document.getElementById('openSettingsBtn').addEventListener('click', openSettings);
+document.getElementById('pauseSettingsBtn').addEventListener('click', openSettings);
+document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+  if (gameState === 'PAUSED') { hideAllModals(); document.getElementById('pauseMenu').classList.remove('hidden'); }
+  else showMainMenu();
+});
+
 document.getElementById('startBtn').addEventListener('click', startGame);
 document.getElementById('openPromoBtn').addEventListener('click', () => { playSound('click'); openPromo(); });
 document.getElementById('closePromoBtn').addEventListener('click', showMainMenu);
@@ -2807,6 +3268,7 @@ document.getElementById('soundToggleBtn').addEventListener('click', (e) => {
 syncUnlockedArenas(false);
 previewIdx = saveData.selectedArena;
 menuAmbient = makeAmbient(MW, MH, 22);
+applySettings();
 fitCanvas();
 initGameWorld();
 updateAllUI();
@@ -2814,11 +3276,20 @@ let lastTime = performance.now();
 let lastIdleDraw = 0;
 let loopDt = 1, drawDt = 1; // шаг времени в «кадрах по 60 Гц»: при 120 Гц ≈ 0.5
 
+let perfEma = 0.6, slowCount = 0;
 function gameLoop(currentTime) {
+  const cap = saveData.settings.fpsCap;
+  if (cap && currentTime - lastTime < 1000 / cap - 2) { requestAnimationFrame(gameLoop); return; }
   const rawDt = (currentTime - lastTime) / 16.667;
   lastTime = currentTime;
   const dt = Math.min(Math.max(rawDt, 0.1), 2.5);
   loopDt = dt;
+  if (gameState === 'PLAYING' && !cap) {
+    perfEma = perfEma * 0.96 + Math.min(rawDt, 4) * 0.04;
+    if (perfEma > 1.75) {
+      if (!autoLow && saveData.settings.quality === 'auto' && ++slowCount > 90) { autoLow = true; LOW_FX = true; }
+    } else slowCount = 0;
+  }
 
   if (gameState === 'PLAYING') {
     drawDt = dt;

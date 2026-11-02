@@ -34,6 +34,7 @@
     <!-- Главное меню -->
     <div id="mainMenu" class="overlay">
       <div class="notebook-card menu-card">
+        <button id="openSettingsBtn" class="menu-gear" title="Настройки" aria-label="Настройки">⚙</button>
         <div class="title-row">
           <h1 class="game-title">Doodle Jump</h1>
           <span class="subtitle">Ultimate Edition</span>
@@ -114,7 +115,7 @@
           <h2>🏟 Путь Арен</h2>
           <div class="stat-pill">⭐ <span id="arenasTotalXp">0</span> XP</div>
         </div>
-        <p class="modal-sub">Опыт (XP) даётся нелегко: за высоту, монстров и монеты. Каждая следующая арена открывается только после набора нужного XP. После 10 000 очков сложность начинает расти!</p>
+        <p class="modal-sub">Опыт (XP) даётся нелегко: за высоту, монстров и монеты. Чем выше арена, тем больше опыта за всё (×1.3, ×1.6 и т. д.), но и открываются они всё дольше — последние потребуют десятков часов игры. После 10 000 очков сложность начинает расти!</p>
 
         <div id="arenasList" class="scroll-list"></div>
 
@@ -158,6 +159,50 @@
       </div>
     </div>
 
+    <!-- Настройки -->
+    <div id="settingsMenu" class="overlay hidden">
+      <div class="notebook-card modal-card">
+        <div class="modal-header">
+          <h2>⚙ Настройки</h2>
+        </div>
+
+        <div class="scroll-list settings-body">
+          <div class="set-section">
+            <div class="set-title">🎯 Кнопка выстрела</div>
+            <p class="modal-sub">Перетащи кнопку по макету экрана туда, где удобно большому пальцу. Кнопка видна только на телефонах.</p>
+            <div id="sbPreview" class="sb-preview"><button id="sbPreviewBtn" class="sb-preview-btn" tabindex="-1">🎯</button></div>
+            <label class="set-row"><span>Размер</span><input id="sbSize" type="range" min="44" max="110" step="1"><b id="sbSizeVal">64</b></label>
+            <label class="set-row"><span>Прозрачность</span><input id="sbOpacity" type="range" min="30" max="100" step="5"><b id="sbOpacityVal">90%</b></label>
+            <button id="sbResetBtn" class="btn btn-outline btn-sm">↺ Сбросить кнопку</button>
+          </div>
+
+          <div class="set-section">
+            <div class="set-title">🎨 Графика</div>
+            <p class="modal-sub">«Авто» сама упрощает эффекты, если игра начинает тормозить. «Эконом» — максимум плавности.</p>
+            <div id="qualitySeg" class="seg">
+              <button class="seg-btn" data-v="auto">Авто</button>
+              <button class="seg-btn" data-v="low">Эконом</button>
+              <button class="seg-btn" data-v="high">Красиво</button>
+            </div>
+          </div>
+
+          <div class="set-section">
+            <div class="set-title">⏱ Максимум FPS</div>
+            <p class="modal-sub">«Авто» — частота твоего экрана (60 или 120 Гц, если Telegram это позволяет). 30 и 60 экономят батарею.</p>
+            <div id="fpsSeg" class="seg">
+              <button class="seg-btn" data-v="0">Авто</button>
+              <button class="seg-btn" data-v="60">60</button>
+              <button class="seg-btn" data-v="30">30</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button id="closeSettingsBtn" class="btn btn-secondary">⬅ Назад</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Пауза -->
     <div id="pauseMenu" class="overlay hidden">
       <div class="notebook-card">
@@ -165,6 +210,7 @@
         <div class="menu-actions">
           <button id="resumeBtn" class="btn btn-primary btn-large">▶ Продолжить</button>
           <button id="pauseRestartBtn" class="btn btn-secondary">🔄 Начать заново</button>
+          <button id="pauseSettingsBtn" class="btn btn-purple">⚙ Настройки</button>
           <button id="pauseMenuBtn" class="btn btn-outline">🏠 В главное меню</button>
         </div>
         <div class="controls-hint"><p>Горячие клавиши: <strong>P</strong> или <strong>Esc</strong> — пауза</p></div>
