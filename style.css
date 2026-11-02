@@ -858,3 +858,138 @@ body { height: var(--tg-viewport-stable-height, 100dvh); }
     padding-bottom: calc(14px + var(--safe-bottom));
   }
 }
+
+/* ==========================================================
+   НОВЫЙ HUD: плавающие «таблетки» вместо тёмной плашки
+   ========================================================== */
+.game-wrapper .hud {
+  top: calc(var(--safe-top) + 8px);
+  left: 10px;
+  right: 10px;
+  height: auto;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  pointer-events: none;
+  align-items: center;
+}
+.game-wrapper .hud > * { pointer-events: auto; }
+
+.hud-left { gap: 6px; font-size: 13px; min-width: 0; }
+.hud-right { gap: 6px; }
+
+.game-wrapper .score-label,
+.game-wrapper .coin-badge,
+.game-wrapper .xp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 11px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 3px 0 var(--ink), 0 6px 12px rgba(0, 0, 0, 0.18);
+  font-weight: 800;
+  white-space: nowrap;
+  text-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.game-wrapper .score-label {
+  background: linear-gradient(180deg, #fffdf6, #f1ead2);
+  color: var(--ink);
+  font-size: 12px;
+}
+.game-wrapper .score-label strong {
+  font-size: 18px;
+  line-height: 1;
+  color: #2e7d32;
+  min-width: 2ch;
+}
+
+.game-wrapper .coin-badge {
+  background: linear-gradient(180deg, #ffe066, #ffb300);
+  color: var(--ink);
+  font-size: 14px;
+}
+.game-wrapper .coin-badge strong { font-size: 15px; }
+
+.game-wrapper .xp-badge {
+  background: linear-gradient(180deg, #b45be0, #7b1fa2);
+  color: #fff;
+  font-size: 12px;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.game-wrapper .icon-btn {
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fffdf6, #f1ead2);
+  color: var(--ink);
+  font-size: 16px;
+  box-shadow: 0 3px 0 var(--ink), 0 6px 12px rgba(0, 0, 0, 0.18);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.game-wrapper .icon-btn:hover { background: linear-gradient(180deg, #fff, #ffe9a8); }
+.game-wrapper .icon-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+
+/* Уведомление об арене — в том же стиле */
+.game-wrapper .arena-toast {
+  top: calc(var(--safe-top) + 54px);
+  border: 2px solid var(--ink);
+  box-shadow: 0 3px 0 var(--ink), 0 8px 16px rgba(0, 0, 0, 0.25);
+}
+
+/* Узкие экраны: компактнее, чтобы всё влезло в одну строку */
+@media (max-width: 400px) {
+  .hud-left { gap: 4px; }
+  .game-wrapper .score-label,
+  .game-wrapper .coin-badge,
+  .game-wrapper .xp-badge { padding: 0 8px; height: 30px; }
+  .game-wrapper .score-label { font-size: 11px; }
+  .game-wrapper .score-label strong { font-size: 16px; }
+  .game-wrapper .icon-btn { width: 32px; height: 32px; }
+}
+@media (max-width: 360px), (max-height: 640px) {
+  .game-wrapper .xp-badge { display: none; }
+}
+
+/* ==========================================================
+   ПРОМОКОДЫ
+   ========================================================== */
+.promo-input {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  font-size: 18px;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 1px;
+  color: var(--ink);
+  background: #fff;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: inset 0 3px 0 rgba(31, 34, 51, 0.12);
+  outline: none;
+  /* глобально выделение отключено — для поля ввода его нужно вернуть */
+  user-select: text;
+  -webkit-user-select: text;
+}
+.promo-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); }
+.promo-msg {
+  min-height: 44px;
+  margin: 12px 0;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+  border-radius: 10px;
+}
+.promo-msg.ok { background: #e3f6dd; color: #1b5e20; border: 2px solid #4caf50; }
+.promo-msg.err { background: #fde4e4; color: #b71c1c; border: 2px solid #e57373; }

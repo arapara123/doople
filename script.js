@@ -1653,7 +1653,7 @@ function drawPlatformShape(c, a, p, t) {
 // ==========================================================
 const defaultSave = {
   bestScore: 0, coins: 300, totalXP: 0, selectedArena: 1, highestUnlockedArena: 1,
-  ownedSkins: ['classic'], selectedSkin: 'classic', savedAt: 0,
+  ownedSkins: ['classic'], selectedSkin: 'classic', savedAt: 0, promos: [],
   stats: { gamesPlayed: 0, totalScore: 0, totalJumps: 0, springJumps: 0, brokenPlatforms: 0, monstersKilled: 0, shotsFired: 0, totalCoinsCollected: 0, powerupsUsed: 0, timePlayedSec: 0 }
 };
 let saveData = JSON.parse(JSON.stringify(defaultSave));
@@ -1669,6 +1669,7 @@ function normalizeSave(parsed) {
   const out = { ...defaultSave, ...(parsed || {}), stats: { ...defaultSave.stats, ...((parsed && parsed.stats) || {}) } };
   out.ownedSkins = Array.isArray(out.ownedSkins) ? out.ownedSkins.filter((id) => SKINS.some((s) => s.id === id)) : ['classic'];
   if (!out.ownedSkins.includes('classic')) out.ownedSkins.unshift('classic');
+  out.promos = Array.isArray(out.promos) ? out.promos.filter((x) => typeof x === 'string') : [];
   if (!out.ownedSkins.includes(out.selectedSkin)) out.selectedSkin = 'classic';
   for (const k of ['bestScore', 'coins', 'totalXP', 'savedAt']) if (!Number.isFinite(out[k]) || out[k] < 0) out[k] = defaultSave[k];
   if (!ARENAS.some((a) => a.id === out.selectedArena)) out.selectedArena = 1;
@@ -1945,6 +1946,7 @@ function resumeGame() {
 
 window.addEventListener('blur', pauseGame);
 window.addEventListener('keydown', (e) => {
+  if (e.target && e.target.tagName === 'INPUT') return; // печатаем в поле промокода
   if (e.code === 'KeyP' || e.code === 'Escape') {
     if (gameState === 'PLAYING') pauseGame(); else if (gameState === 'PAUSED') resumeGame();
     return;
@@ -2380,6 +2382,7 @@ const shopMenuEl = document.getElementById('shopMenu');
 const arenasMenuEl = document.getElementById('arenasMenu');
 const statsMenuEl = document.getElementById('statsMenu');
 const gameOverMenuEl = document.getElementById('gameOverMenu');
+const promoMenuEl = document.getElementById('promoMenu');
 const menuCanvas = document.getElementById('menuCanvas');
 const mctx = menuCanvas.getContext('2d');
 const MW = 362, MH = 170;
@@ -2418,6 +2421,7 @@ function updateAllUI() {
   document.getElementById('menuBestScore').textContent = formatNum(saveData.bestScore);
   document.getElementById('menuCoins').textContent = formatNum(saveData.coins);
   document.getElementById('shopCoins').textContent = formatNum(saveData.coins);
+  document.getElementById('promoCoins').textContent = formatNum(saveData.coins);
   document.getElementById('arenasTotalXp').textContent = formatNum(saveData.totalXP);
   document.getElementById('openShopBtn').textContent = `👕 Скины (${SKINS.length})`;
   document.getElementById('openArenasBtn').textContent = `🏟 Арены (${ARENAS.length})`;
@@ -2619,7 +2623,7 @@ function renderStats() {
 }
 
 function hideAllModals() {
-  [mainMenuEl, shopMenuEl, arenasMenuEl, statsMenuEl, gameOverMenuEl, document.getElementById('pauseMenu')].forEach((el) => el.classList.add('hidden'));
+  [mainMenuEl, shopMenuEl, arenasMenuEl, statsMenuEl, gameOverMenuEl, promoMenuEl, document.getElementById('pauseMenu')].forEach((el) => el.classList.add('hidden'));
 }
 
 function showMainMenu() {
@@ -2669,7 +2673,51 @@ function openModal(el, render) {
   render();
 }
 
+
+// ==========================================================
+// ПРОМОКОДЫ (добавляй новые строки сюда: 'код': { coins: сколько })
+// ==========================================================
+const PROMOS = {
+  jump500: { coins: 500 },
+  jump1000: { coins: 1000 }
+};
+
+function showPromoMsg(text, ok) {
+  const el = document.getElementById('promoMsg');
+  el.textContent = text;
+  el.className = 'promo-msg ' + (ok ? 'ok' : 'err');
+}
+
+function redeemPromo() {
+  const input = document.getElementById('promoInput');
+  const code = input.value.trim().toLowerCase();
+  if (!code) { showPromoMsg('Введи промокод.', false); playSound('break'); return; }
+  const promo = Object.prototype.hasOwnProperty.call(PROMOS, code) ? PROMOS[code] : null;
+  if (!promo) { showPromoMsg('❌ Такого промокода нет.', false); playSound('break'); return; }
+  if (saveData.promos.includes(code)) { showPromoMsg('⚠ Этот промокод уже активирован.', false); playSound('break'); return; }
+  saveData.promos.push(code);
+  saveData.coins += promo.coins;
+  writeSaveData(); flushCloud();
+  input.value = '';
+  playSound('coin');
+  updateAllUI();
+  showPromoMsg(`✅ Промокод активирован! +${formatNum(promo.coins)} 🪙`, true);
+}
+
+function openPromo() {
+  openModal(promoMenuEl, () => {
+    document.getElementById('promoInput').value = '';
+    document.getElementById('promoMsg').className = 'promo-msg';
+    document.getElementById('promoMsg').textContent = '';
+    updateAllUI();
+  });
+}
+
 document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('openPromoBtn').addEventListener('click', () => { playSound('click'); openPromo(); });
+document.getElementById('closePromoBtn').addEventListener('click', showMainMenu);
+document.getElementById('promoApplyBtn').addEventListener('click', redeemPromo);
+document.getElementById('promoInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') redeemPromo(); });
 document.getElementById('restartBtn').addEventListener('click', startGame);
 document.getElementById('openShopBtn').addEventListener('click', () => { playSound('click'); openModal(shopMenuEl, renderShop); });
 document.getElementById('gameOverShopBtn').addEventListener('click', () => openModal(shopMenuEl, renderShop));

@@ -78,7 +78,10 @@
             <button id="openShopBtn" class="btn btn-secondary">👕 Скины</button>
             <button id="openArenasBtn" class="btn btn-purple">🏟 Арены</button>
           </div>
-          <button id="openStatsBtn" class="btn btn-outline">📊 Подробная статистика</button>
+          <div class="menu-grid-2">
+            <button id="openStatsBtn" class="btn btn-outline">📊 Статистика</button>
+            <button id="openPromoBtn" class="btn btn-gold">🎁 Промокод</button>
+          </div>
         </div>
 
         <div class="controls-hint">
@@ -132,6 +135,25 @@
 
         <div class="modal-footer">
           <button id="closeStatsBtn" class="btn btn-secondary">⬅ Назад в меню</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Промокоды -->
+    <div id="promoMenu" class="overlay hidden">
+      <div class="notebook-card modal-card">
+        <div class="modal-header">
+          <h2>🎁 Промокод</h2>
+          <div class="stat-pill">🪙 <span id="promoCoins">0</span></div>
+        </div>
+        <p class="modal-sub">Введи промокод и получи награду. Каждый код можно активировать только один раз.</p>
+
+        <input id="promoInput" class="promo-input" type="text" maxlength="24" placeholder="Введи код" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button id="promoApplyBtn" class="btn btn-primary">✔ Активировать</button>
+        <div id="promoMsg" class="promo-msg"></div>
+
+        <div class="modal-footer">
+          <button id="closePromoBtn" class="btn btn-secondary">⬅ Назад в меню</button>
         </div>
       </div>
     </div>
