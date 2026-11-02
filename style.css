@@ -993,3 +993,13 @@ body { height: var(--tg-viewport-stable-height, 100dvh); }
 }
 .promo-msg.ok { background: #e3f6dd; color: #1b5e20; border: 2px solid #4caf50; }
 .promo-msg.err { background: #fde4e4; color: #b71c1c; border: 2px solid #e57373; }
+
+/* Производительность HUD на телефонах: свой слой, без размытых теней */
+.game-wrapper .hud { transform: translateZ(0); contain: layout style; }
+@media (pointer: coarse) {
+  .game-wrapper .score-label,
+  .game-wrapper .coin-badge,
+  .game-wrapper .xp-badge,
+  .game-wrapper .icon-btn { box-shadow: 0 3px 0 var(--ink); }
+  .game-wrapper .arena-toast { box-shadow: 0 3px 0 var(--ink); }
+}

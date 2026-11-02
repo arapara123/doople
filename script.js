@@ -336,6 +336,8 @@ const MONSTER_TYPES = {
 // 3. ГРАФИЧЕСКИЕ ПОМОЩНИКИ
 // ==========================================================
 const OUT = '#1a1a1a';
+// На телефонах размытые тени (shadowBlur) на канвасе — главный источник лагов, отключаем
+const LOW_FX = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
 
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 function hash(n) { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); }
@@ -1172,7 +1174,7 @@ function drawMonster(c, m, t) {
   c.translate(m.x + m.w / 2, m.y + m.h / 2);
   c.lineWidth = 2; c.strokeStyle = OUT; c.lineJoin = 'round';
   const ph = m.phase || 0;
-  if (m.charge > 0) { c.shadowColor = m.fire || '#ff6a00'; c.shadowBlur = 8 + m.charge * 18; }
+  if (m.charge > 0 && !LOW_FX) { c.shadowColor = m.fire || '#ff6a00'; c.shadowBlur = 8 + m.charge * 18; }
   const lk = Math.sin(ph) * 1.6;
   switch (m.kind) {
     case 'blot': {
@@ -1613,7 +1615,7 @@ function drawPlatformShape(c, a, p, t) {
   c.lineWidth = 2; c.strokeStyle = a.platBorder; c.lineJoin = 'round';
   const col = { normal: a.platNormal, moving: a.platMoving, break: a.platBreak, vanish: a.platVanish }[p.type] || a.platNormal;
   c.fillStyle = col;
-  if (a.glow) { c.shadowColor = a.platBorder; c.shadowBlur = 9; }
+  if (a.glow && !LOW_FX) { c.shadowColor = a.platBorder; c.shadowBlur = 9; }
   if (p.broken) {
     c.fillRect(p.x - 4, p.y, p.w / 2 - 3, p.h); c.strokeRect(p.x - 4, p.y, p.w / 2 - 3, p.h);
     c.fillRect(p.x + p.w / 2 + 4, p.y + 3, p.w / 2 - 3, p.h); c.strokeRect(p.x + p.w / 2 + 4, p.y + 3, p.w / 2 - 3, p.h);
@@ -1653,7 +1655,7 @@ function drawPlatformShape(c, a, p, t) {
 // ==========================================================
 const defaultSave = {
   bestScore: 0, coins: 300, totalXP: 0, selectedArena: 1, highestUnlockedArena: 1,
-  ownedSkins: ['classic'], selectedSkin: 'classic', savedAt: 0, promos: [],
+  ownedSkins: ['classic'], selectedSkin: 'classic', savedAt: 0, promos: [], arenaBest: {},
   stats: { gamesPlayed: 0, totalScore: 0, totalJumps: 0, springJumps: 0, brokenPlatforms: 0, monstersKilled: 0, shotsFired: 0, totalCoinsCollected: 0, powerupsUsed: 0, timePlayedSec: 0 }
 };
 let saveData = JSON.parse(JSON.stringify(defaultSave));
@@ -1669,10 +1671,15 @@ function normalizeSave(parsed) {
   const out = { ...defaultSave, ...(parsed || {}), stats: { ...defaultSave.stats, ...((parsed && parsed.stats) || {}) } };
   out.ownedSkins = Array.isArray(out.ownedSkins) ? out.ownedSkins.filter((id) => SKINS.some((s) => s.id === id)) : ['classic'];
   if (!out.ownedSkins.includes('classic')) out.ownedSkins.unshift('classic');
+  const ab = {};
+  const srcAb = parsed && parsed.arenaBest && typeof parsed.arenaBest === 'object' ? parsed.arenaBest : {};
+  for (const a of ARENAS) { const v = Number(srcAb[a.id]); if (Number.isFinite(v) && v > 0) ab[a.id] = Math.floor(v); }
+  out.arenaBest = ab;
   out.promos = Array.isArray(out.promos) ? out.promos.filter((x) => typeof x === 'string') : [];
   if (!out.ownedSkins.includes(out.selectedSkin)) out.selectedSkin = 'classic';
   for (const k of ['bestScore', 'coins', 'totalXP', 'savedAt']) if (!Number.isFinite(out[k]) || out[k] < 0) out[k] = defaultSave[k];
   if (!ARENAS.some((a) => a.id === out.selectedArena)) out.selectedArena = 1;
+  if (Object.keys(out.arenaBest).length === 0 && out.bestScore > 0) out.arenaBest[ARENAS.some((a) => a.id === out.selectedArena) ? out.selectedArena : 1] = Math.floor(out.bestScore);
   if (!Number.isFinite(out.highestUnlockedArena) || out.highestUnlockedArena < 1) out.highestUnlockedArena = 1;
   return out;
 }
@@ -1689,14 +1696,24 @@ function loadSaveData() {
 let cloudTimer = null;
 let cloudDirty = false;
 function flushCloud() {
+  flushLocal();
   clearTimeout(cloudTimer); cloudTimer = null;
   if (!cloud || !cloudDirty) return;
   cloudDirty = false;
   try { cloud.setItem(CLOUD_KEY, JSON.stringify(saveData), () => {}); } catch (e) { console.warn('CloudStorage:', e); }
 }
+let localTimer = null;
+let localDirty = false;
+function flushLocal() {
+  clearTimeout(localTimer); localTimer = null;
+  if (!localDirty) return;
+  localDirty = false;
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(saveData)); } catch (e) {}
+}
 function writeSaveData() {
   saveData.savedAt = Date.now();
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(saveData)); } catch (e) {}
+  localDirty = true;
+  if (!localTimer) localTimer = setTimeout(flushLocal, 700);
   if (cloud) {
     cloudDirty = true;
     if (!cloudTimer) cloudTimer = setTimeout(flushCloud, 2000);
@@ -1898,6 +1915,7 @@ let hardWarned = false;
 function initGameWorld() {
   hardWarned = false;
   touchPointers.clear(); keys.left = false; keys.right = false;
+  hudLast.score = -1; hudLast.scoreT = 0;
   score = 0; matchBonusXP = 0; cameraY = 0; frameCount = 0;
   platforms = []; bullets = []; monsters = []; coins = []; particles = []; hazards = [];
   hazardTimer = 260; windPhase = Math.random() * 6; monsterCooldown = 0; lastVanish = false;
@@ -1996,8 +2014,12 @@ canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 // Кнопка выстрела для сенсорных экранов
 const shootBtnEl = document.getElementById('shootBtn');
 shootBtnEl.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); shootBullet(); });
+let shootShown = null;
 function updateTouchUI() {
-  shootBtnEl.classList.toggle('hidden', gameState !== 'PLAYING');
+  const show = gameState === 'PLAYING';
+  if (show === shootShown) return;
+  shootShown = show;
+  shootBtnEl.classList.toggle('hidden', !show);
 }
 
 // ==========================================================
@@ -2094,14 +2116,16 @@ function update(dt) {
 
   if (player.shootTimer > 0) player.shootTimer = Math.max(0, player.shootTimer - dt);
 
-  if ((saveData.selectedSkin === 'sf' || saveData.selectedSkin === 'gold') && Math.random() < 0.35) {
+  if ((saveData.selectedSkin === 'sf' || saveData.selectedSkin === 'gold') && Math.random() < 0.35 * dt) {
     particles.push({ x: player.x + 8 + Math.random() * (player.w - 16), y: player.y + player.h - 6, vx: (Math.random() - 0.5) * 1.2, vy: -1 - Math.random() * 1.5, life: 16, color: saveData.selectedSkin === 'sf' ? '#ff1744' : '#ffd54f' });
   }
 
+  const vyStart = player.vy;
+  let moveVy = null;
   if (player.powerup) {
     player.powerupTimer -= dt;
     player.vy = player.powerup === 'jetpack' ? JETPACK_SPEED : PROPELLER_SPEED;
-    if (player.powerup === 'jetpack' && Math.random() < 0.7) {
+    if (player.powerup === 'jetpack' && Math.random() < 0.7 * dt) {
       particles.push({ x: player.x + (player.facing === 1 ? 6 : player.w - 6), y: player.y + player.h - 4, vx: (Math.random() - 0.5) * 2, vy: 3 + Math.random() * 3, life: 18, color: Math.random() < 0.5 ? '#ff5722' : '#ffca28' });
     }
     if (player.powerupTimer <= 0) {
@@ -2110,10 +2134,12 @@ function update(dt) {
     }
   } else {
     player.vy += GRAVITY * dt;
+    moveVy = (vyStart + player.vy) / 2; // точная формула: высота прыжка не зависит от FPS
   }
+  if (moveVy === null) moveVy = player.vy;
 
   const prevBottom = player.y + player.h;
-  player.y += player.vy * dt;
+  player.y += moveVy * dt;
   const currBottom = player.y + player.h;
 
   // отскоки
@@ -2305,7 +2331,7 @@ function drawEntities(t) {
   }
 
   for (const m of monsters) {
-    if (m.flash > 0) { m.flash -= 1; ctx.globalAlpha = 0.55; }
+    if (m.flash > 0) { m.flash -= drawDt; ctx.globalAlpha = 0.55; }
     drawMonster(ctx, m, t);
     ctx.globalAlpha = 1;
   }
@@ -2345,7 +2371,7 @@ function drawHazards(t) {
         pg(ctx, [[hz.x + 3, 50], [hz.x - 7, 68], [hz.x - 1, 68], [hz.x - 4, 84], [hz.x + 8, 62], [hz.x + 2, 62]], '#ffd740');
       } else {
         ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(hz.x - 24, 0, 48, H);
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 7; ctx.shadowColor = '#ffe082'; ctx.shadowBlur = 20;
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 7; ctx.shadowColor = '#ffe082'; ctx.shadowBlur = LOW_FX ? 0 : 20;
         ctx.beginPath(); ctx.moveTo(hz.x, 0);
         let yy = 0, xx = hz.x;
         while (yy < H) { yy += 34; xx = hz.x + Math.sin(yy * 0.3 + hz.seed) * 14; ctx.lineTo(xx, yy); }
@@ -2365,7 +2391,7 @@ function drawHazards(t) {
 function draw(t) {
   const arena = getCurrentArena();
   drawArenaScene(ctx, arena, W, H, cameraY, t);
-  stepAmbient(ctx, arena, gameAmbient, W, H, 1, windNow);
+  stepAmbient(ctx, arena, gameAmbient, W, H, drawDt, windNow);
   drawEntities(t);
   drawHazards(t);
   drawCharacter(ctx, getSkin(), player.x + player.w / 2, player.y + player.h / 2, player.facing, {
@@ -2387,14 +2413,33 @@ const menuCanvas = document.getElementById('menuCanvas');
 const mctx = menuCanvas.getContext('2d');
 const MW = 362, MH = 170;
 
-function formatNum(n) { return Math.floor(n).toLocaleString('ru-RU'); }
+const numFmt = new Intl.NumberFormat('ru-RU');
+function formatNum(n) { return numFmt.format(Math.floor(n)); }
 function formatTime(sec) { return `${Math.floor(sec / 60)} мин ${Math.floor(sec % 60)} сек`; }
 
+const hudRefs = {
+  score: document.getElementById('scoreDisplay'),
+  coins: document.getElementById('hudCoins'),
+  arena: document.getElementById('hudArenaName')
+};
+const hudLast = { score: -1, coins: -1, arena: -1, scoreT: 0 };
+// Обновляем DOM только когда значение реально изменилось (иначе на каждом кадре идёт перерисовка интерфейса)
 function updateHUD() {
-  const arena = getCurrentArena();
-  document.getElementById('scoreDisplay').textContent = formatNum(score);
-  document.getElementById('hudCoins').textContent = formatNum(saveData.coins);
-  document.getElementById('hudArenaName').textContent = `Арена ${arena.id}`;
+  const sc = Math.floor(score);
+  const now = performance.now();
+  if (hudLast.score !== sc && (sc === 0 || now - hudLast.scoreT > 66)) {
+    hudLast.score = sc; hudLast.scoreT = now;
+    hudRefs.score.textContent = formatNum(sc);
+  }
+  if (hudLast.coins !== saveData.coins) {
+    hudLast.coins = saveData.coins;
+    hudRefs.coins.textContent = formatNum(saveData.coins);
+  }
+  const aid = saveData.selectedArena;
+  if (hudLast.arena !== aid) {
+    hudLast.arena = aid;
+    hudRefs.arena.textContent = `Арена ${aid}`;
+  }
 }
 
 function isArenaOpen(a) { return saveData.totalXP >= a.minXP; }
@@ -2418,7 +2463,7 @@ function updateAllUI() {
   const unlocked = saveData.totalXP >= pv.minXP;
   const next = ARENAS.find((a) => a.id === saveData.highestUnlockedArena + 1);
 
-  document.getElementById('menuBestScore').textContent = formatNum(saveData.bestScore);
+  document.getElementById('menuBestScore').textContent = formatNum(saveData.arenaBest[pv.id] || 0);
   document.getElementById('menuCoins').textContent = formatNum(saveData.coins);
   document.getElementById('shopCoins').textContent = formatNum(saveData.coins);
   document.getElementById('promoCoins').textContent = formatNum(saveData.coins);
@@ -2475,7 +2520,7 @@ function drawMenuPreview(t) {
   const unlocked = saveData.totalXP >= a.minXP;
   mctx.setTransform(menuCanvas.width / MW, 0, 0, menuCanvas.height / MH, 0, 0);
   drawArenaScene(mctx, a, MW, MH, 0, t);
-  stepAmbient(mctx, a, menuAmbient, MW, MH, 1, 0.3);
+  stepAmbient(mctx, a, menuAmbient, MW, MH, loopDt, 0.3);
 
   const plats = [
     { x: 20, y: 140, w: 68, h: 15, type: 'normal' },
@@ -2506,7 +2551,7 @@ function drawMenuPreview(t) {
 
 let skinFilter = 'all';
 const RARITY_FILTERS = [
-  ['all', 'Все'], ['common', 'Обычные'], ['rare', 'Редкие'], ['epic', 'Эпические'], ['mythic', 'Мифические'], ['arcana', 'Аркана']
+  ['all', 'Все'], ['owned', 'Купленные'], ['common', 'Обычные'], ['rare', 'Редкие'], ['epic', 'Эпические'], ['mythic', 'Мифические'], ['arcana', 'Аркана']
 ];
 
 function renderShop() {
@@ -2516,13 +2561,13 @@ function renderShop() {
   RARITY_FILTERS.forEach(([key, label]) => {
     const b = document.createElement('button');
     b.className = 'filter-chip' + (skinFilter === key ? ' active' : '');
-    b.textContent = label;
+    b.textContent = key === 'owned' ? `✓ Купленные (${saveData.ownedSkins.length})` : label;
     b.addEventListener('click', () => { skinFilter = key; playSound('click'); renderShop(); });
     filtersEl.appendChild(b);
   });
   const listEl = document.getElementById('skinsList');
   listEl.innerHTML = '';
-  SKINS.filter((s) => skinFilter === 'all' || s.rarity === skinFilter).forEach((skin) => {
+  SKINS.filter((s) => skinFilter === 'all' || (skinFilter === 'owned' ? saveData.ownedSkins.includes(s.id) : s.rarity === skinFilter)).forEach((skin) => {
     const isOwned = saveData.ownedSkins.includes(skin.id);
     const isEquipped = saveData.selectedSkin === skin.id;
     const item = document.createElement('div');
@@ -2579,7 +2624,7 @@ function renderArenas() {
         <canvas class="arena-thumb" width="128" height="96"></canvas>
         <div>
           <div class="card-title">Арена ${arena.id}: ${arena.name}</div>
-          <div class="card-desc">${arena.twist}<br><strong>${formatNum(arena.minXP)} XP</strong></div>
+          <div class="card-desc">${arena.twist}<br><strong>${formatNum(arena.minXP)} XP</strong><br>🏆 Рекорд: <strong>${unlocked ? formatNum(saveData.arenaBest[arena.id] || 0) : '—'}</strong></div>
         </div>
       </div>
       <button class="action-btn ${btnClass}">${btnText}</button>`;
@@ -2603,7 +2648,8 @@ function renderStats() {
   const s = saveData.stats;
   const items = [
     { label: '🎮 Сыграно матчей', val: formatNum(s.gamesPlayed) },
-    { label: '🏆 Лучший счёт', val: formatNum(saveData.bestScore) },
+    { label: '🏆 Лучший счёт (все арены)', val: formatNum(saveData.bestScore) },
+    ...ARENAS.map((a) => ({ label: `${a.icon} Рекорд: ${a.name}`, val: saveData.arenaBest[a.id] ? formatNum(saveData.arenaBest[a.id]) : '—' })),
     { label: '📈 Суммарный счёт', val: formatNum(s.totalScore) },
     { label: '⭐ Нафармлено опыта', val: `${formatNum(saveData.totalXP)} XP` },
     { label: '🏟 Открыто арен', val: `${saveData.highestUnlockedArena} из ${ARENAS.length}` },
@@ -2652,13 +2698,17 @@ function triggerGameOver() {
   stopAllLoops();
   playSound('gameover');
   saveData.stats.totalScore += score;
-  const isRecord = score > saveData.bestScore && score > 0;
+  const arenaId = saveData.selectedArena;
+  const isRecord = score > (saveData.arenaBest[arenaId] || 0) && score > 0;
   document.getElementById('newRecordBadge').classList.toggle('hidden', !isRecord);
+  if (isRecord) saveData.arenaBest[arenaId] = score;
   if (score > saveData.bestScore) saveData.bestScore = score;
   syncUnlockedArenas(true);
   writeSaveData();
   document.getElementById('finalScore').textContent = formatNum(score);
   document.getElementById('finalBest').textContent = formatNum(saveData.bestScore);
+  document.getElementById('finalArenaBest').textContent = formatNum(saveData.arenaBest[arenaId] || 0);
+  document.getElementById('finalArenaName').textContent = ARENAS[arenaId - 1].name;
   document.getElementById('finalXpEarned').textContent = `+${formatNum(matchBonusXP)} XP`;
   document.getElementById('finalCoins').textContent = formatNum(saveData.coins);
   hudEl.classList.add('hidden');
@@ -2762,16 +2812,20 @@ initGameWorld();
 updateAllUI();
 let lastTime = performance.now();
 let lastIdleDraw = 0;
+let loopDt = 1, drawDt = 1; // шаг времени в «кадрах по 60 Гц»: при 120 Гц ≈ 0.5
 
 function gameLoop(currentTime) {
   const rawDt = (currentTime - lastTime) / 16.667;
   lastTime = currentTime;
   const dt = Math.min(Math.max(rawDt, 0.1), 2.5);
+  loopDt = dt;
 
   if (gameState === 'PLAYING') {
+    drawDt = dt;
     update(dt);
     draw(currentTime);
   } else if (currentTime - lastIdleDraw > 90) { // на паузе/в меню рисуем реже — экономим батарею
+    drawDt = Math.min((currentTime - lastIdleDraw) / 16.667, 3);
     lastIdleDraw = currentTime;
     draw(currentTime);
   }
