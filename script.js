@@ -2722,6 +2722,11 @@ if (tgApp) {
     tgApp.ready();
     tgApp.expand();
     if (tgApp.disableVerticalSwipes) tgApp.disableVerticalSwipes();
+    // Полный экран — только на телефонах (на ПК окно мини-аппа остаётся обычным). Нужен Bot API 8.0+
+    if (tgApp.requestFullscreen && (tgApp.platform === 'android' || tgApp.platform === 'ios') &&
+        (!tgApp.isVersionAtLeast || tgApp.isVersionAtLeast('8.0'))) {
+      try { tgApp.requestFullscreen(); } catch (e) { console.warn('Fullscreen:', e); }
+    }
     if (tgApp.setHeaderColor) tgApp.setHeaderColor('#12151c');
     if (tgApp.setBackgroundColor) tgApp.setBackgroundColor('#12151c');
   } catch (e) { console.warn('Telegram init:', e); }
