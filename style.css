@@ -827,3 +827,34 @@ body { height: var(--tg-viewport-stable-height, 100dvh); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ==========================================================
+   ПОЛНОЭКРАННЫЙ РЕЖИМ НА ТЕЛЕФОНЕ (без пустого места снизу)
+   Окно игры занимает весь экран, холст подстраивается под него (fitCanvas в script.js).
+   Отступы под вырезы/кнопки Telegram применяются только к HUD, тостам и меню.
+   ========================================================== */
+:root {
+  --safe-top: max(env(safe-area-inset-top, 0px), calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px)));
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px));
+}
+
+@media (pointer: coarse), (max-width: 600px) {
+  body { align-items: stretch; justify-content: stretch; background: #12151c; }
+  .game-wrapper {
+    width: 100vw;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .hud { top: var(--safe-top); }
+  .arena-toast { top: calc(60px + var(--safe-top)); }
+  .shoot-btn { bottom: calc(14px + var(--safe-bottom)); }
+  .overlay {
+    padding-top: calc(14px + var(--safe-top));
+    padding-bottom: calc(14px + var(--safe-bottom));
+  }
+}

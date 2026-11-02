@@ -1760,8 +1760,8 @@ function showToastText(text) {
 // ==========================================================
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const W = canvas.width;
-const H = canvas.height;
+const W = 420;
+let H = 680; // высота подстраивается под экран (см. fitCanvas)
 
 const GRAVITY = 0.22;
 const JUMP_FORCE = -9.2;
@@ -1789,7 +1789,24 @@ const keys = { left: false, right: false };
 const player = { x: W / 2 - 22, y: H - 140, w: 44, h: 44, vx: 0, vy: 0, facing: 1, shootTimer: 0, powerup: null, powerupTimer: 0 };
 
 let platforms = [], bullets = [], monsters = [], coins = [], particles = [], hazards = [];
-const gameAmbient = makeAmbient(W, H, 30);
+let gameAmbient = makeAmbient(W, H, 30);
+
+// Подгоняет высоту холста под реальную пропорцию экрана, чтобы снизу не было пустого места
+function fitCanvas() {
+  if (gameState === 'PLAYING' || gameState === 'PAUSED') return; // во время матча не трогаем
+  const wrap = canvas.parentElement;
+  const r = wrap.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  const nh = clamp(Math.round(W * r.height / r.width), 560, 1000);
+  if (nh === H && canvas.height === H && canvas.width === W) return;
+  H = nh;
+  canvas.width = W;
+  canvas.height = H;
+  gameAmbient = makeAmbient(W, H, 30);
+  initGameWorld();
+}
+window.addEventListener('resize', fitCanvas);
+
 
 // ----- сложность: плавный рост до 10 000, дальше усложнение с каждой тысячей -----
 const HARD_START = 10000;
@@ -2616,6 +2633,8 @@ function showMainMenu() {
 function startGame() {
   saveData.stats.gamesPlayed += 1;
   writeSaveData();
+  if (gameState !== 'PLAYING' && gameState !== 'PAUSED') fitCanvas();
+  else { gameState = 'MENU'; fitCanvas(); }
   initGameWorld();
   gameState = 'PLAYING';
   hideAllModals();
@@ -2690,6 +2709,7 @@ document.getElementById('soundToggleBtn').addEventListener('click', (e) => {
 syncUnlockedArenas(false);
 previewIdx = saveData.selectedArena;
 menuAmbient = makeAmbient(MW, MH, 22);
+fitCanvas();
 initGameWorld();
 updateAllUI();
 let lastTime = performance.now();
@@ -2738,7 +2758,14 @@ if (tgApp) {
 function saveNow() { writeSaveData(); flushCloud(); }
 document.addEventListener('visibilitychange', () => { if (document.hidden) { pauseGame(); saveNow(); } });
 window.addEventListener('pagehide', saveNow);
-if (tgApp && tgApp.onEvent) tgApp.onEvent('deactivated', () => { pauseGame(); saveNow(); });
+if (tgApp && tgApp.onEvent) {
+  tgApp.onEvent('deactivated', () => { pauseGame(); saveNow(); });
+  for (const ev of ['viewportChanged', 'fullscreenChanged', 'safeAreaChanged', 'contentSafeAreaChanged']) {
+    tgApp.onEvent(ev, () => setTimeout(fitCanvas, 60));
+  }
+}
+setTimeout(fitCanvas, 300);
+setTimeout(fitCanvas, 900);
 
 // Разблокируем звук при первом касании (требование мобильных браузеров)
 window.addEventListener('pointerdown', () => ensureAudio(), { once: true });
