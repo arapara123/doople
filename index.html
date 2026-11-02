@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Doodle Jump Ultimate — Арены, Герои и Статистика</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="game-wrapper">
+    <!-- Верхняя панель во время игры (HUD) -->
+    <div id="hud" class="hud hidden">
+      <div class="hud-left">
+        <span class="score-label">Счёт: <strong id="scoreDisplay">0</strong></span>
+        <span class="coin-badge">🪙 <strong id="hudCoins">0</strong></span>
+        <span class="xp-badge">⭐ <strong id="hudArenaName">Арена 1</strong></span>
+      </div>
+      <div class="hud-right">
+        <button id="pauseBtn" class="icon-btn" title="Пауза (P / Esc)">⏸</button>
+        <button id="soundToggleBtn" class="icon-btn" title="Звук Вкл/Выкл">🔊</button>
+      </div>
+    </div>
+
+    <!-- Уведомление о новой арене во время игры -->
+    <div id="arenaToast" class="arena-toast hidden">
+      🏆 НОВАЯ АРЕНА ОТКРЫТА: <span id="toastArenaTitle"></span>!
+    </div>
+
+    <!-- Игровой холст -->
+    <canvas id="gameCanvas" width="420" height="680"></canvas>
+    <button id="shootBtn" class="shoot-btn hidden" aria-label="Выстрел">🎯</button>
+
+    <!-- Главное меню -->
+    <div id="mainMenu" class="overlay">
+      <div class="notebook-card menu-card">
+        <div class="title-row">
+          <h1 class="game-title">Doodle Jump</h1>
+          <span class="subtitle">Ultimate Edition</span>
+        </div>
+
+        <!-- Витрина арен -->
+        <div class="hero">
+          <canvas id="menuCanvas" width="724" height="340"></canvas>
+          <button id="arenaPrevBtn" class="hero-arrow left" title="Предыдущая арена">‹</button>
+          <button id="arenaNextBtn" class="hero-arrow right" title="Следующая арена">›</button>
+          <div id="menuArenaLock" class="hero-lock hidden"></div>
+          <div class="hero-info">
+            <div class="hero-text">
+              <div class="arena-num-tag" id="menuArenaNum">АРЕНА 1</div>
+              <div class="arena-name-main" id="menuArenaTitle">Тетрадный полигон</div>
+            </div>
+            <button id="arenaSelectBtn" class="btn btn-sm btn-gold">Выбрать арену</button>
+          </div>
+          <div id="arenaDots" class="arena-dots"></div>
+        </div>
+        <p class="arena-twist" id="menuArenaTwist"></p>
+
+        <div class="xp-progress-wrap">
+          <div class="xp-progress-bar">
+            <div id="menuXpFill" class="xp-progress-fill" style="width: 0%;"></div>
+          </div>
+          <div class="xp-progress-text" id="menuXpText">0 / 50 000 XP</div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-pill">🏆 Рекорд: <span id="menuBestScore">0</span></div>
+          <div class="stat-pill">🪙 Монеты: <span id="menuCoins">0</span></div>
+        </div>
+        <div class="loadout-row">
+          <span class="loadout-chip">🎭 Герой: <strong id="menuSkinName">—</strong></span>
+          <span class="loadout-chip">🗺 Играем: <strong id="menuPlayArena">—</strong></span>
+        </div>
+
+        <div class="menu-actions">
+          <button id="startBtn" class="btn btn-primary btn-large">▶ ИГРАТЬ</button>
+          <div class="menu-grid-2">
+            <button id="openShopBtn" class="btn btn-secondary">👕 Скины</button>
+            <button id="openArenasBtn" class="btn btn-purple">🏟 Арены</button>
+          </div>
+          <button id="openStatsBtn" class="btn btn-outline">📊 Подробная статистика</button>
+        </div>
+
+        <div class="controls-hint">
+          <p><strong>ПК:</strong> ⬅️ ➡️ или <strong>A / D</strong> — движение • <strong>Пробел / W / Клик</strong> — выстрел<br><strong>Телефон:</strong> касайся левой или правой половины экрана — герой летит в ту сторону; кнопка 🎯 — выстрел</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Магазин скинов -->
+    <div id="shopMenu" class="overlay hidden">
+      <div class="notebook-card modal-card">
+        <div class="modal-header">
+          <h2>👕 Магазин героев</h2>
+          <div class="stat-pill">🪙 <span id="shopCoins">0</span></div>
+        </div>
+
+        <div id="skinFilters" class="filter-row"></div>
+        <div id="skinsList" class="scroll-list"></div>
+
+        <div class="modal-footer">
+          <button id="closeShopBtn" class="btn btn-secondary">⬅ Назад в меню</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Меню Арен -->
+    <div id="arenasMenu" class="overlay hidden">
+      <div class="notebook-card modal-card">
+        <div class="modal-header">
+          <h2>🏟 Путь Арен</h2>
+          <div class="stat-pill">⭐ <span id="arenasTotalXp">0</span> XP</div>
+        </div>
+        <p class="modal-sub">Опыт (XP) даётся нелегко: за высоту, монстров и монеты. Каждая следующая арена открывается только после набора нужного XP. После 10 000 очков сложность начинает расти!</p>
+
+        <div id="arenasList" class="scroll-list"></div>
+
+        <div class="modal-footer">
+          <button id="closeArenasBtn" class="btn btn-secondary">⬅ Назад в меню</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Подробная статистика -->
+    <div id="statsMenu" class="overlay hidden">
+      <div class="notebook-card modal-card">
+        <div class="modal-header">
+          <h2>📊 Статистика игрока</h2>
+        </div>
+
+        <div id="statsGrid" class="stats-detailed-grid scroll-list"></div>
+
+        <div class="modal-footer">
+          <button id="closeStatsBtn" class="btn btn-secondary">⬅ Назад в меню</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Пауза -->
+    <div id="pauseMenu" class="overlay hidden">
+      <div class="notebook-card">
+        <h2 class="pause-title">⏸ Пауза</h2>
+        <div class="menu-actions">
+          <button id="resumeBtn" class="btn btn-primary btn-large">▶ Продолжить</button>
+          <button id="pauseRestartBtn" class="btn btn-secondary">🔄 Начать заново</button>
+          <button id="pauseMenuBtn" class="btn btn-outline">🏠 В главное меню</button>
+        </div>
+        <div class="controls-hint"><p>Горячие клавиши: <strong>P</strong> или <strong>Esc</strong> — пауза</p></div>
+      </div>
+    </div>
+
+    <!-- Экран окончания игры -->
+    <div id="gameOverMenu" class="overlay hidden">
+      <div class="notebook-card">
+        <h2 class="gameover-title">Матч завершён!</h2>
+        <div id="newRecordBadge" class="record-badge hidden">🎉 НОВЫЙ РЕКОРД! 🎉</div>
+        <div class="gameover-stats">
+          <p>Счёт за матч: <strong id="finalScore">0</strong></p>
+          <p>Лучший рекорд: <strong id="finalBest">0</strong></p>
+          <p class="xp-earned-line">Получено опыта: <strong id="finalXpEarned">+0 XP</strong> ⭐</p>
+          <p>Баланс монет: 🪙 <strong id="finalCoins">0</strong></p>
+        </div>
+        <div class="menu-actions">
+          <button id="restartBtn" class="btn btn-primary">🔄 Играть ещё раз</button>
+          <div class="menu-grid-2">
+            <button id="gameOverShopBtn" class="btn btn-secondary">👕 Скины</button>
+            <button id="gameOverArenasBtn" class="btn btn-purple">🏟 Арены</button>
+          </div>
+          <button id="toMenuBtn" class="btn btn-outline">🏠 В главное меню</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
