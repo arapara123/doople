@@ -2170,3 +2170,88 @@ body { height: var(--tg-viewport-stable-height, 100dvh); }
 .mm-strip-hint i { display: inline-block; font-style: normal; transition: transform 0.2s; }
 .mm-stage.strip-open .mm-strip-hint i { transform: rotate(180deg); }
 .mm-lock { padding-bottom: 36px; }
+
+
+/* ==========================================================
+   ДРУЗЬЯ И РЕЙТИНГ
+   ========================================================== */
+.t-friends { --t: #b9e0a5; }
+.fr-profile {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin-bottom: 8px; text-align: left; flex-shrink: 0;
+  background: var(--card); border: 2px solid var(--ink); border-radius: 12px; box-shadow: 2px 2px 0 var(--ink);
+}
+.fr-ava { flex-shrink: 0; border-radius: 9px; background: var(--card-2); border: 1.5px solid var(--ink); }
+.fr-profile .fr-ava { width: 52px; height: 52px; }
+.fr-me { flex: 1; min-width: 0; }
+.fr-name-row { display: flex; align-items: center; gap: 6px; min-height: 28px; }
+.fr-name-row b { font-size: 16px; font-weight: 900; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fr-code-row { font-size: 12px; color: var(--muted); font-weight: 700; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.fr-code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; color: var(--ink); letter-spacing: 1.5px; background: var(--c-yellow); border: 1.5px solid var(--ink); border-radius: 5px; padding: 0 5px; }
+.fr-mini {
+  width: 28px; height: 28px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  background: var(--card); color: var(--ink); border: 1.5px solid var(--ink); border-radius: 7px; padding: 0;
+}
+.fr-mini .ic { width: 15px; height: 15px; }
+.fr-mini.ok { background: var(--c-green); }
+.fr-status { font-size: 11px; font-weight: 700; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 5px; }
+.fr-status i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--ink); background: var(--c-green); }
+.fr-status.off i { background: var(--muted); }
+.fr-input {
+  flex: 1; min-width: 0; height: 36px; padding: 0 10px; font: 700 14px var(--font); color: var(--ink);
+  background: #fff; border: 2px solid var(--ink); border-radius: 9px; outline: none; user-select: text; -webkit-user-select: text;
+}
+.fr-input:focus { box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.35); }
+.fr-tabs { margin-bottom: 8px; flex-shrink: 0; }
+.fr-add { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.fr-add .action-btn { height: 36px; }
+.fr-note { font-size: 11px; color: var(--muted); font-weight: 700; text-align: left; padding: 0 2px; flex-shrink: 0; }
+.fr-note .ic { width: 12px; height: 12px; vertical-align: -2px; }
+.fr-empty {
+  display: flex; flex-direction: column; gap: 4px; padding: 18px 14px; text-align: center; flex-shrink: 0;
+  border: 2px dashed rgba(38, 35, 31, 0.35); border-radius: 12px; color: var(--muted); font-size: 12.5px; line-height: 1.4;
+}
+.fr-empty b { color: var(--ink); font-size: 14px; }
+.fr-gifts {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; text-align: left; flex-shrink: 0;
+  background: #fbeec4; border: 2px solid var(--ink); border-radius: 12px; box-shadow: 2px 2px 0 var(--ink);
+}
+.fr-gifts > span .ic { width: 26px; height: 26px; }
+.fr-gifts div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.fr-gifts b { font-size: 13px; color: var(--ink); }
+.fr-gifts small { font-size: 11px; color: var(--muted); font-weight: 700; }
+.game-wrapper .overlay:not(.main-menu) .list-card.fr-card { justify-content: flex-start; gap: 9px; padding: 7px 8px; }
+.fr-card .fr-ava { width: 44px; height: 44px; }
+.fr-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.fr-info b { font-size: 14px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fr-info small { font-size: 11px; color: var(--muted); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fr-acts { display: flex; gap: 5px; flex-shrink: 0; }
+.fr-act {
+  min-width: 34px; height: 34px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  font: 800 11px var(--font); color: var(--ink); background: var(--card); border: 2px solid var(--ink); border-radius: 9px; box-shadow: 0 2px 0 var(--ink);
+}
+.fr-act .ic { width: 17px; height: 17px; }
+.fr-act.js-gift:not(:disabled) { background: var(--c-yellow); }
+.fr-act.js-ch { background: #f5b3a1; }
+.fr-act:disabled { opacity: 0.4; box-shadow: none; cursor: default; }
+.fr-act.js-rm { background: var(--card-2); }
+.fr-act.js-rm .ic { width: 13px; height: 13px; }
+.fr-act.arm { background: var(--c-red); color: #fff; }
+.fr-act:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+.fr-boards { flex-shrink: 0; }
+.fr-boards .seg-btn { font-size: 12px; padding: 7px 2px; }
+.lb { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+.lb-row {
+  display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px 6px; flex-shrink: 0; text-align: left;
+  background: var(--card); border: 1.5px solid var(--ink); border-radius: 10px;
+}
+.lb-row .fr-ava { width: 30px; height: 30px; border-radius: 7px; }
+.lb-rank { width: 28px; text-align: center; font-weight: 900; font-size: 13px; color: var(--muted); flex-shrink: 0; }
+.lb-name { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 800; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-name i { font-style: normal; font-size: 10px; font-weight: 900; background: var(--ink); color: var(--card); border-radius: 4px; padding: 0 4px; vertical-align: 1px; }
+.lb-score { font-size: 14px; font-weight: 900; color: var(--ink); font-variant-numeric: tabular-nums; }
+.lb-row.top1 .lb-rank, .lb-row.top2 .lb-rank, .lb-row.top3 .lb-rank { color: var(--ink); border: 1.5px solid var(--ink); border-radius: 50%; width: 26px; height: 26px; line-height: 23px; margin: 0 1px; }
+.lb-row.top1 .lb-rank { background: var(--c-yellow); }
+.lb-row.top2 .lb-rank { background: #d9dde3; }
+.lb-row.top3 .lb-rank { background: #e8b98a; }
+.lb-row.me { background: #e3f2d6; border-width: 2px; box-shadow: 2px 2px 0 var(--ink); }
+.lb-mine { margin-top: 2px; }

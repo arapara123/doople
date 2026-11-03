@@ -74,6 +74,8 @@ const ICON_PATHS = {
   image: 'M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15.5 8.5h.01',
   save: 'M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6',
   egg: 'M12 3c3.5 0 6.5 5.5 6.5 10a6.5 6.5 0 0 1-13 0C5.5 8.5 8.5 3 12 3zM5.8 12.5l2 1.3 2.1-1.3 2.1 1.3 2.1-1.3 2.1 1.3 2-1.3',
+  friends: 'M9 4.5a3.5 3.5 0 1 1 0 7a3.5 3.5 0 1 1 0-7zM2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M15.5 4.8a3.3 3.3 0 0 1 0 6.4M18 14.6c2.1.8 3.5 2.7 3.5 5.4',
+  pen: 'M4 20l1-4.5L15.5 5l3.5 3.5L8.5 19zM13.5 7l3.5 3.5M4 20h5',
   bunny: 'M9.5 10C8 6 8 3 9.5 3s2 3 1.5 7M14.5 10c1.5-4 1.5-7 0-7s-2 3-1.5 7M12 9.5a6 5.5 0 1 1 0 11a6 5.5 0 1 1 0-11zM10 14h.01M14 14h.01M11 17h2'
 };
 const EMOJI_ICON = {};
@@ -85,7 +87,7 @@ const EMOJI_ICON = {};
   ['shield', '🛡😇'], ['target', '👾⚔🏹🎯🔫'], ['brick', '🧱'], ['clock', '⏱⌛🕐'], ['wheel', '🎡'], ['wrench', '🛠'],
   ['chart', '📈📊'], ['flag', '🏟🧭🗺🏔🌌'], ['sound', '🔊'], ['mute', '🔇'], ['pumpkin', '🎃'], ['tree', '🎄'],
   ['propeller', '🧢'], ['pause', '⏸'], ['gear', '⚙'], ['ticket', '🎟'], ['home', '🏠'], ['refresh', '🔄'],
-  ['music', '🎵'], ['image', '🎨'], ['save', '💾'], ['copy', '📤'], ['download', '⬇'], ['upload', '📥'], ['folder', '📂'], ['egg', '🥚🐣'], ['bunny', '🐰🐇']
+  ['music', '🎵'], ['image', '🎨'], ['save', '💾'], ['copy', '📤'], ['download', '⬇'], ['upload', '📥'], ['folder', '📂'], ['egg', '🥚🐣'], ['friends', '👥'], ['pen', '✏'], ['bunny', '🐰🐇']
 ].forEach(([name, list]) => { for (const ch of Array.from(list)) EMOJI_ICON[ch] = name; });
 
 // эмодзи (в т. ч. составные через ZWJ) + пробел после него
@@ -3084,6 +3086,15 @@ function normalizeMeta(out, parsed) {
   for (const k in EVENTS) out.eventCur[k] = num(ec[k], 0);
   out.wheelDay = str(p.wheelDay);
   out.metaSeen = !!p.metaSeen;
+  const nt = p.net && typeof p.net === 'object' ? p.net : {};
+  const okId = typeof nt.id === 'string' && /^[0-9a-f-]{36}$/i.test(nt.id);
+  out.net = {
+    id: okId ? nt.id : '', secret: typeof nt.secret === 'string' && nt.secret.length >= 16 ? nt.secret : '',
+    code: okId && typeof nt.code === 'string' ? nt.code.slice(0, 8) : '', name: typeof nt.name === 'string' ? nt.name.slice(0, 16) : '',
+    week: str(nt.week), weekBest: num(nt.weekBest, 0),
+    outbox: Array.isArray(nt.outbox) ? nt.outbox.filter((x) => x && (x.t === 'add' && typeof x.code === 'string' || x.t === 'gift' && typeof x.to === 'string')).slice(0, 50) : []
+  };
+  if (!out.net.secret) out.net.id = '';
   return out;
 }
 
@@ -4558,6 +4569,7 @@ function hideAllModals() {
 
 function showMainMenu() {
   hideAllModals();
+  challenge = null;
   previewIdx = saveData.selectedArena;
   menuAmbient = makeAmbient(MW, MH, 22);
   mainMenuEl.classList.remove('hidden');
@@ -4622,6 +4634,9 @@ function triggerGameOver() {
   if (matchCur && EV_KEY) extra.push(`${EVENTS[EV_KEY].cur} +${matchCur} ${EVENTS[EV_KEY].curName}`);
   if (meta.ready) extra.push(`✅ Заданий готово: ${meta.ready} — забери награду`);
   if (meta.ach.length) extra.push(`🏅 Новых достижений: ${meta.ach.length}`);
+  const chTxt = challengeResultText(score);
+  if (chTxt) extra.unshift(chTxt);
+  netOnGameOver(score);
   const fx = document.getElementById('finalExtra');
   fx.textContent = extra.join(' • ');
   fx.classList.toggle('hidden', !extra.length);
@@ -5777,6 +5792,7 @@ function updateMetaUI() {
     $id('eventBannerS').textContent = `${ev.cur} ${formatNum(saveData.eventCur[ev.id] || 0)} • ещё ${fmtLeft(eventEndsMs(ev))}`;
   }
   renderBoostRow();
+  if (typeof updateFriendsTile === 'function' && typeof friendsMenuEl !== 'undefined') updateFriendsTile();
 }
 // Перерисовать открытое окно мета-игры (после получения награды и т. п.)
 function refreshOpenMeta() {
@@ -5823,6 +5839,377 @@ function metaFrame(t) {
 }
 refreshEvent();
 var metaUIReady = true;
+
+// ==========================================================
+// 14.9. ДРУЗЬЯ И РЕЙТИНГ (Supabase). Сначала офлайн:
+// всё хранится на устройстве, а когда есть интернет — отправляется на сервер и подтягивается обратно.
+// Действия без сети (добавить друга, подарок) ждут в очереди и уходят при первом подключении.
+// ==========================================================
+const SUPA_URL = 'https://nezaxmenlsxataastfam.supabase.co';
+const SUPA_KEY = 'sb_publishable_ckgMpzOONSgAI-eO9sAtpQ_AJTp7E_H';
+const NET_CACHE_KEY = 'doodle_jump_net_cache_v1';
+var net = { busy: null, online: navigator.onLine !== false, lastError: '', tab: 'friends', board: 'all', boardBusy: false, cache: { friends: [], boards: {}, gifts: 0, at: 0 } };
+try { const c = JSON.parse(localStorage.getItem(NET_CACHE_KEY) || 'null'); if (c && typeof c === 'object') Object.assign(net.cache, c); } catch (e) {}
+function saveNetCache() { try { localStorage.setItem(NET_CACHE_KEY, JSON.stringify(net.cache)); } catch (e) {} }
+
+async function rpc(fn, args) {
+  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const tm = setTimeout(() => { if (ctrl) ctrl.abort(); }, 9000);
+  try {
+    const r = await fetch(SUPA_URL + '/rest/v1/rpc/' + fn, {
+      method: 'POST', cache: 'no-store', signal: ctrl ? ctrl.signal : undefined,
+      headers: { apikey: SUPA_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(args || {})
+    });
+    const txt = await r.text();
+    let data = null;
+    try { data = txt ? JSON.parse(txt) : null; } catch (e) {}
+    if (!r.ok) {
+      const err = new Error((data && data.message) || ('HTTP ' + r.status));
+      err.code = data && data.code; err.server = true;
+      throw err;
+    }
+    net.online = true;
+    return data;
+  } catch (e) {
+    if (!e.server) net.online = false;
+    throw e;
+  } finally { clearTimeout(tm); }
+}
+function newSecret() {
+  const b = new Uint8Array(24);
+  if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(b);
+  else for (let i = 0; i < b.length; i++) b[i] = Math.floor(Math.random() * 256);
+  return Array.from(b, (x) => (x < 16 ? '0' : '') + x.toString(16)).join('');
+}
+function cleanName(s) { return String(s || '').replace(/[\u0000-\u001f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16); }
+function agoText(ts) {
+  const m = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+  if (!Number.isFinite(m)) return '';
+  if (m < 3) return 'только что';
+  if (m < 60) return m + ' мин назад';
+  if (m < 1440) return Math.floor(m / 60) + ' ч назад';
+  return Math.floor(m / 1440) + ' дн назад';
+}
+
+async function ensureAccount() {
+  const N = saveData.net;
+  if (N.id && N.secret) return;
+  if (!N.secret) N.secret = newSecret();
+  const r = await rpc('dj_register', { p_secret: N.secret, p_name: N.name || null });
+  N.id = r.id; N.code = r.code; N.name = r.name;
+  writeSaveData();
+}
+async function flushOutbox() {
+  const N = saveData.net;
+  while (N.outbox.length) {
+    const it = N.outbox[0];
+    try {
+      if (it.t === 'add') {
+        const r = await rpc('dj_add_friend', { p_id: N.id, p_secret: N.secret, p_code: it.code });
+        friendAddResult(r, it.code);
+      } else if (it.t === 'gift') {
+        await rpc('dj_send_gift', { p_id: N.id, p_secret: N.secret, p_to: it.to });
+      }
+    } catch (e) {
+      if (!e.server) throw e; // нет сети — попробуем позже
+    }
+    N.outbox.shift();
+    writeSaveData();
+  }
+}
+// Главная синхронизация: регистрация, очередь, прогресс, список друзей
+function netSync(withFriends) {
+  if (net.busy) return net.busy;
+  if (gameState === 'PLAYING') return Promise.resolve(false);
+  net.busy = (async () => {
+    const N = saveData.net;
+    try {
+      await ensureAccount();
+      await flushOutbox();
+      const wk = weekKeyNow();
+      if (N.week !== wk) { N.week = wk; N.weekBest = 0; }
+      let r;
+      try {
+        r = await rpc('dj_sync', {
+          p_id: N.id, p_secret: N.secret, p_name: N.name || null, p_skin: saveData.selectedSkin,
+          p_arena: saveData.highestUnlockedArena, p_xp: Math.floor(saveData.totalXP), p_scores: saveData.arenaBest,
+          p_week: N.week, p_week_best: Math.floor(N.weekBest || 0)
+        });
+      } catch (e) {
+        if (e.code === '28000') { N.id = ''; N.code = ''; await ensureAccount(); return netSync(withFriends); } // аккаунт пропал на сервере — заводим новый
+        throw e;
+      }
+      if (r) { N.code = r.code || N.code; if (!N.name) N.name = r.name; net.cache.gifts = r.gifts || 0; }
+      if (withFriends || (r && r.friends !== net.cache.friends.length)) {
+        net.cache.friends = (await rpc('dj_friends', { p_id: N.id, p_secret: N.secret })) || [];
+      }
+      net.cache.at = Date.now();
+      net.lastError = '';
+      saveNetCache();
+      writeSaveData();
+      return true;
+    } catch (e) {
+      net.lastError = e.server ? (e.message || 'ошибка сервера') : 'offline';
+      return false;
+    } finally {
+      net.busy = null;
+      updateFriendsTile();
+      if (!friendsMenuEl.classList.contains('hidden')) renderFriends();
+    }
+  })();
+  return net.busy;
+}
+function netOnGameOver(sc) {
+  const N = saveData.net, wk = weekKeyNow();
+  if (N.week !== wk) { N.week = wk; N.weekBest = 0; }
+  if (sc > N.weekBest) N.weekBest = Math.floor(sc);
+  setTimeout(() => netSync(false), 400);
+}
+
+// ---------- Окно «Друзья» ----------
+const friendsMenuEl = $id('friendsMenu');
+let frRemoveArm = '';
+function friendAddResult(r, code) {
+  if (!r) return;
+  if (r.ok) { playSound('coin'); metaToast('👥', 'Новый друг: ' + r.name, 'Теперь вы видите рекорды друг друга'); }
+  else {
+    const msg = { not_found: 'Код ' + code + ' не найден', self: 'Это твой собственный код', already: (r.name || 'Он') + ' уже в друзьях', limit: 'Максимум 100 друзей' }[r.error] || 'Не получилось';
+    playSound('break'); metaToast('⚠', msg, '');
+  }
+}
+async function addFriendByCode(raw) {
+  const code = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (code.length !== 6) { playSound('break'); metaToast('⚠', 'Код друга — 6 символов', 'Например: K7F3QD'); return; }
+  if (code === saveData.net.code) { playSound('break'); metaToast('⚠', 'Это твой собственный код', ''); return; }
+  const N = saveData.net;
+  if (!N.id || !navigator.onLine) {
+    N.outbox.push({ t: 'add', code }); writeSaveData();
+    metaToast('🕐', 'Добавим, когда появится интернет', 'Код ' + code + ' сохранён');
+    netSync(true); renderFriends(); return;
+  }
+  try {
+    const r = await rpc('dj_add_friend', { p_id: N.id, p_secret: N.secret, p_code: code });
+    friendAddResult(r, code);
+    if (r && r.ok) await netSync(true);
+  } catch (e) {
+    if (!e.server) { N.outbox.push({ t: 'add', code }); writeSaveData(); metaToast('🕐', 'Нет интернета', 'Добавим друга, когда сеть появится'); }
+    else metaToast('⚠', 'Ошибка сервера', e.message);
+  }
+  renderFriends();
+}
+async function sendGift(f) {
+  const N = saveData.net;
+  f.gifted = true; saveNetCache(); renderFriends();
+  playSound('coin');
+  try {
+    const r = await rpc('dj_send_gift', { p_id: N.id, p_secret: N.secret, p_to: f.id });
+    metaToast('🎁', 'Подарок отправлен: ' + f.name, r && r.ok ? '+50 монет другу' : 'Сегодня ты уже дарил(а)');
+  } catch (e) {
+    if (!e.server) { N.outbox.push({ t: 'gift', to: f.id }); writeSaveData(); metaToast('🎁', 'Подарок в очереди', 'Отправим, когда появится интернет'); }
+  }
+}
+async function claimFriendGifts() {
+  const N = saveData.net;
+  try {
+    const r = await rpc('dj_claim_gifts', { p_id: N.id, p_secret: N.secret });
+    net.cache.gifts = 0; saveNetCache();
+    if (r && r.total > 0) {
+      saveData.coins += r.total;
+      metaSave();
+      showLoot('🎁', 'Подарки от друзей', [{ ico: '🪙', text: `+${formatNum(r.total)} монет` }, { ico: '👥', text: 'От: ' + r.from.join(', ') }]);
+    }
+  } catch (e) { metaToast('⚠', 'Нет интернета', 'Заберёшь подарки, когда сеть появится'); }
+  renderFriends(); updateFriendsTile(); updateAllUI();
+}
+// Вызов: сыграть на арене друга и побить его рекорд
+var challenge = null;
+function startChallenge(f) {
+  const scores = f.scores || {};
+  let arena = saveData.selectedArena;
+  if (!scores[arena]) {
+    const open = Object.keys(scores).map(Number).filter((id) => ARENAS[id - 1] && isArenaOpen(ARENAS[id - 1]));
+    if (!open.length) { playSound('break'); metaToast('🔒', 'Нет общей арены', `${f.name} играет на аренах, которые у тебя ещё закрыты`); return; }
+    arena = open.sort((a, b) => scores[b] - scores[a])[0];
+  }
+  saveData.selectedArena = arena;
+  challenge = { name: f.name, target: scores[arena], arena };
+  startGame();
+  showToastText(`🎯 Вызов: набери больше ${formatNum(challenge.target)} — рекорд ${f.name}`);
+}
+function challengeResultText(sc) {
+  if (!challenge || challenge.arena !== saveData.selectedArena) return '';
+  if (sc > challenge.target) { const t = `🏆 Ты побил(а) рекорд ${challenge.name}!`; showToastText(t); playSound('arena_up'); return t; }
+  return `🎯 До рекорда ${challenge.name}: ещё ${formatNum(challenge.target - sc + 1)}`;
+}
+
+function avatarCanvasHTML(skin, size) { return `<canvas class="fr-ava" data-skin="${skin || 'classic'}" width="${size * 2}" height="${size * 2}"></canvas>`; }
+function paintAvatars(root) {
+  root.querySelectorAll('canvas.fr-ava').forEach((cv) => {
+    const sk = SKIN_MAP[cv.dataset.skin] || SKINS[0];
+    const c = cv.getContext('2d');
+    c.scale(cv.width / 44, cv.height / 44);
+    drawCharacter(c, sk, 22, 25, 1, { scale: 0.72, t: 0 });
+  });
+}
+function escHTML(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
+
+function renderFriendsProfile() {
+  const N = saveData.net;
+  const st = net.busy ? 'обновляем…' : (net.lastError === 'offline' || !navigator.onLine)
+    ? (net.cache.at ? 'нет интернета · данные от ' + agoText(net.cache.at) : 'нет интернета')
+    : net.lastError ? 'сервер недоступен' : (net.cache.at ? 'онлайн · обновлено ' + agoText(net.cache.at) : 'онлайн');
+  const dot = (net.lastError || !navigator.onLine) ? 'off' : 'on';
+  $id('frProfile').innerHTML = `
+    ${avatarCanvasHTML(saveData.selectedSkin, 52)}
+    <div class="fr-me">
+      <div class="fr-name-row"><b id="frName">${escHTML(N.name || 'Без имени')}</b><button id="frEditName" class="fr-mini" title="Изменить имя">✏</button></div>
+      <div class="fr-code-row">${N.code ? `Твой код: <b class="fr-code">${N.code}</b> <button id="frCopyCode" class="fr-mini" title="Скопировать">📤</button>` : 'Код появится, когда игра подключится к интернету'}</div>
+      <div class="fr-status ${dot}"><i></i>${st}</div>
+    </div>`;
+  paintAvatars($id('frProfile'));
+  $id('frEditName').addEventListener('click', () => {
+    const row = $id('frProfile').querySelector('.fr-name-row');
+    row.innerHTML = `<input id="frNameInput" class="fr-input" maxlength="16" value="${escHTML(N.name || '')}" placeholder="Твоё имя"><button id="frNameOk" class="fr-mini ok">✓</button>`;
+    const inp = $id('frNameInput');
+    inp.focus(); inp.select();
+    const done = () => {
+      const v = cleanName(inp.value);
+      if (v.length >= 2 && v !== N.name) { N.name = v; writeSaveData(); netSync(false); metaToast('✏', 'Имя сохранено', v); }
+      renderFriends();
+    };
+    $id('frNameOk').addEventListener('click', done);
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') done(); if (e.key === 'Escape') renderFriends(); });
+  });
+  const cp = $id('frCopyCode');
+  if (cp) cp.addEventListener('click', async () => {
+    const text = `Добавь меня в друзья в Doodle Jump: мой код ${N.code}`;
+    let ok = false;
+    try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); ok = true; } } catch (e) {}
+    if (!ok && navigator.share) { try { await navigator.share({ text }); ok = true; } catch (e) {} }
+    playSound('click');
+    metaToast('📤', ok ? 'Код скопирован' : 'Твой код: ' + N.code, ok ? 'Отправь его другу' : 'Перепиши и отправь другу');
+  });
+}
+
+function renderFriendsList(body) {
+  const N = saveData.net;
+  const fr = net.cache.friends || [];
+  let html = '';
+  if (net.cache.gifts > 0) html += `<div class="fr-gifts"><span>🎁</span><div><b>Подарки от друзей: ${net.cache.gifts}</b><small>по 50 монет за каждый</small></div><button id="frClaim" class="action-btn select">Забрать</button></div>`;
+  html += `<div class="fr-add"><input id="frAddInput" class="fr-input" maxlength="9" placeholder="Код друга, например K7F3QD" autocomplete="off" autocapitalize="characters" spellcheck="false"><button id="frAddBtn" class="action-btn buy">Добавить</button></div>`;
+  const queued = N.outbox.filter((x) => x.t === 'add').map((x) => x.code);
+  if (queued.length) html += `<div class="fr-note">🕐 Ждут интернета: ${queued.join(', ')}</div>`;
+  if (!fr.length) {
+    html += `<div class="fr-empty"><b>Пока никого</b><span>Отправь другу свой код, а его код введи выше. Друзья увидят рекорды друг друга и смогут дарить монеты.</span></div>`;
+  } else {
+    html += fr.map((f) => {
+      const a = ARENAS[(f.arena || 1) - 1] || ARENAS[0];
+      const rm = frRemoveArm === f.id;
+      return `<div class="list-card fr-card" data-id="${f.id}">
+        ${avatarCanvasHTML(f.skin, 44)}
+        <div class="fr-info"><b>${escHTML(f.name)}</b><small>рекорд ${formatNum(f.best || 0)} · арена ${a.id}</small><small>${f.last_seen ? 'был(а) ' + agoText(f.last_seen) : ''}</small></div>
+        <div class="fr-acts">
+          <button class="fr-act js-gift" ${f.gifted ? 'disabled' : ''} title="Подарить 50 монет">🎁</button>
+          <button class="fr-act js-ch" title="Вызов: побить рекорд">🎯</button>
+          <button class="fr-act js-rm ${rm ? 'arm' : ''}" title="Удалить из друзей">${rm ? 'Удалить?' : '❌'}</button>
+        </div></div>`;
+    }).join('');
+  }
+  body.innerHTML = html;
+  paintAvatars(body);
+  const cl = $id('frClaim'); if (cl) cl.addEventListener('click', claimFriendGifts);
+  const inp = $id('frAddInput');
+  $id('frAddBtn').addEventListener('click', () => addFriendByCode(inp.value));
+  inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') addFriendByCode(inp.value); });
+  body.querySelectorAll('.fr-card').forEach((card) => {
+    const f = fr.find((x) => x.id === card.dataset.id);
+    if (!f) return;
+    card.querySelector('.js-gift').addEventListener('click', () => sendGift(f));
+    card.querySelector('.js-ch').addEventListener('click', () => { playSound('click'); startChallenge(f); });
+    card.querySelector('.js-rm').addEventListener('click', async () => {
+      if (frRemoveArm !== f.id) { frRemoveArm = f.id; renderFriends(); return; }
+      frRemoveArm = '';
+      try {
+        await rpc('dj_remove_friend', { p_id: N.id, p_secret: N.secret, p_friend: f.id });
+        net.cache.friends = net.cache.friends.filter((x) => x.id !== f.id); saveNetCache();
+      } catch (e) { metaToast('⚠', 'Нет интернета', 'Удалить можно только онлайн'); }
+      renderFriends(); updateFriendsTile();
+    });
+  });
+}
+
+function boardKey() { return net.board === 'arena' ? 'arena' + saveData.selectedArena : net.board === 'week' ? 'week' + weekKeyNow() : net.board; }
+async function loadBoard() {
+  if (net.board === 'friends' || net.boardBusy) return;
+  net.boardBusy = true; renderFriends();
+  const key = boardKey();
+  try {
+    const r = await rpc('dj_leaderboard', { p_kind: net.board, p_arena: saveData.selectedArena, p_week: weekKeyNow(), p_id: saveData.net.id || null });
+    net.cache.boards[key] = Object.assign(r || {}, { at: Date.now() });
+    saveNetCache();
+  } catch (e) {}
+  net.boardBusy = false;
+  if (!friendsMenuEl.classList.contains('hidden')) renderFriends();
+}
+function renderBoard(body) {
+  const tabs = [['all', 'Все'], ['week', 'Неделя'], ['arena', 'Арена ' + saveData.selectedArena], ['friends', 'Друзья']];
+  let html = `<div class="seg fr-boards">${tabs.map(([k, t]) => `<button class="seg-btn ${net.board === k ? 'active' : ''}" data-b="${k}">${t}</button>`).join('')}</div>`;
+  let rows = [], me = null, total = 0, at = 0;
+  if (net.board === 'friends') {
+    const list = (net.cache.friends || []).map((f) => ({ name: f.name, skin: f.skin, best: f.best || 0 }));
+    list.push({ name: saveData.net.name || 'Ты', skin: saveData.selectedSkin, best: saveData.bestScore || 0, me: true });
+    list.sort((a, b) => b.best - a.best);
+    let rk = 0, prev = -1;
+    list.forEach((x, i) => { if (x.best !== prev) { rk = i + 1; prev = x.best; } x.rank = rk; });
+    rows = list; total = list.length;
+  } else {
+    const b = net.cache.boards[boardKey()];
+    if (b) { rows = b.top || []; me = b.me; total = b.total || 0; at = b.at; }
+  }
+  if (net.board === 'week') html += `<div class="fr-note">Лучший результат за эту неделю. Новая неделя — с понедельника.</div>`;
+  if (net.board === 'arena') html += `<div class="fr-note">Рекорды на арене «${escHTML(ARENAS[saveData.selectedArena - 1].name)}». Другую арену выбери в меню.</div>`;
+  if (!rows.length) {
+    html += `<div class="fr-empty"><b>${net.boardBusy ? 'Загружаем…' : (navigator.onLine ? 'Пока пусто' : 'Нет интернета')}</b><span>${net.boardBusy ? '' : navigator.onLine ? 'Сыграй матч — и твой результат появится здесь.' : 'Рейтинг загрузится, когда появится сеть.'}</span></div>`;
+  } else {
+    html += '<div class="lb">' + rows.map((r) => `<div class="lb-row ${r.me ? 'me' : ''} ${r.rank <= 3 ? 'top' + r.rank : ''}">
+      <span class="lb-rank">${r.rank}</span>${avatarCanvasHTML(r.skin, 30)}<span class="lb-name">${escHTML(r.name)}${r.me ? ' <i>ты</i>' : ''}</span><b class="lb-score">${formatNum(r.best)}</b></div>`).join('') + '</div>';
+    if (me && !rows.some((r) => r.me)) html += `<div class="lb-row me lb-mine"><span class="lb-rank">${me.rank}</span>${avatarCanvasHTML(saveData.selectedSkin, 30)}<span class="lb-name">${escHTML(saveData.net.name || 'Ты')} <i>ты</i></span><b class="lb-score">${formatNum(me.best)}</b></div>`;
+    if (net.board !== 'friends') html += `<div class="fr-note">Всего игроков: ${formatNum(total)}${at ? ' · обновлено ' + agoText(at) : ''}${net.boardBusy ? ' · обновляем…' : ''}</div>`;
+  }
+  body.innerHTML = html;
+  paintAvatars(body);
+  body.querySelectorAll('.fr-boards .seg-btn').forEach((b) => b.addEventListener('click', () => {
+    net.board = b.dataset.b; playSound('click'); renderFriends(); loadBoard();
+  }));
+}
+function renderFriends() {
+  renderFriendsProfile();
+  document.querySelectorAll('#frTabs .seg-btn').forEach((b) => b.classList.toggle('active', b.dataset.t === net.tab));
+  const body = $id('frBody');
+  if (net.tab === 'top') renderBoard(body); else renderFriendsList(body);
+}
+$id('frTabs').addEventListener('click', (e) => {
+  const b = e.target.closest('.seg-btn'); if (!b) return;
+  net.tab = b.dataset.t; playSound('click'); renderFriends();
+  if (net.tab === 'top') loadBoard();
+});
+$id('openFriendsBtn').addEventListener('click', () => {
+  playSound('click');
+  frRemoveArm = '';
+  openModal(friendsMenuEl, renderFriends);
+  netSync(true).then(() => { if (net.tab === 'top') loadBoard(); });
+});
+function updateFriendsTile() {
+  const sub = $id('tileFriendsSub');
+  if (!sub) return;
+  const n = (net.cache.friends || []).length;
+  sub.textContent = n ? n + ' в списке' : 'и рейтинг';
+  setDot('dotFriends', net.cache.gifts > 0);
+}
+window.addEventListener('online', () => netSync(false));
+setTimeout(() => { updateFriendsTile(); netSync(false); }, 2500);
+
 
 // ==========================================================
 // 15. ГЛАВНЫЙ ЦИКЛ

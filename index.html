@@ -124,9 +124,11 @@
           <button id="openPassBtn" class="mm-tile t-pass"><span class="mm-tile-ico">🎖</span><b>Пропуск</b><small id="tilePassSub"></small><i id="dotPass" class="mm-dot hidden"></i></button>
           <button id="openUpgBtn" class="mm-tile t-upg"><span class="mm-tile-ico">🛠</span><b>Прокачка</b><small id="tileUpgSub"></small></button>
           <button id="openAchBtn" class="mm-tile t-ach"><span class="mm-tile-ico">🏆</span><b>Награды</b><small id="tileAchSub"></small></button>
-          <button id="openArenasBtn" class="mm-tile t-arenas"><span class="mm-tile-ico">🏟</span><b>Арены</b><small id="tileArenasSub"></small></button>
+          <button id="openFriendsBtn" class="mm-tile t-friends"><span class="mm-tile-ico">👥</span><b>Друзья</b><small id="tileFriendsSub"></small><i id="dotFriends" class="mm-dot hidden"></i></button>
           <button id="openStatsBtn" class="mm-tile t-stats"><span class="mm-tile-ico">📊</span><b>Статы</b><small id="tileStatsSub"></small></button>
         </nav>
+
+        <button id="openArenasBtn" class="hidden" aria-hidden="true"><small id="tileArenasSub"></small></button>
 
         <div class="mm-hint">
           <span><b>ПК:</b> ← → / A D — движение, Пробел / клик — выстрел</span>
@@ -396,6 +398,20 @@
       <div class="notebook-card modal-card">
         <div class="modal-header"><h2 id="eventTitle">Событие</h2></div>
         <div id="eventBody" class="scroll-list"></div>
+        <div class="modal-footer"><button class="btn btn-secondary js-back">Назад</button></div>
+      </div>
+    </div>
+
+    <!-- Друзья и рейтинг -->
+    <div id="friendsMenu" class="overlay hidden">
+      <div class="notebook-card modal-card">
+        <div class="modal-header"><h2>Друзья</h2><div class="stat-pill">🪙 <span class="js-coins">0</span></div></div>
+        <div id="frProfile" class="fr-profile"></div>
+        <div id="frTabs" class="seg fr-tabs">
+          <button class="seg-btn active" data-t="friends">Друзья</button>
+          <button class="seg-btn" data-t="top">Рейтинг</button>
+        </div>
+        <div id="frBody" class="scroll-list"></div>
         <div class="modal-footer"><button class="btn btn-secondary js-back">Назад</button></div>
       </div>
     </div>
