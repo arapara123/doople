@@ -2890,20 +2890,56 @@ function updateAllUI() {
   }
 }
 
+// Витрина арены: тяжёлые слои (фон, декорации, платформы) кэшируются в отдельные холсты,
+// а каждый кадр рисуются только ambient-частицы, персонаж и монстр — поэтому прыжок идёт плавно.
+function makeMenuLayer() {
+  const cv = document.createElement('canvas');
+  return { cv, cx: cv.getContext('2d') };
+}
+const menuLayers = { base: makeMenuLayer(), deco: makeMenuLayer(), plat: makeMenuLayer(), key: '', decoT: -1e9 };
+
 function drawMenuPreview(t) {
   const a = ARENAS[previewIdx - 1];
   const unlocked = saveData.totalXP >= a.minXP;
-  mctx.setTransform(menuCanvas.width / MW, 0, 0, menuCanvas.height / MH, 0, 0);
-  drawArenaScene(mctx, a, MW, MH, 0, t);
-  stepAmbient(mctx, a, menuAmbient, MW, MH, loopDt, 0.3);
+  const cw = menuCanvas.width, ch = menuCanvas.height;
+  const sx = cw / MW, sy = ch / MH;
+  const L = menuLayers;
 
-  const plats = [
-    { x: 20, y: 140, w: 68, h: 15, type: 'normal' },
-    { x: 148, y: 118, w: 68, h: 15, type: 'moving' },
-    { x: 276, y: 140, w: 68, h: 15, type: 'normal' }
-  ];
-  for (const p of plats) drawPlatformShape(mctx, a, p, t);
-  drawSpringShape(mctx, 54, 140, 13);
+  const key = a.id + ':' + (LOW_FX ? 1 : 0) + ':' + cw + 'x' + ch;
+  if (L.key !== key) {
+    L.key = key;
+    for (const l of [L.base, L.deco, L.plat]) { l.cv.width = cw; l.cv.height = ch; }
+    // фон (градиент + клетка) — статичный
+    L.base.cx.setTransform(sx, 0, 0, sy, 0, 0);
+    drawArenaBase(L.base.cx, a, MW, MH, 0);
+    // платформы и пружина — тоже статичные (свечение/shadowBlur считается один раз)
+    const pc = L.plat.cx;
+    pc.setTransform(sx, 0, 0, sy, 0, 0);
+    const plats = [
+      { x: 20, y: 140, w: 68, h: 15, type: 'normal' },
+      { x: 148, y: 118, w: 68, h: 15, type: 'moving' },
+      { x: 276, y: 140, w: 68, h: 15, type: 'normal' }
+    ];
+    for (const p of plats) drawPlatformShape(pc, a, p, t);
+    drawSpringShape(pc, 54, 140, 13);
+    L.decoT = -1e9;
+  }
+  // декорации медленные — обновляем ~15 раз в секунду
+  if (t - L.decoT >= 66) {
+    L.decoT = t;
+    const dc = L.deco.cx;
+    dc.setTransform(1, 0, 0, 1, 0, 0);
+    dc.clearRect(0, 0, cw, ch);
+    dc.setTransform(sx, 0, 0, sy, 0, 0);
+    drawArenaDeco(dc, a, MW, MH, 0, t);
+  }
+
+  mctx.setTransform(1, 0, 0, 1, 0, 0);
+  mctx.drawImage(L.base.cv, 0, 0);
+  mctx.drawImage(L.deco.cv, 0, 0);
+  mctx.drawImage(L.plat.cv, 0, 0);
+  mctx.setTransform(sx, 0, 0, sy, 0, 0);
+  stepAmbient(mctx, a, menuAmbient, MW, MH, loopDt, 0.3);
 
   // персонаж прыгает между платформами
   const hop = Math.sin(((t % 1200) / 1200) * Math.PI) * 52;
@@ -3495,15 +3531,15 @@ function gameLoop(currentTime) {
     drawDt = dt;
     update(dt);
     draw(currentTime);
-  } else if (currentTime - lastIdleDraw > 220) { // на паузе/в меню игровое поле почти не видно — рисуем редко, экономим батарею
+  } else if (currentTime - lastIdleDraw > 700) { // на паузе/в меню игровое поле почти не видно — рисуем редко: тяжёлый кадр не должен рвать анимацию витрины
     drawDt = Math.min((currentTime - lastIdleDraw) / 16.667, 3);
     lastIdleDraw = currentTime;
     draw(currentTime);
   }
   updateTouchUI();
-  // Витрина арены в меню тяжёлая (полная сцена с декорациями): 30 кадров/с хватает, на слабых телефонах ещё реже
-  if (!mainMenuEl.classList.contains('hidden') && currentTime - lastMenuDraw > (LOW_FX ? 50 : 33)) {
-    loopDt = Math.min((currentTime - lastMenuDraw) / 16.667, 3); // шаг времени для частиц витрины (кадры реже — шаг больше)
+  // Витрина арены: тяжёлые слои закэшированы, поэтому рисуем на каждом кадре (плавный прыжок)
+  if (!mainMenuEl.classList.contains('hidden')) {
+    loopDt = Math.min(Math.max((currentTime - lastMenuDraw) / 16.667, 0.1), 3); // шаг времени для частиц витрины
     lastMenuDraw = currentTime;
     drawMenuPreview(currentTime);
   }

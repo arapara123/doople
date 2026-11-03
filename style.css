@@ -1117,3 +1117,10 @@ body { height: var(--tg-viewport-stable-height, 100dvh); }
     height: 100%;
   }
 }
+
+/* ==========================================================
+   ПЛАВНОСТЬ ГЛАВНОГО МЕНЮ: убираем лишние перерисовки поверх анимированной витрины
+   ========================================================== */
+#mainMenu { backdrop-filter: none; -webkit-backdrop-filter: none; }
+.hero::after { animation: none; display: none; }
+.game-title { animation: none; }
