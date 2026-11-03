@@ -43,7 +43,7 @@
 
     <!-- Уведомление о новой арене во время игры -->
     <div id="arenaToast" class="arena-toast hidden">
-      🏆 НОВАЯ АРЕНА ОТКРЫТА: <span id="toastArenaTitle"></span>!
+      Открыта новая арена: <span id="toastArenaTitle"></span>!
     </div>
 
     <!-- Игровой холст -->
@@ -86,6 +86,7 @@
             <button id="arenaPrevBtn" class="mm-arrow left" title="Предыдущая арена" aria-label="Предыдущая арена">‹</button>
             <button id="arenaNextBtn" class="mm-arrow right" title="Следующая арена" aria-label="Следующая арена">›</button>
             <div id="menuArenaLock" class="mm-lock hidden"></div>
+            <span class="mm-strip-hint">все арены <i>▾</i></span>
           </div>
           <div class="mm-hero-bar">
             <div class="mm-hero-text">
@@ -97,7 +98,7 @@
           <p class="mm-twist" id="menuArenaTwist"></p>
         </section>
 
-        <div id="arenaStrip" class="mm-strip" aria-label="Все арены"></div>
+        <div id="arenaStrip" class="mm-strip collapsed" aria-label="Все арены"></div>
 
         <div class="mm-xp">
           <div class="mm-xp-row"><span id="menuXpLabel">Прогресс</span><b id="menuXpText">0</b></div>
@@ -105,14 +106,14 @@
         </div>
 
         <div class="mm-stats">
-          <div class="mm-stat"><span class="mm-stat-ico">🏆</span><div><b id="menuBestScore">0</b><small>Рекорд арены</small></div></div>
-          <div class="mm-stat"><span class="mm-stat-ico">🎭</span><div><b id="menuSkinName">—</b><small>Твой герой</small></div></div>
+          <div class="mm-stat"><span class="mm-stat-ico">⭐</span><div><b id="menuBestScore">0</b><small>Рекорд арены</small></div></div>
+          <div class="mm-stat"><span class="mm-stat-ico">👕</span><div><b id="menuSkinName">—</b><small>Твой герой</small></div></div>
         </div>
 
         <div id="boostRow" class="mm-boosts hidden"></div>
 
         <button id="startBtn" class="mm-play">
-          <span class="mm-play-ico">▶</span>
+          <span class="mm-play-ico"><svg class="ic ic-play" viewBox="0 0 24 24"><use href="#i-play"></use></svg></span>
           <span class="mm-play-txt"><b>ИГРАТЬ</b><small id="menuPlayArena">—</small></span>
         </button>
 
@@ -122,14 +123,14 @@
           <button id="openChestBtn" class="mm-tile t-promo"><span class="mm-tile-ico">🎰</span><b>Сундуки</b><small id="tileChestSub"></small><i id="dotChest" class="mm-dot hidden"></i></button>
           <button id="openPassBtn" class="mm-tile t-pass"><span class="mm-tile-ico">🎖</span><b>Пропуск</b><small id="tilePassSub"></small><i id="dotPass" class="mm-dot hidden"></i></button>
           <button id="openUpgBtn" class="mm-tile t-upg"><span class="mm-tile-ico">🛠</span><b>Прокачка</b><small id="tileUpgSub"></small></button>
-          <button id="openAchBtn" class="mm-tile t-ach"><span class="mm-tile-ico">🏅</span><b>Награды</b><small id="tileAchSub"></small></button>
+          <button id="openAchBtn" class="mm-tile t-ach"><span class="mm-tile-ico">🏆</span><b>Награды</b><small id="tileAchSub"></small></button>
           <button id="openArenasBtn" class="mm-tile t-arenas"><span class="mm-tile-ico">🏟</span><b>Арены</b><small id="tileArenasSub"></small></button>
           <button id="openStatsBtn" class="mm-tile t-stats"><span class="mm-tile-ico">📊</span><b>Статы</b><small id="tileStatsSub"></small></button>
         </nav>
 
         <div class="mm-hint">
           <span><b>ПК:</b> ← → / A D — движение, Пробел / клик — выстрел</span>
-          <span><b>Телефон:</b> касайся левой/правой половины экрана, 🎯 — выстрел</span>
+          <span><b>Телефон:</b> касайся левой/правой половины экрана, кнопка-прицел — выстрел</span>
         </div>
       </div>
     </div>
@@ -138,7 +139,7 @@
     <div id="shopMenu" class="overlay hidden">
       <div class="notebook-card modal-card">
         <div class="modal-header">
-          <h2>👕 Магазин героев</h2>
+          <h2>Магазин героев</h2>
           <div class="stat-pill">🪙 <span id="shopCoins">0</span></div>
         </div>
 
@@ -148,7 +149,7 @@
         <div id="skinsList" class="scroll-list"></div>
 
         <div class="modal-footer">
-          <button id="closeShopBtn" class="btn btn-secondary">⬅ Назад в меню</button>
+          <button id="closeShopBtn" class="btn btn-secondary">Назад</button>
         </div>
       </div>
     </div>
@@ -157,7 +158,7 @@
     <div id="arenasMenu" class="overlay hidden">
       <div class="notebook-card modal-card">
         <div class="modal-header">
-          <h2>🏟 Путь Арен</h2>
+          <h2>Путь арен</h2>
           <div class="stat-pill">⭐ <span id="arenasTotalXp">0</span> XP</div>
         </div>
         <p class="modal-sub">Опыт (XP) даётся нелегко: за высоту, монстров и монеты. Чем выше арена, тем больше опыта за всё (×1.3, ×1.6 и т. д.), но и открываются они всё дольше — последние потребуют десятков часов игры. После 10 000 очков сложность начинает расти!</p>
@@ -165,7 +166,7 @@
         <div id="arenasList" class="scroll-list"></div>
 
         <div class="modal-footer">
-          <button id="closeArenasBtn" class="btn btn-secondary">⬅ Назад в меню</button>
+          <button id="closeArenasBtn" class="btn btn-secondary">Назад</button>
         </div>
       </div>
     </div>
@@ -174,13 +175,13 @@
     <div id="statsMenu" class="overlay hidden">
       <div class="notebook-card modal-card">
         <div class="modal-header">
-          <h2>📊 Статистика игрока</h2>
+          <h2>Статистика</h2>
         </div>
 
         <div id="statsGrid" class="stats-detailed-grid scroll-list"></div>
 
         <div class="modal-footer">
-          <button id="closeStatsBtn" class="btn btn-secondary">⬅ Назад в меню</button>
+          <button id="closeStatsBtn" class="btn btn-secondary">Назад</button>
         </div>
       </div>
     </div>
@@ -189,17 +190,17 @@
     <div id="promoMenu" class="overlay hidden">
       <div class="notebook-card modal-card">
         <div class="modal-header">
-          <h2>🎁 Промокод</h2>
+          <h2>Промокод</h2>
           <div class="stat-pill">🪙 <span id="promoCoins">0</span></div>
         </div>
         <p class="modal-sub">Введи промокод и получи награду. Каждый код можно активировать только один раз.</p>
 
         <input id="promoInput" class="promo-input" type="text" maxlength="24" placeholder="Введи код" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-        <button id="promoApplyBtn" class="btn btn-primary">✔ Активировать</button>
+        <button id="promoApplyBtn" class="btn btn-primary">Активировать</button>
         <div id="promoMsg" class="promo-msg"></div>
 
         <div class="modal-footer">
-          <button id="closePromoBtn" class="btn btn-secondary">⬅ Назад в меню</button>
+          <button id="closePromoBtn" class="btn btn-secondary">Назад</button>
         </div>
       </div>
     </div>
@@ -208,21 +209,21 @@
     <div id="settingsMenu" class="overlay hidden">
       <div class="notebook-card modal-card">
         <div class="modal-header">
-          <h2>⚙ Настройки</h2>
+          <h2>Настройки</h2>
         </div>
 
         <div class="scroll-list settings-body">
           <div class="set-section">
-            <div class="set-title">🎯 Кнопка выстрела</div>
+            <div class="set-title">Кнопка выстрела</div>
             <p class="modal-sub">Перетащи кнопку по макету экрана туда, где удобно большому пальцу. Кнопка видна только на телефонах.</p>
             <div id="sbPreview" class="sb-preview"><button id="sbPreviewBtn" class="sb-preview-btn" tabindex="-1">🎯</button></div>
             <label class="set-row"><span>Размер</span><input id="sbSize" type="range" min="44" max="110" step="1"><b id="sbSizeVal">64</b></label>
             <label class="set-row"><span>Прозрачность</span><input id="sbOpacity" type="range" min="30" max="100" step="5"><b id="sbOpacityVal">90%</b></label>
-            <button id="sbResetBtn" class="btn btn-outline btn-sm">↺ Сбросить кнопку</button>
+            <button id="sbResetBtn" class="btn btn-outline btn-sm">🔄 Сбросить кнопку</button>
           </div>
 
           <div class="set-section">
-            <div class="set-title">🎵 Музыка</div>
+            <div class="set-title">Музыка</div>
             <p class="modal-sub">У каждой арены своя мелодия. Она создаётся прямо в игре, поэтому работает без интернета.</p>
             <div id="musicSeg" class="seg">
               <button class="seg-btn" data-v="1">Вкл</button>
@@ -232,7 +233,7 @@
           </div>
 
           <div class="set-section">
-            <div class="set-title">🎨 Графика</div>
+            <div class="set-title">Графика</div>
             <p class="modal-sub">«Авто» сама упрощает эффекты, если игра начинает тормозить. «Эконом» — максимум плавности.</p>
             <div id="qualitySeg" class="seg">
               <button class="seg-btn" data-v="auto">Авто</button>
@@ -242,7 +243,7 @@
           </div>
 
           <div class="set-section">
-            <div class="set-title">⏱ Максимум FPS</div>
+            <div class="set-title">Максимум FPS</div>
             <p class="modal-sub">«Авто» — частота экрана (до 120 Гц и выше). Если устройство не тянет, игра сама перейдёт на ровные 60. «120» — всегда до 120 к/с. 60 и 30 экономят батарею.</p>
             <div id="fpsSeg" class="seg">
               <button class="seg-btn" data-v="0">Авто</button>
@@ -254,7 +255,7 @@
           </div>
 
           <div class="set-section">
-            <div class="set-title">💾 Сохранение прогресса</div>
+            <div class="set-title">Сохранение прогресса</div>
             <p class="modal-sub">Прогресс хранится на этом устройстве и работает без интернета. Чтобы не потерять его (смена телефона, очистка браузера) или перенести на другое устройство — скопируй код и вставь там в это же поле.</p>
             <p id="persistInfo" class="modal-sub"></p>
             <textarea id="saveCode" class="save-code" rows="3" placeholder="Здесь появится код сохранения. Чтобы загрузить прогресс — вставь код сюда и нажми «Загрузить»." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
@@ -272,7 +273,7 @@
         </div>
 
         <div class="modal-footer">
-          <button id="closeSettingsBtn" class="btn btn-secondary">⬅ Назад</button>
+          <button id="closeSettingsBtn" class="btn btn-secondary">Назад</button>
         </div>
       </div>
     </div>
@@ -280,12 +281,12 @@
     <!-- Пауза -->
     <div id="pauseMenu" class="overlay hidden">
       <div class="notebook-card">
-        <h2 class="pause-title">⏸ Пауза</h2>
+        <h2 class="pause-title">Пауза</h2>
         <div class="menu-actions">
-          <button id="resumeBtn" class="btn btn-primary btn-large">▶ Продолжить</button>
-          <button id="pauseRestartBtn" class="btn btn-secondary">🔄 Начать заново</button>
-          <button id="pauseSettingsBtn" class="btn btn-purple">⚙ Настройки</button>
-          <button id="pauseMenuBtn" class="btn btn-outline">🏠 В главное меню</button>
+          <button id="resumeBtn" class="btn btn-primary btn-large">Продолжить</button>
+          <button id="pauseRestartBtn" class="btn btn-secondary">Начать заново</button>
+          <button id="pauseSettingsBtn" class="btn btn-purple">Настройки</button>
+          <button id="pauseMenuBtn" class="btn btn-outline">В главное меню</button>
         </div>
         <div class="controls-hint"><p>Горячие клавиши: <strong>P</strong> или <strong>Esc</strong> — пауза</p></div>
       </div>
@@ -294,24 +295,24 @@
     <!-- Экран окончания игры -->
     <div id="gameOverMenu" class="overlay hidden">
       <div class="notebook-card">
-        <h2 class="gameover-title">Матч завершён!</h2>
-        <div id="newRecordBadge" class="record-badge hidden">🎉 НОВЫЙ РЕКОРД! 🎉</div>
+        <h2 class="gameover-title">Матч окончен</h2>
+        <div id="newRecordBadge" class="record-badge hidden">Новый рекорд!</div>
         <div class="gameover-stats">
           <p>Счёт за матч: <strong id="finalScore">0</strong></p>
           <p>Рекорд арены «<span id="finalArenaName">—</span>»: <strong id="finalArenaBest">0</strong></p>
           <p>Лучший рекорд (все арены): <strong id="finalBest">0</strong></p>
-          <p class="xp-earned-line">Получено опыта: <strong id="finalXpEarned">+0 XP</strong> ⭐</p>
+          <p class="xp-earned-line">Получено опыта: <strong id="finalXpEarned">+0 XP</strong></p>
           <p>Баланс монет: 🪙 <strong id="finalCoins">0</strong></p>
-          <p class="combo-line">Макс. комбо: <strong id="finalCombo">0</strong> 🔥 • Сезон: <strong id="finalSP">+0</strong> 🎖</p>
+          <p class="combo-line">Макс. комбо: <strong id="finalCombo">0</strong> · Очки сезона: <strong id="finalSP">+0</strong></p>
           <p id="finalExtra" class="final-extra hidden"></p>
         </div>
         <div class="menu-actions">
-          <button id="restartBtn" class="btn btn-primary">🔄 Играть ещё раз</button>
+          <button id="restartBtn" class="btn btn-primary">Играть ещё раз</button>
           <div class="menu-grid-2">
-            <button id="gameOverShopBtn" class="btn btn-secondary">👕 Скины</button>
-            <button id="gameOverArenasBtn" class="btn btn-purple">🏟 Арены</button>
+            <button id="gameOverShopBtn" class="btn btn-secondary">Скины</button>
+            <button id="gameOverArenasBtn" class="btn btn-purple">Арены</button>
           </div>
-          <button id="toMenuBtn" class="btn btn-outline">🏠 В главное меню</button>
+          <button id="toMenuBtn" class="btn btn-outline">В главное меню</button>
         </div>
       </div>
     </div>
@@ -319,36 +320,36 @@
     <!-- Награда дня -->
     <div id="dailyMenu" class="overlay hidden">
       <div class="notebook-card modal-card">
-        <div class="modal-header"><h2>📅 Награда дня</h2><div class="stat-pill" id="dailyStreak">🔥</div></div>
+        <div class="modal-header"><h2>Награда дня</h2><div class="stat-pill" id="dailyStreak">🔥</div></div>
         <p class="modal-sub" id="dailySub"></p>
         <div id="dailyGrid" class="daily-grid"></div>
         <button id="dailyClaimBtn" class="btn btn-primary btn-large">Забрать</button>
-        <div class="modal-footer"><button class="btn btn-secondary js-back">⬅ Назад в меню</button></div>
+        <div class="modal-footer"><button class="btn btn-secondary js-back">Назад</button></div>
       </div>
     </div>
 
     <!-- Задания -->
     <div id="questsMenu" class="overlay hidden">
       <div class="notebook-card modal-card">
-        <div class="modal-header"><h2>🎯 Задания</h2><div class="stat-pill">🪙 <span class="js-coins">0</span></div></div>
+        <div class="modal-header"><h2>Задания</h2><div class="stat-pill">🪙 <span class="js-coins">0</span></div></div>
         <div id="questsList" class="scroll-list"></div>
-        <div class="modal-footer"><button class="btn btn-secondary js-back">⬅ Назад в меню</button></div>
+        <div class="modal-footer"><button class="btn btn-secondary js-back">Назад</button></div>
       </div>
     </div>
 
     <!-- Достижения -->
     <div id="achMenu" class="overlay hidden">
       <div class="notebook-card modal-card">
-        <div class="modal-header"><h2>🏅 Достижения</h2><div class="stat-pill" id="achCount">0</div></div>
+        <div class="modal-header"><h2>Достижения</h2><div class="stat-pill" id="achCount">0</div></div>
         <div id="achList" class="scroll-list ach-grid"></div>
-        <div class="modal-footer"><button class="btn btn-secondary js-back">⬅ Назад в меню</button></div>
+        <div class="modal-footer"><button class="btn btn-secondary js-back">Назад</button></div>
       </div>
     </div>
 
     <!-- Сундуки и колесо фортуны -->
     <div id="chestMenu" class="overlay hidden">
       <div class="notebook-card modal-card">
-        <div class="modal-header"><h2>🎰 Сундуки</h2><div class="stat-pill">🪙 <span class="js-coins">0</span></div></div>
+        <div class="modal-header"><h2>Сундуки</h2><div class="stat-pill">🪙 <span class="js-coins">0</span></div></div>
         <div class="scroll-list">
           <div class="wheel-box">
             <canvas id="wheelCanvas" width="440" height="440"></canvas>
@@ -363,29 +364,29 @@
           <div class="sec-title">Мои бонусы на старт <small>выбираются в меню над кнопкой «Играть»</small></div>
           <div id="boostInv" class="boost-grid"></div>
         </div>
-        <div class="modal-footer"><button class="btn btn-secondary js-back">⬅ Назад в меню</button></div>
+        <div class="modal-footer"><button class="btn btn-secondary js-back">Назад</button></div>
       </div>
     </div>
 
     <!-- Прокачка -->
     <div id="upgMenu" class="overlay hidden">
       <div class="notebook-card modal-card">
-        <div class="modal-header"><h2>🛠 Прокачка</h2><div class="stat-pill">🪙 <span class="js-coins">0</span></div></div>
+        <div class="modal-header"><h2>Прокачка</h2><div class="stat-pill">🪙 <span class="js-coins">0</span></div></div>
         <p class="modal-sub">Улучшения действуют во всех матчах и на всех аренах.</p>
         <div id="upgList" class="scroll-list"></div>
-        <div class="modal-footer"><button class="btn btn-secondary js-back">⬅ Назад в меню</button></div>
+        <div class="modal-footer"><button class="btn btn-secondary js-back">Назад</button></div>
       </div>
     </div>
 
     <!-- Боевой пропуск -->
     <div id="passMenu" class="overlay hidden">
       <div class="notebook-card modal-card">
-        <div class="modal-header"><h2>🎖 Пропуск</h2><div class="stat-pill">🪙 <span class="js-coins">0</span></div></div>
+        <div class="modal-header"><h2>Пропуск</h2><div class="stat-pill">🪙 <span class="js-coins">0</span></div></div>
         <div id="passHead" class="pass-head"></div>
         <div id="passList" class="scroll-list pass-list"></div>
         <div class="modal-footer">
-          <button id="passClaimAll" class="btn btn-primary">🎁 Забрать всё доступное</button>
-          <button class="btn btn-secondary js-back">⬅ Назад в меню</button>
+          <button id="passClaimAll" class="btn btn-primary">Забрать всё доступное</button>
+          <button class="btn btn-secondary js-back">Назад</button>
         </div>
       </div>
     </div>
@@ -395,7 +396,7 @@
       <div class="notebook-card modal-card">
         <div class="modal-header"><h2 id="eventTitle">Событие</h2></div>
         <div id="eventBody" class="scroll-list"></div>
-        <div class="modal-footer"><button class="btn btn-secondary js-back">⬅ Назад в меню</button></div>
+        <div class="modal-footer"><button class="btn btn-secondary js-back">Назад</button></div>
       </div>
     </div>
 

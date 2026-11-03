@@ -19,6 +19,152 @@ if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D
   };
 }
 // ==========================================================
+// 0. ИКОНКИ: свой набор линейных иконок вместо эмодзи (в стиле «ручка по тетради»)
+// Любой эмодзи, попавший в интерфейс, автоматически заменяется на иконку из набора (или убирается).
+// ==========================================================
+const ICON_PATHS = {
+  coin: 'M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16zM12 8.5a3.5 3.5 0 1 1 0 7a3.5 3.5 0 1 1 0-7z',
+  star: 'M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z',
+  check: 'M5 12.5l4.5 4.5L19 7.5',
+  cross: 'M6 6l12 12M18 6L6 18',
+  lock: 'M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3M12 14.5v2',
+  medal: 'M8 3l2.5 6M16 3l-2.5 6M12 9a5.5 5.5 0 1 1 0 11a5.5 5.5 0 1 1 0-11zM12 12.5v4',
+  gem: 'M7 4h10l4 5-9 11L3 9zM3 9h18M10 4l-1.5 5L12 20l3.5-11L14 4',
+  fire: 'M12 21c-4 0-7-2.8-7-6.5 0-3 2-5 3.5-6.5.3 2 1.3 3 2.3 3.3C10.5 8 12 5 14 3c.5 3 5 5.5 5 11 0 4-3 7-7 7z',
+  rocket: 'M12 3c3 2 4.5 5.5 4.5 9.5L14 16h-4l-2.5-3.5C7.5 8.5 9 5 12 3zM12 8.5a1.5 1.5 0 1 1 0 3a1.5 1.5 0 1 1 0-3zM7.5 12.5L5 15l1 3 3-1.5M16.5 12.5L19 15l-1 3-3-1.5M10.5 19l1.5 2 1.5-2',
+  crown: 'M4 18h16M4 18L3 7l5 4 4-6 4 6 5-4-1 11',
+  trophy: 'M8 4h8v5a4 4 0 0 1-8 0zM8 6H5c0 3 1 4.5 3 5M16 6h3c0 3-1 4.5-3 5M12 13v4M8.5 20h7M10 17h4',
+  snow: 'M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9M10 4.5l2 1.5 2-1.5M10 19.5l2-1.5 2 1.5',
+  magnet: 'M6 4v8a6 6 0 0 0 12 0V4h-4v8a2 2 0 0 1-4 0V4zM6 8h4M14 8h4',
+  spring: 'M5 4h14M5 20h14M8 17l8-2.5-8-2.5 8-2.5-8-2.5',
+  shirt: 'M8 4L3 7l2 4 2-1v10h10V10l2 1 2-4-5-3c0 1.7-1.8 3-4 3S8 5.7 8 4z',
+  candy: 'M9 9a4.2 4.2 0 1 1 6 6a4.2 4.2 0 1 1-6-6zM9 9L4 7.5 5 4 7.5 5zM15 15l5 1.5-1 3.5-2.5-1z',
+  chest: 'M3 10h18v9H3zM3 10V8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v2M10 10v3h4v-3',
+  gift: 'M4 9h16v4H4zM5.5 13h13v7h-13zM12 9v11M12 9c-2-4-6-4-6-1.5S9 9 12 9zM12 9c2-4 6-4 6-1.5S15 9 12 9z',
+  jump: 'M12 18V5M6.5 10.5L12 5l5.5 5.5M7 21h10',
+  calendar: 'M4 6h16v14H4zM4 10h16M8 3v5M16 3v5',
+  gamepad: 'M7 8h10a4 4 0 0 1 4 4v1.5a3 3 0 0 1-5.4 1.8L14.5 14h-5l-1.1 1.3A3 3 0 0 1 3 13.5V12a4 4 0 0 1 4-4zM7.5 10.5v3M6 12h3M15.5 11h.01M17.5 13h.01',
+  list: 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01',
+  warn: 'M12 4l9.5 16h-19zM12 10v4.5M12 17.5h.01',
+  shield: 'M12 3l8 3v6c0 4.5-3.4 7.7-8 9-4.6-1.3-8-4.5-8-9V6z',
+  target: 'M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16zM12 9a3 3 0 1 1 0 6a3 3 0 1 1 0-6zM12 1.5V6M12 18v4.5M1.5 12H6M18 12h4.5',
+  brick: 'M3 6h18v12H3zM3 12h18M9 6v6M15 12v6',
+  clock: 'M12 3.5a8.5 8.5 0 1 1 0 17a8.5 8.5 0 1 1 0-17zM12 7.5V12l3 2',
+  wheel: 'M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18zM12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4',
+  wrench: 'M14.5 4.5a4.5 4.5 0 0 0-4.3 5.9L4 16.6 7.4 20l6.2-6.2a4.5 4.5 0 0 0 5.9-4.3l-2.7 2.7-2.9-.6-.6-2.9z',
+  chart: 'M4 20h16M7 17v-4M12 17V7M17 17v-7',
+  flag: 'M5 21V4M5 4h12l-2.5 4L17 12H5',
+  sound: 'M4 9.5h4L13 5v14l-5-4.5H4zM16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11',
+  mute: 'M4 9.5h4L13 5v14l-5-4.5H4zM16.5 9.5l5 5M21.5 9.5l-5 5',
+  pumpkin: 'M12 7c-5 0-8 2.8-8 6.5S7 20 12 20s8-2.8 8-6.5S17 7 12 7zM12 7c-2 0-3 3-3 6.5S10 20 12 20M12 7c2 0 3 3 3 6.5S14 20 12 20M12 7c0-2 1-3.5 3-4',
+  tree: 'M12 3l5 6h-3l4.5 6h-13L10 9H7zM12 15v5',
+  propeller: 'M10.5 12a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0M3 9c3-2 6-2 7.5 3M21 9c-3-2-6-2-7.5 3M12 13.5V20M8 20h8',
+  pause: 'M8.5 5v14M15.5 5v14',
+  play: 'M7 4.5v15l12.5-7.5z',
+  gear: 'M12 5.5a6.5 6.5 0 1 1 0 13a6.5 6.5 0 1 1 0-13zM12 9.5a2.5 2.5 0 1 1 0 5a2.5 2.5 0 1 1 0-5zM12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1',
+  ticket: 'M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4zM14.5 7v2M14.5 11v2M14.5 15v2',
+  home: 'M4 11l8-7 8 7M6 9.5V20h12V9.5M10 20v-5h4v5',
+  refresh: 'M19.5 8A8 8 0 1 0 20 13M19.5 3.5V8H15',
+  back: 'M15 5l-7 7 7 7',
+  copy: 'M8 8h11v12H8zM5 16H4V4h11v1',
+  download: 'M12 4v11M7 10.5l5 5 5-5M5 20h14',
+  upload: 'M12 15V4M7 8.5l5-5 5 5M5 20h14',
+  folder: 'M3 6h6l2 2h10v11H3z',
+  music: 'M9 18V5l11-2v13M9 18a2.5 2.5 0 1 1-5 0a2.5 2.5 0 1 1 5 0zM20 16a2.5 2.5 0 1 1-5 0a2.5 2.5 0 1 1 5 0z',
+  image: 'M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15.5 8.5h.01',
+  save: 'M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6',
+  egg: 'M12 3c3.5 0 6.5 5.5 6.5 10a6.5 6.5 0 0 1-13 0C5.5 8.5 8.5 3 12 3zM5.8 12.5l2 1.3 2.1-1.3 2.1 1.3 2.1-1.3 2.1 1.3 2-1.3',
+  bunny: 'M9.5 10C8 6 8 3 9.5 3s2 3 1.5 7M14.5 10c1.5-4 1.5-7 0-7s-2 3-1.5 7M12 9.5a6 5.5 0 1 1 0 11a6 5.5 0 1 1 0-11zM10 14h.01M14 14h.01M11 17h2'
+};
+const EMOJI_ICON = {};
+[
+  ['coin', '🪙💰🐷🍀'], ['star', '⭐🌠'], ['check', '✓✅✔'], ['cross', '❌'], ['lock', '🔒'],
+  ['medal', '🎖🏅🥉🥈🥇'], ['gem', '💎'], ['fire', '🔥☄'], ['rocket', '🚀'], ['crown', '👑'], ['trophy', '🏆'],
+  ['snow', '❄⛄'], ['magnet', '🧲'], ['spring', '🌀'], ['shirt', '👕🎭'], ['candy', '🍬'], ['gift', '🎁'],
+  ['chest', '📦🗝🎰'], ['jump', '🦘🦿'], ['calendar', '📅📆'], ['gamepad', '🎮🕹'], ['list', '📋'], ['warn', '⚠'],
+  ['shield', '🛡😇'], ['target', '👾⚔🏹🎯🔫'], ['brick', '🧱'], ['clock', '⏱⌛🕐'], ['wheel', '🎡'], ['wrench', '🛠'],
+  ['chart', '📈📊'], ['flag', '🏟🧭🗺🏔🌌'], ['sound', '🔊'], ['mute', '🔇'], ['pumpkin', '🎃'], ['tree', '🎄'],
+  ['propeller', '🧢'], ['pause', '⏸'], ['gear', '⚙'], ['ticket', '🎟'], ['home', '🏠'], ['refresh', '🔄'],
+  ['music', '🎵'], ['image', '🎨'], ['save', '💾'], ['copy', '📤'], ['download', '⬇'], ['upload', '📥'], ['folder', '📂'], ['egg', '🥚🐣'], ['bunny', '🐰🐇']
+].forEach(([name, list]) => { for (const ch of Array.from(list)) EMOJI_ICON[ch] = name; });
+
+// эмодзи (в т. ч. составные через ZWJ) + пробел после него
+const EMOJI_RE = /(?:[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{2300}-\u{23FF}]️?(?:‍[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}]️?)*)( ?)/gu;
+const SVGNS = 'http://www.w3.org/2000/svg';
+function iconEl(name) {
+  const svg = document.createElementNS(SVGNS, 'svg');
+  svg.setAttribute('class', 'ic ic-' + name);
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  const u = document.createElementNS(SVGNS, 'use');
+  u.setAttribute('href', '#i-' + name);
+  u.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', '#i-' + name);
+  svg.appendChild(u);
+  return svg;
+}
+function iconHTML(name) { return `<svg class="ic ic-${name}" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-${name}"></use></svg>`; }
+(function buildSprite() {
+  let html = '<svg id="iconSprite" width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">';
+  for (const k in ICON_PATHS) html += `<symbol id="i-${k}" viewBox="0 0 24 24"><path d="${ICON_PATHS[k]}"/></symbol>`;
+  document.body.insertAdjacentHTML('afterbegin', html + '</svg>');
+})();
+function iconizeText(node) {
+  const txt = node.nodeValue;
+  EMOJI_RE.lastIndex = 0;
+  if (!txt || !EMOJI_RE.test(txt)) return;
+  EMOJI_RE.lastIndex = 0;
+  const frag = document.createDocumentFragment();
+  let last = 0, m;
+  while ((m = EMOJI_RE.exec(txt))) {
+    if (m.index > last) frag.appendChild(document.createTextNode(txt.slice(last, m.index)));
+    const base = Array.from(m[0])[0];
+    const name = EMOJI_ICON[base];
+    if (name) { frag.appendChild(iconEl(name)); if (m[1]) frag.appendChild(document.createTextNode(' ')); }
+    last = m.index + m[0].length;
+  }
+  if (last < txt.length) frag.appendChild(document.createTextNode(txt.slice(last)));
+  if (node.parentNode) node.parentNode.replaceChild(frag, node);
+}
+const ICON_SKIP = { SCRIPT: 1, STYLE: 1, TEXTAREA: 1, INPUT: 1, svg: 1, CANVAS: 1 };
+function iconize(root) {
+  if (!root) return;
+  if (root.nodeType === 3) { iconizeText(root); return; }
+  if (root.nodeType !== 1 || ICON_SKIP[root.nodeName]) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(n) { const p = n.parentNode; return p && (ICON_SKIP[p.nodeName] || (p.closest && p.closest('svg'))) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; }
+  });
+  const list = [];
+  while (walker.nextNode()) list.push(walker.currentNode);
+  list.forEach(iconizeText);
+}
+(function watchIcons() {
+  const root = document.querySelector('.game-wrapper') || document.body;
+  iconize(root);
+  if (!window.MutationObserver) return;
+  new MutationObserver((muts) => {
+    for (const m of muts) {
+      if (m.type === 'characterData') iconize(m.target);
+      else for (const n of m.addedNodes) iconize(n);
+    }
+  }).observe(root, { childList: true, subtree: true, characterData: true });
+})();
+// Те же иконки для холста (колесо фортуны, замки на миниатюрах)
+const iconPathCache = {};
+function drawIcon(c, name, x, y, size, color, fill, lw) {
+  const d = ICON_PATHS[name];
+  if (!d || typeof Path2D === 'undefined') return;
+  const p = iconPathCache[name] || (iconPathCache[name] = new Path2D(d));
+  c.save();
+  c.translate(x - size / 2, y - size / 2);
+  c.scale(size / 24, size / 24);
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  if (fill) { c.fillStyle = fill; c.fill(p); }
+  c.strokeStyle = color || '#26231f'; c.lineWidth = lw || 2;
+  c.stroke(p);
+  c.restore();
+}
+
+// ==========================================================
 // 1. ЗВУКОВОЙ ДВИЖОК (Web Audio API: слои, шум, фильтры, огибающие)
 // ==========================================================
 const AudioCtor = window.AudioContext || window.webkitAudioContext;
@@ -544,7 +690,8 @@ const MONSTER_TYPES = {
   riftling:   { w: 46, h: 42, hp: 1, move: 'sine', speed: 2.4, amp: 58 },
   // монстры сезонных событий
   jackghost:  { w: 44, h: 46, hp: 1, move: 'sine', speed: 1.5, amp: 44 },
-  snowgremlin:{ w: 44, h: 42, hp: 2, move: 'patrol', speed: 1.3, range: 36 }
+  snowgremlin:{ w: 44, h: 42, hp: 2, move: 'patrol', speed: 1.3, range: 36 },
+  evilbunny:  { w: 44, h: 48, hp: 1, move: 'patrol', speed: 1.7, range: 46 }
 };
 
 // ==========================================================
@@ -1356,6 +1503,32 @@ const SKINS = [
     }
   },
   {
+    id: 'bunny', name: 'Пасхальный Кролик', rarity: 'event', rarityName: 'Событие', event: 'easter', priceCur: 120,
+    desc: 'Длинные уши, корзинка и расписные яйца вместо снарядов. Только на Пасху!', perkText: '🥚 Яйца ×2', perk: { cur: 2 },
+    price: 0, icon: '🐰',
+    skin: '#f6f2ee', torso: '#b39ddb', legs: '#9575cd', shoe: '#ffffff', arm: '#f6f2ee', hand: '#f6f2ee', noEyes: true, bullet: 'orb', bulletColor: '#f48fb1',
+    back(c, t) {
+      const w = Math.sin(t * 0.006) * 0.08;
+      for (const [x, r] of [[-6, -0.2], [5, 0.15]]) {
+        c.save(); c.translate(x, -18); c.rotate(r + w);
+        ell(c, 0, -12, 5.5, 13, '#f6f2ee'); ell(c, 0, -11, 2.4, 9, '#f8bbd0', false);
+        c.restore();
+      }
+      ci(c, -13, 14, 5, '#ffffff');
+    },
+    look(c) {
+      ell(c, 3.5, -8, 2.8, 3.6, '#3e2723', false); ell(c, 11, -8, 2.5, 3.4, '#3e2723', false);
+      ci(c, 4.4, -9.4, 1, '#fff', false); ci(c, 11.8, -9.4, 0.9, '#fff', false);
+      ell(c, 1, -1, 3, 1.8, 'rgba(244,143,177,0.6)', false); ell(c, 14, -1, 2.6, 1.8, 'rgba(244,143,177,0.6)', false);
+      pg(c, [[6.5, -3], [9.5, -3], [8, -1]], '#f06292');
+      rr(c, 6.3, 0, 3.4, 3.4, 0.8, '#fff');
+      c.strokeStyle = '#bdbdbd'; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(11, -1); c.lineTo(18, -3); c.moveTo(11, 0.5); c.lineTo(18, 1); c.stroke();
+      c.strokeStyle = OUT; c.lineWidth = 2;
+      pg(c, [[-8, 5], [0, 10], [8, 5]], '#81c784');
+    }
+  },
+  {
     id: 'ranger', name: 'Сезонный Рейнджер', rarity: 'season', rarityName: 'Сезон', season: true,
     desc: 'Броня чемпиона сезона. Награда 30-го уровня премиум-пропуска.', perkText: '⭐ Опыт +20%', perk: { xp: 1.2 },
     price: 0, icon: '🎖',
@@ -1894,6 +2067,31 @@ function drawMonster(c, m, t) {
       const fc = 'rgba(255,235,59,' + gl.toFixed(2) + ')';
       pg(c, [[-9, -13], [-3, -13], [-6, -8]], fc, false); pg(c, [[3, -13], [9, -13], [6, -8]], fc, false);
       pg(c, [[-8, -4], [-4, -1], [0, -4], [4, -1], [8, -4], [6, 0], [-6, 0]], fc, false);
+      break;
+    }
+    case 'evilbunny': {
+      const hop = Math.abs(Math.sin(ph * 4)) * -4;
+      c.translate(0, hop);
+      const ew = Math.sin(ph * 3) * 0.12;
+      for (const sx of [-1, 1]) {
+        c.save(); c.translate(sx * 6, -12); c.rotate(sx * 0.18 + ew * sx);
+        ell(c, 0, -11, 4.6, 11, '#ece6f2'); ell(c, 0, -10, 2, 7.5, '#f48fb1', false);
+        c.restore();
+      }
+      ell(c, 0, 11, 14, 12, '#ece6f2');
+      ell(c, 0, 14, 7, 7, '#ffffff', false);
+      ci(c, 0, -4, 12, '#ece6f2');
+      c.lineWidth = 2.4; c.beginPath(); c.moveTo(-9, -10); c.lineTo(-3, -7); c.moveTo(9, -10); c.lineTo(3, -7); c.stroke(); c.lineWidth = 2;
+      ci(c, -5, -4, 2.6, '#d32f2f', false); ci(c, 5, -4, 2.6, '#d32f2f', false);
+      ci(c, -5, -4, 1, '#111', false); ci(c, 5, -4, 1, '#111', false);
+      pg(c, [[-2, 1], [2, 1], [0, 3]], '#f06292', false);
+      rr(c, -3, 4, 6, 5, 1, '#fff');
+      c.beginPath(); c.moveTo(0, 4); c.lineTo(0, 9); c.stroke();
+      c.save(); c.translate(15, 9); c.rotate(0.3 + Math.sin(ph * 2) * 0.1);
+      ell(c, 0, 0, 6, 8, '#81d4fa');
+      c.strokeStyle = '#f06292'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-5.5, -1); c.lineTo(-2, 1.5); c.lineTo(1.5, -1); c.lineTo(5.5, 1.5); c.stroke();
+      c.restore();
+      c.strokeStyle = OUT; c.lineWidth = 2;
       break;
     }
     case 'snowgremlin': {
@@ -2604,7 +2802,26 @@ function seededRand(seed) {
 }
 
 // ---------- Сезонные события ----------
-// Проверить событие в любой день: открой игру с ?event=halloween или ?event=newyear
+// Проверить событие в любой день: открой игру с ?event=halloween, ?event=newyear или ?event=easter
+// Пасха каждый год в разные даты: событие идёт от недели до католической Пасхи до недели после православной.
+function easterWestern(y) {
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4;
+  const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mo = Math.floor((h + l - 7 * m + 114) / 31), da = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(y, mo - 1, da);
+}
+function easterOrthodox(y) {
+  const a = y % 4, b = y % 7, c = y % 19, d = (19 * c + 15) % 30, e = (2 * a + 4 * b - d + 34) % 7;
+  const mo = Math.floor((d + e + 114) / 31), da = ((d + e + 114) % 31) + 1;
+  return new Date(y, mo - 1, da + 13); // юлианская дата → григорианская (1900–2099)
+}
+function easterRange(y) {
+  const w = easterWestern(y), o = easterOrthodox(y);
+  const a = new Date(Math.min(w, o)); a.setDate(a.getDate() - 7);
+  const b = new Date(Math.max(w, o)); b.setDate(b.getDate() + 7);
+  return [a, b];
+}
 const EVENTS = {
   halloween: {
     id: 'halloween', name: 'Хэллоуин', icon: '🎃', cur: '🍬', curName: 'конфет', color: '#ff8f1f',
@@ -2615,6 +2832,11 @@ const EVENTS = {
     id: 'newyear', name: 'Новый год', icon: '🎄', cur: '❄️', curName: 'снежинок', color: '#4fc3f7',
     monster: 'snowgremlin', skin: 'santa', from: [12, 15], to: [1, 14],
     desc: 'Платформы в снегу и гирляндах, на аренах хулиганят снежные гремлины. Собирай снежинки ❄️ и забери праздничный скин, пока идёт событие.'
+  },
+  easter: {
+    id: 'easter', name: 'Пасха', icon: '🐰', cur: '🥚', curName: 'яиц', color: '#9ccc65',
+    monster: 'evilbunny', skin: 'bunny', range: easterRange,
+    desc: 'Платформы в весенней траве и расписных яйцах, а по аренам скачут злые кролики. Собирай яйца 🥚 и обменяй их на скин Пасхального Кролика.'
   }
 };
 var EV_KEY = '';           // id текущего события ('' — нет события); используется в кэше спрайтов платформ
@@ -2633,6 +2855,11 @@ function getEvent() {
     const md = (d.getMonth() + 1) * 100 + d.getDate();
     for (const k in EVENTS) {
       const ev = EVENTS[k];
+      if (ev.range) {
+        const r = ev.range(d.getFullYear()), end = new Date(r[1]); end.setDate(end.getDate() + 1);
+        if (d >= r[0] && d < end) eventCache = ev;
+        continue;
+      }
       const a = ev.from[0] * 100 + ev.from[1], b = ev.to[0] * 100 + ev.to[1];
       if (a <= b ? (md >= a && md <= b) : (md >= a || md <= b)) eventCache = ev;
     }
@@ -2649,6 +2876,11 @@ function eventEndsMs(ev) {
   if (!ev) return 0;
   const d = new Date();
   let y = d.getFullYear();
+  if (ev.range) {
+    let r = ev.range(y), end = new Date(r[1]); end.setDate(end.getDate() + 1);
+    if (end - d < 0) { r = ev.range(y + 1); end = new Date(r[1]); end.setDate(end.getDate() + 1); }
+    return end - d;
+  }
   if (ev.to[0] < ev.from[0] && d.getMonth() + 1 >= ev.from[0]) y += 1;
   let ms = new Date(y, ev.to[0] - 1, ev.to[1] + 1) - d;
   if (ms < 0) ms = new Date(y + 1, ev.to[0] - 1, ev.to[1] + 1) - d;
@@ -2671,6 +2903,20 @@ function drawEventDecor(c, p) {
       ell(c, p.x + 11, p.y - 4, 6, 5, '#ff8f1f');
       c.fillStyle = '#558b2f'; c.fillRect(p.x + 10, p.y - 11, 2.4, 3.5);
       c.fillStyle = '#3e2723'; c.fillRect(p.x + 8, p.y - 6, 1.8, 1.8); c.fillRect(p.x + 12.4, p.y - 6, 1.8, 1.8);
+    }
+  } else if (EV_KEY === 'easter') {
+    c.strokeStyle = '#7cb342'; c.lineWidth = 1.6; c.lineCap = 'round';
+    c.beginPath();
+    for (let x = p.x + 6; x < p.x + p.w - 4; x += 6) { const hh = 3 + ((x * 13) % 4); c.moveTo(x, p.y + 1); c.lineTo(x - 1.5, p.y - hh); }
+    c.stroke();
+    if (p.type === 'normal' || p.type === 'moving') {
+      const cols = ['#81d4fa', '#f48fb1', '#fff176', '#ce93d8'];
+      const col = cols[Math.floor(p.w + (p.type === 'moving' ? 1 : 0)) % 4];
+      c.strokeStyle = OUT; c.lineWidth = 1.4;
+      ell(c, p.x + p.w - 12, p.y - 5, 4.6, 6, col);
+      c.strokeStyle = '#ffffff'; c.lineWidth = 1.2;
+      c.beginPath(); c.moveTo(p.x + p.w - 16, p.y - 5); c.lineTo(p.x + p.w - 14, p.y - 3.5); c.lineTo(p.x + p.w - 12, p.y - 5); c.lineTo(p.x + p.w - 10, p.y - 3.5); c.lineTo(p.x + p.w - 8, p.y - 5); c.stroke();
+      ci(c, p.x + 9, p.y - 1.5, 2.2, '#fff59d', false); ci(c, p.x + 9, p.y - 1.5, 0.9, '#ff8f00', false);
     }
   } else if (EV_KEY === 'newyear') {
     c.fillStyle = '#ffffff'; c.strokeStyle = 'rgba(120,160,200,0.8)'; c.lineWidth = 1;
@@ -2711,14 +2957,14 @@ const CHEST_KEYS = Object.keys(CHESTS);
 // ---------- Колесо фортуны (раз в день бесплатно) ----------
 const WHEEL_COST = 120;
 const WHEEL = [
-  { r: { t: 'coins', n: 50 }, w: 22, label: '50', icon: '🪙', col: '#5b9bff' },
-  { r: { t: 'boost', k: 'magnet', n: 1 }, w: 12, label: 'Магнит', icon: '🧲', col: '#c06bf0' },
-  { r: { t: 'coins', n: 120 }, w: 18, label: '120', icon: '🪙', col: '#2ed3b7' },
-  { r: { t: 'boost', k: 'shield', n: 1 }, w: 10, label: 'Щит', icon: '🛡', col: '#ff7043' },
-  { r: { t: 'coins', n: 250 }, w: 12, label: '250', icon: '🪙', col: '#26a69a' },
-  { r: { t: 'boost', k: 'jet', n: 1 }, w: 10, label: 'Джет', icon: '🚀', col: '#ff5c8a' },
-  { r: { t: 'chest', k: 'common' }, w: 12, label: 'Сундук', icon: '📦', col: '#8bc34a' },
-  { r: { t: 'coins', n: 1000 }, w: 4, label: '1000', icon: '💎', col: '#ffb300' }
+  { r: { t: 'coins', n: 50 }, w: 22, label: '50', icon: 'coin', col: '#fffbf2' },
+  { r: { t: 'boost', k: 'magnet', n: 1 }, w: 12, label: 'Магнит', icon: 'magnet', col: '#a9d4f5' },
+  { r: { t: 'coins', n: 120 }, w: 18, label: '120', icon: 'coin', col: '#fffbf2' },
+  { r: { t: 'boost', k: 'shield', n: 1 }, w: 10, label: 'Щит', icon: 'shield', col: '#f5b3a1' },
+  { r: { t: 'coins', n: 250 }, w: 12, label: '250', icon: 'coin', col: '#fffbf2' },
+  { r: { t: 'boost', k: 'jet', n: 1 }, w: 10, label: 'Джет', icon: 'rocket', col: '#b9e0a5' },
+  { r: { t: 'chest', k: 'common' }, w: 12, label: 'Сундук', icon: 'chest', col: '#fffbf2' },
+  { r: { t: 'coins', n: 1000 }, w: 4, label: '1000', icon: 'gem', col: '#f7d774' }
 ];
 
 // ---------- Прокачка бонусов ----------
@@ -3002,7 +3248,7 @@ function gainCoins(n) {
 }
 
 let toastTimer = null;
-function showArenaToast(title) { showToastText(`🏆 НОВАЯ АРЕНА ОТКРЫТА: ${title}!`); }
+function showArenaToast(title) { showToastText(`🏆 Открыта новая арена: ${title}`); }
 function showToastText(text) {
   const toast = document.getElementById('arenaToast');
   toast.textContent = text;
@@ -3584,7 +3830,7 @@ function update(dt) {
       climb = newHeightScore;
       score += delta * comboMult();
       addXP(delta * 1.5);
-      if (!hardWarned && climb >= HARD_START) { hardWarned = true; showToastText('⚠ ВЫШЕ 10 000: СЛОЖНОСТЬ РАСТЁТ!'); playSound('warn'); }
+      if (!hardWarned && climb >= HARD_START) { hardWarned = true; showToastText('⚠ Выше 10 000 — сложность растёт'); playSound('warn'); }
     }
     updateHUD();
 
@@ -3759,6 +4005,14 @@ function drawEventPickup(c, coin) {
     c.stroke();
     c.strokeStyle = '#4fc3f7'; c.lineWidth = 1.6; c.stroke();
     ci(c, 0, 0, 3, '#fff');
+  } else if (EV_KEY === 'easter') {
+    const cols = ['#81d4fa', '#f48fb1', '#fff176', '#ce93d8'];
+    const col = cols[Math.floor(Math.abs(coin.x * 7 + coin.r)) % 4];
+    c.beginPath(); c.moveTo(0, -12); c.bezierCurveTo(8, -12, 10, 2, 9, 5); c.bezierCurveTo(8, 11, -8, 11, -9, 5); c.bezierCurveTo(-10, 2, -8, -12, 0, -12); c.closePath();
+    c.fillStyle = col; c.fill(); c.stroke();
+    c.strokeStyle = '#ffffff'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(-9, 0); c.lineTo(-5, 3); c.lineTo(-1, 0); c.lineTo(3, 3); c.lineTo(7, 0); c.lineTo(9, 1.5); c.stroke();
+    ci(c, -3, -6, 1.6, '#ffffff', false); ci(c, 3, -5, 1.2, '#ffffff', false);
   } else {
     pg(c, [[-8, 0], [-16, -7], [-16, 7]], '#ffca28');
     pg(c, [[8, 0], [16, -7], [16, 7]], '#ffca28');
@@ -3772,22 +4026,22 @@ function drawEventPickup(c, coin) {
 // Счётчик комбо: рисуется прямо на холсте (без перестройки страницы), только когда комбо идёт
 function drawComboBadge() {
   const m = comboMult();
-  const cols = ['#9aa3c7', '#4fc3f7', '#69f0ae', '#ffd54f', '#ff7043', '#ff4081'];
+  const cols = ['#6f675b', '#3b82c4', '#3f9a34', '#c98a00', '#d9542b', '#c2185b'];
   const col = cols[Math.min(m, 5)];
   const k = 1 + (comboPulse / 10) * 0.12;
   const w = 128, h = 30, x = W / 2, y = comboY;
   ctx.save();
   ctx.translate(x, y + h / 2);
   ctx.scale(k, k);
-  ctx.fillStyle = 'rgba(16,19,36,0.82)';
-  ctx.strokeStyle = col; ctx.lineWidth = 2;
+  ctx.fillStyle = '#fffbf2';
+  ctx.strokeStyle = '#26231f'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, 15); ctx.fill(); ctx.stroke();
   ctx.fillStyle = col;
   ctx.fillRect(-w / 2 + 12, h / 2 - 6, (w - 24) * clamp(comboTimer / COMBO_TIME, 0, 1), 3);
   ctx.font = '900 14px system-ui, -apple-system, sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#fff';
-  ctx.fillText('КОМБО ' + combo, -14, -2);
+  ctx.fillStyle = '#26231f';
+  ctx.fillText('комбо ' + combo, -14, -2);
   ctx.fillStyle = col;
   ctx.fillText('×' + m, 40, -2);
   ctx.restore();
@@ -3961,10 +4215,10 @@ function updateAllUI() {
   $('tileStatsSub').textContent = `${formatNum(saveData.stats.gamesPlayed)} игр`;
 
   $('menuSkinName').textContent = getSkin().name;
-  $('menuPlayArena').textContent = `${sel.icon} ${sel.name}`;
-  $('menuArenaNum').textContent = `АРЕНА ${pv.id} / ${ARENAS.length}`;
-  $('menuArenaMult').textContent = `⭐ ОПЫТ ×${xpMult(pv).toFixed(1)}`;
-  $('menuArenaTitle').textContent = `${pv.icon} ${pv.name}`;
+  $('menuPlayArena').textContent = sel.name;
+  $('menuArenaNum').textContent = `Арена ${pv.id} из ${ARENAS.length}`;
+  $('menuArenaMult').textContent = `⭐ опыт ×${xpMult(pv).toFixed(1)}`;
+  $('menuArenaTitle').textContent = pv.name;
   $('menuArenaDesc').textContent = pv.desc;
   $('menuArenaTwist').textContent = pv.twist;
   updateAvatar();
@@ -3996,7 +4250,7 @@ function updateAllUI() {
     const span = next.minXP - ha.minXP;
     const pct = Math.min(100, (Math.max(0, saveData.totalXP - ha.minXP) / span) * 100);
     $('menuXpFill').style.width = `${pct}%`;
-    $('menuXpLabel').textContent = `До арены ${next.id}: ${next.icon} ${next.name}`;
+    $('menuXpLabel').textContent = `До арены ${next.id}: ${next.name}`;
     $('menuXpText').textContent = `${fmtXP(Math.floor(saveData.totalXP))} / ${fmtXP(next.minXP)}`;
   } else {
     $('menuXpFill').style.width = '100%';
@@ -4016,7 +4270,17 @@ function updateAllUI() {
     if (sx === null) return;
     const dx = e.clientX - sx, dy = e.clientY - sy;
     sx = null;
-    if (Math.abs(dx) > 36 && Math.abs(dx) > Math.abs(dy)) { playSound('click'); stepPreview(dx < 0 ? 1 : -1); }
+    if (Math.abs(dx) > 36 && Math.abs(dx) > Math.abs(dy)) { playSound('click'); stepPreview(dx < 0 ? 1 : -1); stage._swiped = true; }
+    else if (Math.abs(dx) > 10 || Math.abs(dy) > 10) stage._swiped = true;
+  });
+  // Нажатие по витрине показывает / прячет ленту всех арен
+  stage.addEventListener('click', (e) => {
+    if (e.target.closest('button')) return;
+    if (stage._swiped) { stage._swiped = false; return; }
+    playSound('click');
+    const open = stripEl.classList.toggle('collapsed') === false;
+    stage.classList.toggle('strip-open', open);
+    if (open) { stripScrolledTo = -1; updateArenaStrip(); }
   });
   stage.addEventListener('pointercancel', () => { sx = null; });
 })();
@@ -4245,7 +4509,7 @@ function renderArenas() {
     cc.scale(128 / 362, 96 / 272);
     drawArenaScene(cc, arena, 362, 272, 0, 0);
     cc.restore();
-    if (!unlocked) { cc.fillStyle = 'rgba(8,10,20,0.6)'; cc.fillRect(0, 0, 128, 96); cc.font = '30px serif'; cc.textAlign = 'center'; cc.fillText('🔒', 64, 58); }
+    if (!unlocked) { cc.fillStyle = 'rgba(38,35,31,0.55)'; cc.fillRect(0, 0, 128, 96); drawIcon(cc, 'lock', 64, 48, 30, '#ffffff', null, 2.2); }
     card.querySelector('button').addEventListener('click', () => {
       if (!unlocked || isSelected) return;
       saveData.selectedArena = arena.id; previewIdx = arena.id;
@@ -4261,7 +4525,7 @@ function renderStats() {
   const items = [
     { label: '🎮 Сыграно матчей', val: formatNum(s.gamesPlayed) },
     { label: '🏆 Лучший счёт (все арены)', val: formatNum(saveData.bestScore) },
-    ...ARENAS.map((a) => ({ label: `${a.icon} Рекорд: ${a.name}`, val: saveData.arenaBest[a.id] ? formatNum(saveData.arenaBest[a.id]) : '—' })),
+    ...ARENAS.map((a) => ({ label: `Рекорд: ${a.name}`, val: saveData.arenaBest[a.id] ? formatNum(saveData.arenaBest[a.id]) : '—' })),
     { label: '📈 Суммарный счёт', val: formatNum(s.totalScore) },
     { label: '⭐ Нафармлено опыта', val: `${formatNum(saveData.totalXP)} XP` },
     { label: '🏟 Открыто арен', val: `${saveData.highestUnlockedArena} из ${ARENAS.length}` },
@@ -4330,7 +4594,7 @@ function triggerGameOver() {
     player.vy = SPRING_FORCE;
     hazards = hazards.filter((hz) => hz.kind === 'fireball' ? false : hz.kind === 'faller' ? !hz.falling : false);
     playSound('powerup');
-    showToastText('😇 ВОСКРЕШЕНИЕ! Герой спасён');
+    showToastText('😇 Второй шанс — герой спасён');
     return;
   }
   gameState = 'GAMEOVER';
@@ -5097,23 +5361,22 @@ function buildWheelFace() {
     const a0 = -Math.PI / 2 + i * seg;
     c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, R, a0, a0 + seg); c.closePath();
     c.fillStyle = WHEEL[i].col; c.fill();
-    c.fillStyle = 'rgba(255,255,255,' + (i % 2 ? 0.08 : 0.16) + ')'; c.fill();
-    c.strokeStyle = 'rgba(10,12,30,0.55)'; c.lineWidth = 3; c.stroke();
+    c.strokeStyle = '#26231f'; c.lineWidth = 4; c.stroke();
+    c.save();
+    c.rotate(a0 + seg / 2);
+    c.translate(R * 0.72, 0); c.rotate(Math.PI / 2);
+    const ic = WHEEL[i].icon;
+    drawIcon(c, ic, 0, 0, S * 0.1, '#26231f', ic === 'coin' ? '#f2c230' : ic === 'gem' ? '#a9d4f5' : null, 2.2);
+    c.restore();
     c.save();
     c.rotate(a0 + seg / 2);
     c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.font = `${Math.round(S * 0.075)}px system-ui, sans-serif`;
-    c.fillText(WHEEL[i].icon, R * 0.7, 0);
-    c.font = `900 ${Math.round(S * 0.045)}px system-ui, sans-serif`;
-    c.fillStyle = '#fff'; c.strokeStyle = 'rgba(0,0,0,0.45)'; c.lineWidth = 4;
-    c.strokeText(WHEEL[i].label, R * 0.44, 0); c.fillText(WHEEL[i].label, R * 0.44, 0);
+    c.font = `800 ${Math.round(S * 0.046)}px system-ui, -apple-system, sans-serif`;
+    c.fillStyle = '#26231f';
+    c.fillText(WHEEL[i].label, R * 0.42, 0);
     c.restore();
   }
-  c.beginPath(); c.arc(0, 0, R, 0, Math.PI * 2); c.lineWidth = 10; c.strokeStyle = '#14172a'; c.stroke();
-  for (let i = 0; i < n * 2; i++) {
-    const a = (i / (n * 2)) * Math.PI * 2;
-    ci(c, Math.cos(a) * R, Math.sin(a) * R, 4.5, i % 2 ? '#ffe082' : '#fff8e1', false);
-  }
+  c.beginPath(); c.arc(0, 0, R, 0, Math.PI * 2); c.lineWidth = 6; c.strokeStyle = '#26231f'; c.stroke();
   wheel.face = f;
 }
 function drawWheel(t) {
@@ -5137,11 +5400,10 @@ function drawWheel(t) {
   wctx.rotate(wheel.angle);
   wctx.drawImage(wheel.face, -S / 2, -S / 2);
   wctx.setTransform(1, 0, 0, 1, 0, 0);
-  wctx.strokeStyle = '#14172a'; wctx.lineWidth = 4; wctx.lineJoin = 'round';
-  ci(wctx, S / 2, S / 2, S * 0.09, '#fffdf6');
-  wctx.font = `${Math.round(S * 0.07)}px system-ui`; wctx.textAlign = 'center'; wctx.textBaseline = 'middle';
-  wctx.fillText('🎰', S / 2, S / 2 + 2);
-  pg(wctx, [[S / 2 - 16, 2], [S / 2 + 16, 2], [S / 2, 40]], '#ff3d57');
+  wctx.strokeStyle = '#26231f'; wctx.lineWidth = 4; wctx.lineJoin = 'round';
+  ci(wctx, S / 2, S / 2, S * 0.07, '#fffbf2');
+  ci(wctx, S / 2, S / 2, S * 0.02, '#26231f', false);
+  pg(wctx, [[S / 2 - 15, 4], [S / 2 + 15, 4], [S / 2, 40]], '#e0574f');
 }
 function wheelFree() { return saveData.wheelDay !== todayKey(); }
 function spinWheel() {
@@ -5279,24 +5541,57 @@ function claimPass(l, prem, quiet) {
   return grantReward(prem ? passPrem(l) : passFree(l));
 }
 function seasonName() { const [y, m] = saveData.pass.season.split('-'); return `${MONTHS_RU[Number(m) - 1] || ''} ${y}`; }
+function passLabel(r) {
+  switch (r.t) {
+    case 'coins': return '+' + formatNum(r.n);
+    case 'boost': return BOOSTS[r.k].name + (r.n > 1 ? ' · ' + r.n + ' шт.' : '');
+    case 'chest': return CHESTS[r.k].short + ' сундук';
+    case 'skin': return SKIN_MAP[r.id] ? SKIN_MAP[r.id].name : 'Скин';
+  }
+  return rewardView(r).short;
+}
+function drawPassSkin(cv, id) {
+  const sk = SKIN_MAP[id];
+  if (!sk || !cv) return;
+  const c = cv.getContext('2d');
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, cv.width, cv.height);
+  c.scale(cv.width / 44, cv.height / 44);
+  drawCharacter(c, sk, 22, 25, 1, { scale: 0.72, t: 0 });
+}
 function renderPass() {
   ensureSeason();
   const P = saveData.pass, L = passLevel();
   const into = P.sp - L * PASS_SP;
+  const pct = L >= PASS_LEVELS ? 100 : (into / PASS_SP) * 100;
+  const owned = saveData.ownedSkins.includes('ranger');
   $id('passHead').innerHTML = `
-    <div class="pass-top"><div><div class="pass-season">Сезон «${seasonName()}»</div><small>Закончится через ${fmtLeft(msToSeasonEnd())}</small></div>
-      <div class="pass-lvl"><b>${L}</b><small>из ${PASS_LEVELS}</small></div></div>
-    <div class="q-bar big"><i style="width:${L >= PASS_LEVELS ? 100 : (into / PASS_SP) * 100}%"></i></div>
-    <div class="card-desc">${L >= PASS_LEVELS ? 'Максимальный уровень сезона!' : `${into} / ${PASS_SP} 🎖 до уровня ${L + 1}`} • очки сезона дают матчи (за счёт и монстров) и задания</div>
-    ${P.premium ? '<div class="pass-prem-on">💎 Премиум-линия активна</div>'
-      : `<button id="passBuyBtn" class="btn btn-gold btn-sm">💎 Открыть премиум за ${formatNum(PASS_PREMIUM_PRICE)} 🪙</button>`}`;
+    <div class="ps-top">
+      <div class="ps-lvl"><small>уровень</small><b>${L}</b><small>из ${PASS_LEVELS}</small></div>
+      <div class="ps-info">
+        <div class="ps-season">Сезон «${seasonName()}»</div>
+        <div class="ps-left">🕐 закончится через ${fmtLeft(msToSeasonEnd())}</div>
+        <div class="ps-bar"><i style="width:${pct.toFixed(1)}%"></i></div>
+        <div class="ps-bar-t">${L >= PASS_LEVELS ? 'Сезон пройден полностью!' : `<b>${into}</b> / ${PASS_SP} очков до ${L + 1} уровня`}</div>
+      </div>
+    </div>
+    <div class="ps-prem ${P.premium ? 'on' : ''}">
+      <canvas class="ps-prem-skin" width="132" height="132"></canvas>
+      <div class="ps-prem-txt">
+        <b>${P.premium ? 'Премиум активен' : 'Премиум-пропуск'}</b>
+        <small>${P.premium ? 'Забирай награды обеих линий.' : 'Вторая линия наград: больше монет, золотые сундуки и'} скин «Сезонный Рейнджер» на 30 уровне${owned ? ' (уже твой)' : ''}.</small>
+        ${P.premium ? '' : `<button id="passBuyBtn" class="btn btn-gold btn-sm">Открыть за ${formatNum(PASS_PREMIUM_PRICE)} 🪙</button>`}
+      </div>
+    </div>
+    <div class="ps-how">Очки сезона дают матчи (высота и монстры) и задания.</div>`;
+  drawPassSkin($id('passHead').querySelector('.ps-prem-skin'), 'ranger');
   const bb = $id('passBuyBtn');
   if (bb) bb.addEventListener('click', () => {
     if (saveData.coins < PASS_PREMIUM_PRICE) { playSound('break'); metaToast('🪙', 'Не хватает монет', `Премиум стоит ${formatNum(PASS_PREMIUM_PRICE)} 🪙`); return; }
     saveData.coins -= PASS_PREMIUM_PRICE;
     P.premium = true;
     metaSave(); playSound('arena_up');
-    metaToast('💎', 'Премиум-линия открыта!', 'Забирай награды правой колонки');
+    metaToast('💎', 'Премиум открыт!', 'Забирай награды правой колонки');
     renderPass(); updateAllUI();
   });
   const cell = (l, prem) => {
@@ -5305,15 +5600,24 @@ function renderPass() {
     const got = (prem ? P.cp : P.cf).includes(l);
     const locked = prem && !P.premium;
     const ready = !got && !locked && l <= L;
-    const cls = got ? 'got' : ready ? 'ready' : (locked ? 'plock' : 'lock');
-    return `<button class="pass-cell ${prem ? 'prem' : 'free'} ${cls}" data-l="${l}" data-p="${prem ? 1 : 0}" ${ready ? '' : 'disabled'}>
-      <span class="pc-ico">${v.ico}</span><span class="pc-t">${r.t === 'skin' ? 'Эксклюзив' : v.short}</span>${got ? '<i>✓</i>' : locked ? '<i>🔒</i>' : ''}</button>`;
+    const big = r.t === 'chest' || r.t === 'skin';
+    const st = got ? 'got' : ready ? 'ready' : locked ? 'plock' : 'lock';
+    const ico = r.t === 'skin' ? `<canvas class="ps-mini" data-skin="${r.id}" width="80" height="80"></canvas>` : `<span class="ps-ico">${v.ico}</span>`;
+    const mark = got ? '<span class="ps-mark ok">✓</span>' : ready ? '<span class="ps-mark take">Забрать</span>' : locked ? '<span class="ps-mark">🔒</span>' : '';
+    return `<button class="ps-cell ${prem ? 'prem' : 'free'} ${st} ${big ? 'big' : ''} ${r.t === 'chest' ? 'ch-' + r.k : ''}" data-l="${l}" data-p="${prem ? 1 : 0}" ${ready ? '' : 'disabled'}>
+      ${ico}<span class="ps-t">${passLabel(r)}</span>${mark}</button>`;
   };
-  let html = '<div class="pass-row pass-hdr"><span></span><span>Бесплатно</span><span>💎 Премиум</span></div>';
-  for (let l = 1; l <= PASS_LEVELS; l++) html += `<div class="pass-row ${l <= L ? 'reached' : ''}"><div class="pass-lv">${l}</div>${cell(l, false)}${cell(l, true)}</div>`;
+  let html = '<div class="ps-row ps-hdr"><span>Бесплатно</span><span></span><span>Премиум</span></div>';
+  for (let l = 1; l <= PASS_LEVELS; l++) {
+    const cls = (l <= L ? 'reached ' : '') + (l === L + 1 ? 'next ' : '') + (l % 5 === 0 ? 'mile' : '');
+    html += `<div class="ps-row ${cls}" data-l="${l}">${cell(l, false)}<div class="ps-node"><span data-l="${l}">${l}</span></div>${cell(l, true)}</div>`;
+  }
   const list = $id('passList');
+  const keep = list.scrollTop;
   list.innerHTML = html;
-  list.querySelectorAll('.pass-cell.ready').forEach((b) => b.addEventListener('click', () => {
+  list.scrollTop = keep;
+  list.querySelectorAll('canvas.ps-mini').forEach((cv) => drawPassSkin(cv, cv.dataset.skin));
+  list.querySelectorAll('.ps-cell.ready').forEach((b) => b.addEventListener('click', () => {
     const v = claimPass(Number(b.dataset.l), b.dataset.p === '1');
     if (!v) return;
     metaSave();
@@ -5321,7 +5625,17 @@ function renderPass() {
     checkAchievements(true);
     renderPass(); updateAllUI();
   }));
-  $id('passClaimAll').disabled = passClaimable() === 0;
+  const n = passClaimable();
+  const ca = $id('passClaimAll');
+  ca.disabled = n === 0;
+  ca.textContent = n ? `Забрать всё доступное (${n})` : 'Пока нечего забирать';
+}
+function passScrollToCurrent() {
+  const list = $id('passList');
+  const row = list.querySelector('.ps-row.next') || list.querySelector('.ps-row.reached:last-of-type') || list.querySelector('.ps-row[data-l="' + PASS_LEVELS + '"]');
+  const firstReady = list.querySelector('.ps-cell.ready');
+  const target = firstReady ? firstReady.closest('.ps-row') : row;
+  if (target) list.scrollTop = Math.max(0, target.offsetTop - list.offsetTop - list.clientHeight / 2 + target.offsetHeight / 2);
 }
 $id('passClaimAll').addEventListener('click', () => {
   const views = [];
@@ -5340,7 +5654,7 @@ $id('passClaimAll').addEventListener('click', () => {
 function renderEvent() {
   const ev = refreshEvent();
   const body = $id('eventBody');
-  if (!ev) { body.innerHTML = '<p class="modal-sub">Сейчас событий нет. Ближайшие: Хэллоуин (с 15 октября) и Новый год (с 15 декабря).</p>'; return; }
+  if (!ev) { body.innerHTML = `<p class="modal-sub">Сейчас событий нет. В году их три: Пасха (следующая — с ${(() => { const n = new Date(); let r = easterRange(n.getFullYear()); if (r[1] < n) r = easterRange(n.getFullYear() + 1); return r[0].getDate() + ' ' + ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня'][r[0].getMonth()]; })()}), Хэллоуин (с 15 октября) и Новый год (с 15 декабря).</p>`; return; }
   const sk = SKIN_MAP[ev.skin];
   const owned = saveData.ownedSkins.includes(sk.id);
   const have = saveData.eventCur[ev.id] || 0;
@@ -5351,7 +5665,7 @@ function renderEvent() {
     <div class="list-card"><div class="card-left"><div><div class="card-title">${sk.name}<span class="rarity-tag rarity-event">Событие</span></div>
       <div class="card-desc">${sk.desc}</div>${sk.perkText ? `<div class="perk-line">${sk.perkText}</div>` : ''}</div></div>
       ${owned ? '<button class="action-btn equipped" disabled>Есть ✓</button>' : `<button id="evBuyBtn" class="action-btn ${have >= sk.priceCur ? 'buy' : 'locked-btn'}">${sk.priceCur} ${ev.cur}</button>`}</div>
-    <p class="modal-sub">Как получить ${ev.cur}: собирай их на аренах (появляются вместо части монет) и открывай сундуки — пока идёт событие, в каждом сундуке есть ${ev.curName}.</p>`;
+    <p class="modal-sub">Как получить ${ev.cur}: собирай их на аренах (появляются вместо части монет) и открывай сундуки — пока идёт событие, в каждом сундуке есть немного ${ev.curName}.</p>`;
   const c = $id('evSkinCv').getContext('2d');
   c.scale(200 / 44, 200 / 44);
   drawCharacter(c, sk, 22, 25, 1, { scale: 0.72, t: 0 });
@@ -5485,7 +5799,7 @@ bindOpen('openQuestsBtn', metaEls.quests, renderQuests);
 bindOpen('openAchBtn', metaEls.ach, renderAch);
 bindOpen('openChestBtn', metaEls.chest, () => { renderChests(); renderWheelBtn(); wheel.dirty = true; });
 bindOpen('openUpgBtn', metaEls.upg, renderUpg);
-bindOpen('openPassBtn', metaEls.pass, renderPass);
+bindOpen('openPassBtn', metaEls.pass, () => { renderPass(); requestAnimationFrame(passScrollToCurrent); });
 bindOpen('dailyBanner', metaEls.daily, renderDaily);
 bindOpen('eventBanner', metaEls.event, renderEvent);
 document.querySelectorAll('.js-back').forEach((b) => b.addEventListener('click', () => { playSound('click'); showMainMenu(); }));
