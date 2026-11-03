@@ -51,61 +51,72 @@
     <button id="shootBtn" class="shoot-btn hidden" aria-label="Выстрел">🎯</button>
 
     <!-- Главное меню -->
-    <div id="mainMenu" class="overlay">
-      <div class="notebook-card menu-card">
-        <button id="openSettingsBtn" class="menu-gear" title="Настройки" aria-label="Настройки">⚙</button>
-        <div class="title-row">
-          <h1 class="game-title">Doodle Jump</h1>
-          <span class="subtitle">Ultimate Edition</span>
-        </div>
-
-        <!-- Витрина арен -->
-        <div class="hero">
-          <canvas id="menuCanvas" width="724" height="340"></canvas>
-          <button id="arenaPrevBtn" class="hero-arrow left" title="Предыдущая арена">‹</button>
-          <button id="arenaNextBtn" class="hero-arrow right" title="Следующая арена">›</button>
-          <div id="menuArenaLock" class="hero-lock hidden"></div>
-          <div class="hero-info">
-            <div class="hero-text">
-              <div class="arena-num-tag" id="menuArenaNum">АРЕНА 1</div>
-              <div class="arena-name-main" id="menuArenaTitle">Тетрадный полигон</div>
+    <div id="mainMenu" class="overlay main-menu">
+      <div class="mm-glow" aria-hidden="true"></div>
+      <div class="mm">
+        <header class="mm-top">
+          <div class="mm-brand">
+            <canvas id="mmAvatar" class="mm-avatar" width="88" height="88"></canvas>
+            <div>
+              <h1 class="mm-title">Doodle Jump</h1>
+              <div class="mm-sub">Ultimate Edition</div>
             </div>
-            <button id="arenaSelectBtn" class="btn btn-sm btn-gold">Выбрать арену</button>
           </div>
-          <div id="arenaDots" class="arena-dots"></div>
-        </div>
-        <p class="arena-twist" id="menuArenaTwist"></p>
-
-        <div class="xp-progress-wrap">
-          <div class="xp-progress-bar">
-            <div id="menuXpFill" class="xp-progress-fill" style="width: 0%;"></div>
+          <div class="mm-top-right">
+            <div class="mm-coins">🪙 <span id="menuCoins">0</span></div>
+            <button id="openSettingsBtn" class="mm-icon" title="Настройки" aria-label="Настройки">⚙</button>
           </div>
-          <div class="xp-progress-text" id="menuXpText">0 / 50 000 XP</div>
-        </div>
+        </header>
 
-        <div class="stats-row">
-          <div class="stat-pill">🏆 Рекорд арены: <span id="menuBestScore">0</span></div>
-          <div class="stat-pill">🪙 Монеты: <span id="menuCoins">0</span></div>
-        </div>
-        <div class="loadout-row">
-          <span class="loadout-chip">🎭 Герой: <strong id="menuSkinName">—</strong></span>
-          <span class="loadout-chip">🗺 Играем: <strong id="menuPlayArena">—</strong></span>
-        </div>
-
-        <div class="menu-actions">
-          <button id="startBtn" class="btn btn-primary btn-large">▶ ИГРАТЬ</button>
-          <div class="menu-grid-2">
-            <button id="openShopBtn" class="btn btn-secondary">👕 Скины</button>
-            <button id="openArenasBtn" class="btn btn-purple">🏟 Арены</button>
+        <!-- Витрина арены -->
+        <section class="mm-hero">
+          <div id="menuStage" class="mm-stage">
+            <canvas id="menuCanvas" width="724" height="420"></canvas>
+            <div class="mm-stage-top">
+              <span class="mm-tag" id="menuArenaNum">АРЕНА 1 / 15</span>
+              <span class="mm-tag mm-tag-xp" id="menuArenaMult">⭐ ОПЫТ ×1.0</span>
+            </div>
+            <button id="arenaPrevBtn" class="mm-arrow left" title="Предыдущая арена" aria-label="Предыдущая арена">‹</button>
+            <button id="arenaNextBtn" class="mm-arrow right" title="Следующая арена" aria-label="Следующая арена">›</button>
+            <div id="menuArenaLock" class="mm-lock hidden"></div>
           </div>
-          <div class="menu-grid-2">
-            <button id="openStatsBtn" class="btn btn-outline">📊 Статистика</button>
-            <button id="openPromoBtn" class="btn btn-gold">🎁 Промокод</button>
+          <div class="mm-hero-bar">
+            <div class="mm-hero-text">
+              <div class="mm-arena-title" id="menuArenaTitle">Тетрадный полигон</div>
+              <div class="mm-arena-desc" id="menuArenaDesc"></div>
+            </div>
+            <button id="arenaSelectBtn" class="mm-select">Выбрать</button>
           </div>
+          <p class="mm-twist" id="menuArenaTwist"></p>
+        </section>
+
+        <div id="arenaStrip" class="mm-strip" aria-label="Все арены"></div>
+
+        <div class="mm-xp">
+          <div class="mm-xp-row"><span id="menuXpLabel">Прогресс</span><b id="menuXpText">0</b></div>
+          <div class="mm-xp-bar"><div id="menuXpFill" class="mm-xp-fill" style="width: 0%;"></div></div>
         </div>
 
-        <div class="controls-hint">
-          <p><strong>ПК:</strong> ⬅️ ➡️ или <strong>A / D</strong> — движение • <strong>Пробел / W / Клик</strong> — выстрел<br><strong>Телефон:</strong> касайся левой или правой половины экрана — герой летит в ту сторону; кнопка 🎯 — выстрел</p>
+        <div class="mm-stats">
+          <div class="mm-stat"><span class="mm-stat-ico">🏆</span><div><b id="menuBestScore">0</b><small>Рекорд арены</small></div></div>
+          <div class="mm-stat"><span class="mm-stat-ico">🎭</span><div><b id="menuSkinName">—</b><small>Твой герой</small></div></div>
+        </div>
+
+        <button id="startBtn" class="mm-play">
+          <span class="mm-play-ico">▶</span>
+          <span class="mm-play-txt"><b>ИГРАТЬ</b><small id="menuPlayArena">—</small></span>
+        </button>
+
+        <nav class="mm-tiles">
+          <button id="openShopBtn" class="mm-tile t-skins"><span class="mm-tile-ico">👕</span><b>Скины</b><small id="tileSkinsSub"></small></button>
+          <button id="openArenasBtn" class="mm-tile t-arenas"><span class="mm-tile-ico">🏟</span><b>Арены</b><small id="tileArenasSub"></small></button>
+          <button id="openStatsBtn" class="mm-tile t-stats"><span class="mm-tile-ico">📊</span><b>Статы</b><small id="tileStatsSub"></small></button>
+          <button id="openPromoBtn" class="mm-tile t-promo"><span class="mm-tile-ico">🎁</span><b>Коды</b><small>награды</small></button>
+        </nav>
+
+        <div class="mm-hint">
+          <span><b>ПК:</b> ← → / A D — движение, Пробел / клик — выстрел</span>
+          <span><b>Телефон:</b> касайся левой/правой половины экрана, 🎯 — выстрел</span>
         </div>
       </div>
     </div>

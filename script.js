@@ -3224,7 +3224,7 @@ const gameOverMenuEl = document.getElementById('gameOverMenu');
 const promoMenuEl = document.getElementById('promoMenu');
 const menuCanvas = document.getElementById('menuCanvas');
 const mctx = menuCanvas.getContext('2d', { alpha: false });
-const MW = 362, MH = 170;
+const MW = 362, MH = 210;
 
 const numFmt = new Intl.NumberFormat('ru-RU');
 function formatNum(n) { return numFmt.format(Math.floor(n)); }
@@ -3256,17 +3256,98 @@ function updateHUD() {
 }
 
 function isArenaOpen(a) { return saveData.totalXP >= a.minXP; }
-function stepPreview(dir) {
-  const open = ARENAS.filter(isArenaOpen);
-  if (open.length < 2) { playSound('break'); return; }
-  let i = open.findIndex((a) => a.id === previewIdx);
-  if (i < 0) i = 0;
-  setPreview(open[(i + dir + open.length) % open.length].id);
+
+// Фирменный цвет каждой арены: им окрашивается всё главное меню
+const ARENA_ACCENT = ['#6fd860', '#3ddc84', '#4fc3f7', '#d05ce3', '#ff6d3a', '#00e5ff', '#ffd54f', '#26c6da', '#9b7bff', '#ffb74d', '#ff7eb6', '#9fa8da', '#e0a43a', '#f06292', '#b388ff'];
+function arenaAccent(a) { return ARENA_ACCENT[(a.id - 1) % ARENA_ACCENT.length]; }
+function hexRgb(hex) {
+  const h = hex.replace('#', '');
+  const n = parseInt(h.length === 3 ? h.split('').map((x) => x + x).join('') : h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
-function setPreview(idx) {
-  previewIdx = ((idx - 1 + ARENAS.length) % ARENAS.length) + 1;
+function inkFor(hex) {
+  const [r, g, b] = hexRgb(hex);
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 165 ? '#14172a' : '#ffffff';
+}
+
+// Листаем все арены (закрытые тоже можно посмотреть, но не выбрать)
+let previewDir = 1;
+function stepPreview(dir) {
+  setPreview(previewIdx + dir, dir);
+}
+function setPreview(idx, dir) {
+  const nIdx = ((idx - 1 + ARENAS.length) % ARENAS.length) + 1;
+  if (nIdx !== previewIdx) startPreviewTransition(dir || (nIdx > previewIdx ? 1 : -1));
+  previewIdx = nIdx;
   menuAmbient = makeAmbient(MW, MH, 22);
   updateAllUI();
+}
+
+// ---------- Лента арен под витриной (миниатюры рисуются один раз, лениво) ----------
+const stripEl = document.getElementById('arenaStrip');
+const stripCards = [];
+const thumbCache = new Map();
+function renderThumb(cv, a) {
+  const cc = cv.getContext('2d');
+  cc.setTransform(cv.width / 240, 0, 0, cv.height / 160, 0, 0);
+  drawArenaScene(cc, a, 240, 160, 0, 0);
+  const plat = { x: 86, y: 128, w: 68, h: 15, type: 'normal' };
+  drawPlatformShape(cc, a, plat, 0);
+  cc.setTransform(1, 0, 0, 1, 0, 0);
+}
+function buildArenaStrip() {
+  if (stripCards.length) return;
+  ARENAS.forEach((a) => {
+    const b = document.createElement('button');
+    b.className = 'mm-arena';
+    b.style.setProperty('--c', arenaAccent(a));
+    b.innerHTML = `<span class="mm-arena-img"><canvas width="168" height="112"></canvas><i class="mm-arena-lock">🔒</i><i class="mm-arena-on">✓</i></span><span class="mm-arena-name"><b>${a.id}</b> ${a.name}</span>`;
+    b.addEventListener('click', () => { playSound('click'); setPreview(a.id); });
+    stripEl.appendChild(b);
+    stripCards.push({ el: b, cv: b.querySelector('canvas'), a, drawn: false });
+  });
+  // миниатюры дорисовываются по одной в свободное время, чтобы меню открывалось мгновенно
+  let i = 0;
+  const next = () => {
+    if (i >= stripCards.length) return;
+    const sc = stripCards[i++];
+    if (!sc.drawn) { renderThumb(sc.cv, sc.a); sc.drawn = true; }
+    whenIdle(next);
+  };
+  whenIdle(next);
+}
+let stripScrolledTo = -1;
+function updateArenaStrip() {
+  buildArenaStrip();
+  for (const sc of stripCards) {
+    const open = isArenaOpen(sc.a);
+    sc.el.classList.toggle('locked', !open);
+    sc.el.classList.toggle('active', sc.a.id === previewIdx);
+    sc.el.classList.toggle('playing', sc.a.id === saveData.selectedArena);
+  }
+  const cur = stripCards[previewIdx - 1];
+  if (cur && !cur.drawn) { renderThumb(cur.cv, cur.a); cur.drawn = true; }
+  if (cur && stripScrolledTo !== previewIdx && !mainMenuEl.classList.contains('hidden')) {
+    stripScrolledTo = previewIdx;
+    const left = cur.el.offsetLeft - (stripEl.clientWidth - cur.el.offsetWidth) / 2;
+    try { stripEl.scrollTo({ left, behavior: 'smooth' }); } catch (e) { stripEl.scrollLeft = left; }
+  }
+}
+
+// ---------- Аватар героя в шапке ----------
+const avatarCv = document.getElementById('mmAvatar');
+let avatarSkin = '';
+function updateAvatar() {
+  const sk = getSkin();
+  if (!avatarCv || avatarSkin === sk.id) return;
+  avatarSkin = sk.id;
+  const c = avatarCv.getContext('2d');
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, avatarCv.width, avatarCv.height);
+  const k = avatarCv.width / 44;
+  c.scale(k, k);
+  drawCharacter(c, sk, 22, 25, 1, { scale: 0.72, t: 0 });
+  c.setTransform(1, 0, 0, 1, 0, 0);
 }
 
 function updateAllUI() {
@@ -3276,66 +3357,113 @@ function updateAllUI() {
   const pv = ARENAS[previewIdx - 1];
   const unlocked = saveData.totalXP >= pv.minXP;
   const next = ARENAS.find((a) => a.id === saveData.highestUnlockedArena + 1);
+  const $ = (id) => document.getElementById(id);
 
-  document.getElementById('menuBestScore').textContent = formatNum(saveData.arenaBest[pv.id] || 0);
-  document.getElementById('menuCoins').textContent = formatNum(saveData.coins);
-  document.getElementById('shopCoins').textContent = formatNum(saveData.coins);
-  document.getElementById('promoCoins').textContent = formatNum(saveData.coins);
-  document.getElementById('arenasTotalXp').textContent = formatNum(saveData.totalXP);
-  document.getElementById('openShopBtn').textContent = `👕 Скины (${SKINS.length})`;
-  document.getElementById('openArenasBtn').textContent = `🏟 Арены (${ARENAS.length})`;
+  // цвет меню = цвет просматриваемой арены
+  const ac = arenaAccent(pv);
+  const [r, g, b] = hexRgb(ac);
+  mainMenuEl.style.setProperty('--ac', ac);
+  mainMenuEl.style.setProperty('--ac-rgb', `${r},${g},${b}`);
+  mainMenuEl.style.setProperty('--ac-ink', inkFor(ac));
+  const pa = arenaAccent(sel), [pr, pg2, pb] = hexRgb(pa);
+  mainMenuEl.style.setProperty('--play', pa);
+  mainMenuEl.style.setProperty('--play-rgb', `${pr},${pg2},${pb}`);
+  mainMenuEl.style.setProperty('--play-ink', inkFor(pa));
 
-  document.getElementById('menuSkinName').textContent = getSkin().name;
-  document.getElementById('menuPlayArena').textContent = `${sel.icon} ${sel.name}`;
-  document.getElementById('menuArenaNum').textContent = `АРЕНА ${pv.id} ИЗ ${ARENAS.length} • ОПЫТ ×${xpMult(pv).toFixed(1)}`;
-  document.getElementById('menuArenaTitle').textContent = `${pv.icon} ${pv.name}`;
-  document.getElementById('menuArenaTwist').textContent = pv.twist;
+  $('menuBestScore').textContent = unlocked ? formatNum(saveData.arenaBest[pv.id] || 0) : '—';
+  $('menuCoins').textContent = formatNum(saveData.coins);
+  $('shopCoins').textContent = formatNum(saveData.coins);
+  $('promoCoins').textContent = formatNum(saveData.coins);
+  $('arenasTotalXp').textContent = formatNum(saveData.totalXP);
+  $('tileSkinsSub').textContent = `${saveData.ownedSkins.length} из ${SKINS.length}`;
+  $('tileArenasSub').textContent = `${saveData.highestUnlockedArena} из ${ARENAS.length}`;
+  $('tileStatsSub').textContent = `${formatNum(saveData.stats.gamesPlayed)} игр`;
 
-  const lockEl = document.getElementById('menuArenaLock');
-  const selBtn = document.getElementById('arenaSelectBtn');
+  $('menuSkinName').textContent = getSkin().name;
+  $('menuPlayArena').textContent = `${sel.icon} ${sel.name}`;
+  $('menuArenaNum').textContent = `АРЕНА ${pv.id} / ${ARENAS.length}`;
+  $('menuArenaMult').textContent = `⭐ ОПЫТ ×${xpMult(pv).toFixed(1)}`;
+  $('menuArenaTitle').textContent = `${pv.icon} ${pv.name}`;
+  $('menuArenaDesc').textContent = pv.desc;
+  $('menuArenaTwist').textContent = pv.twist;
+  updateAvatar();
+
+  const lockEl = $('menuArenaLock');
+  const selBtn = $('arenaSelectBtn');
   if (!unlocked) {
+    const prev = ARENAS[pv.id - 2];
+    const from = prev ? prev.minXP : 0;
+    const pct = Math.max(0, Math.min(100, ((saveData.totalXP - from) / Math.max(1, pv.minXP - from)) * 100));
     lockEl.classList.remove('hidden');
-    lockEl.innerHTML = `🔒<br>Нужно ${fmtXP(pv.minXP)} XP`;
+    lockEl.innerHTML = `<div class="mm-lock-box"><div class="mm-lock-ico">🔒</div><div class="mm-lock-t">Откроется на ${fmtXP(pv.minXP)} XP</div><div class="mm-lock-bar"><i style="width:${pct.toFixed(1)}%"></i></div><div class="mm-lock-s">Осталось ${fmtXP(Math.max(0, Math.ceil(pv.minXP - saveData.totalXP)))} XP</div></div>`;
     selBtn.textContent = '🔒 Закрыта';
-    selBtn.className = 'btn btn-sm btn-locked';
+    selBtn.className = 'mm-select locked';
   } else if (sel.id === pv.id) {
     lockEl.classList.add('hidden');
-    selBtn.textContent = '✔ Активна';
-    selBtn.className = 'btn btn-sm btn-active';
+    selBtn.textContent = '✓ Выбрана';
+    selBtn.className = 'mm-select active';
   } else {
     lockEl.classList.add('hidden');
-    selBtn.textContent = 'Выбрать арену';
-    selBtn.className = 'btn btn-sm btn-gold';
+    selBtn.textContent = 'Выбрать';
+    selBtn.className = 'mm-select';
   }
 
-  const dots = document.getElementById('arenaDots');
-  dots.innerHTML = '';
-  ARENAS.forEach((a) => {
-    const d = document.createElement('span');
-    d.className = 'dot' + (a.id === previewIdx ? ' active' : '') + (saveData.totalXP < a.minXP ? ' locked' : '');
-    d.addEventListener('click', () => { playSound('click'); if (saveData.totalXP >= a.minXP) setPreview(a.id); else playSound('break'); });
-    dots.appendChild(d);
-  });
+  updateArenaStrip();
 
   if (next) {
     const ha = ARENAS[saveData.highestUnlockedArena - 1];
     const span = next.minXP - ha.minXP;
     const pct = Math.min(100, (Math.max(0, saveData.totalXP - ha.minXP) / span) * 100);
-    document.getElementById('menuXpFill').style.width = `${pct}%`;
-    document.getElementById('menuXpText').textContent = `${formatNum(saveData.totalXP)} / ${fmtXP(next.minXP)} XP до Арены ${next.id}`;
+    $('menuXpFill').style.width = `${pct}%`;
+    $('menuXpLabel').textContent = `До арены ${next.id}: ${next.icon} ${next.name}`;
+    $('menuXpText').textContent = `${fmtXP(Math.floor(saveData.totalXP))} / ${fmtXP(next.minXP)}`;
   } else {
-    document.getElementById('menuXpFill').style.width = '100%';
-    document.getElementById('menuXpText').textContent = `${formatNum(saveData.totalXP)} XP • Все арены открыты!`;
+    $('menuXpFill').style.width = '100%';
+    $('menuXpLabel').textContent = 'Все арены открыты!';
+    $('menuXpText').textContent = `${fmtXP(Math.floor(saveData.totalXP))} XP`;
   }
 }
 
+// ---------- Свайп по витрине (телефон) ----------
+(function () {
+  const stage = document.getElementById('menuStage');
+  if (!stage) return;
+  let sx = null, sy = 0;
+  stage.addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; sx = e.clientX; sy = e.clientY; });
+  stage.addEventListener('pointerup', (e) => {
+    if (sx === null) return;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    sx = null;
+    if (Math.abs(dx) > 36 && Math.abs(dx) > Math.abs(dy)) { playSound('click'); stepPreview(dx < 0 ? 1 : -1); }
+  });
+  stage.addEventListener('pointercancel', () => { sx = null; });
+})();
+
 // Витрина арены: тяжёлые слои (фон, декорации, платформы) кэшируются в отдельные холсты,
-// а каждый кадр рисуются только ambient-частицы, персонаж и монстр — поэтому прыжок идёт плавно.
+// а каждый кадр рисуются только ambient-частицы, персонаж и монстры — поэтому прыжок идёт плавно.
 function makeMenuLayer() {
   const cv = document.createElement('canvas');
   return { cv, cx: cv.getContext('2d') };
 }
 const menuLayers = { base: makeMenuLayer(), deco: makeMenuLayer(), plat: makeMenuLayer(), key: '', decoT: -1e9 };
+// Плавный переход между аренами: старый кадр уезжает и тает, новый въезжает
+const menuTrans = { cv: document.createElement('canvas'), t0: -1e9, dir: 1 };
+const TRANS_MS = 340;
+function startPreviewTransition(dir) {
+  const T = menuTrans;
+  if (T.cv.width !== menuCanvas.width || T.cv.height !== menuCanvas.height) { T.cv.width = menuCanvas.width; T.cv.height = menuCanvas.height; }
+  const tc = T.cv.getContext('2d');
+  tc.setTransform(1, 0, 0, 1, 0, 0);
+  tc.drawImage(menuCanvas, 0, 0);
+  T.t0 = performance.now();
+  T.dir = dir;
+}
+
+const MENU_PLATS = [
+  { x: 14, y: 182, w: 68, h: 15, type: 'normal' },
+  { x: 147, y: 158, w: 68, h: 15, type: 'moving' },
+  { x: 280, y: 182, w: 68, h: 15, type: 'normal' }
+];
 
 function drawMenuPreview(t) {
   const a = ARENAS[previewIdx - 1];
@@ -3348,22 +3476,20 @@ function drawMenuPreview(t) {
   if (L.key !== key) {
     L.key = key;
     for (const l of [L.base, L.deco, L.plat]) { l.cv.width = cw; l.cv.height = ch; }
-    // фон (градиент + клетка) — статичный
     L.base.cx.setTransform(sx, 0, 0, sy, 0, 0);
     drawArenaBase(L.base.cx, a, MW, MH, 0);
-    // платформы и пружина — тоже статичные (свечение/shadowBlur считается один раз)
     const pc = L.plat.cx;
     pc.setTransform(sx, 0, 0, sy, 0, 0);
-    const plats = [
-      { x: 20, y: 140, w: 68, h: 15, type: 'normal' },
-      { x: 148, y: 118, w: 68, h: 15, type: 'moving' },
-      { x: 276, y: 140, w: 68, h: 15, type: 'normal' }
-    ];
-    for (const p of plats) drawPlatformShape(pc, a, p, t);
-    drawSpringShape(pc, 54, 140, 13);
+    for (const p of MENU_PLATS) drawPlatformShape(pc, a, p, t);
+    drawSpringShape(pc, 48, 182, 13);
+    // коин над средней платформой
+    pc.save(); pc.translate(181, 128);
+    pc.fillStyle = '#ffca28'; pc.strokeStyle = '#b28900'; pc.lineWidth = 2;
+    pc.beginPath(); pc.arc(0, 0, 9, 0, 6.283); pc.fill(); pc.stroke();
+    pc.fillStyle = 'rgba(255,255,255,0.55)'; pc.fillRect(-2, -5, 3, 7);
+    pc.restore();
     L.decoT = -1e9;
   }
-  // декорации медленные — обновляем ~15 раз в секунду
   if (t - L.decoT >= 66) {
     L.decoT = t;
     const dc = L.deco.cx;
@@ -3373,30 +3499,70 @@ function drawMenuPreview(t) {
     drawArenaDeco(dc, a, MW, MH, 0, t);
   }
 
+  // фаза перехода: новая сцена въезжает с той стороны, куда листаем
+  const T = menuTrans;
+  const tp = Math.min(1, (t - T.t0) / TRANS_MS);
+  const ease = 1 - Math.pow(1 - tp, 3);
+  const shift = tp < 1 ? T.dir * (1 - ease) * cw * 0.18 : 0;
+
   mctx.setTransform(1, 0, 0, 1, 0, 0);
   mctx.drawImage(L.base.cv, 0, 0);
-  mctx.drawImage(L.deco.cv, 0, 0);
-  mctx.drawImage(L.plat.cv, 0, 0);
-  mctx.setTransform(sx, 0, 0, sy, 0, 0);
+  mctx.drawImage(L.deco.cv, shift * 0.5, 0);
+  mctx.drawImage(L.plat.cv, shift, 0);
+  mctx.setTransform(sx, 0, 0, sy, shift, 0);
   stepAmbient(mctx, a, menuAmbient, MW, MH, loopDt, 0.3);
 
-  // персонаж прыгает между платформами
-  const hop = Math.sin(((t % 1200) / 1200) * Math.PI) * 52;
-  const bx = 182 + Math.sin((t / 2400) * Math.PI * 2) * 110;
+  // персонаж прыгает по платформам
+  const hop = Math.sin(((t % 1200) / 1200) * Math.PI) * 64;
+  const bx = 181 + Math.sin((t / 2400) * Math.PI * 2) * 133;
   const facing = Math.cos((t / 2400) * Math.PI * 2) > 0 ? 1 : -1;
-  drawCharacter(mctx, getSkin(), bx, 110 - hop, facing, { t, scale: 0.9 });
+  drawCharacter(mctx, getSkin(), bx, 148 - hop, facing, { t, scale: 0.95 });
 
-  // демонстрационный монстр арены
-  const mk = a.monsters[0];
-  const T = MONSTER_TYPES[mk];
-  const dm = { kind: mk, x: 290 - T.w / 2, y: 44 + Math.sin(t * 0.003) * 6, w: T.w, h: T.h, hp: T.hp, maxHp: T.hp, phase: t * 0.003, charge: 0 };
-  drawMonster(mctx, dm, t);
+  // монстры этой арены
+  const kinds = a.monsters;
+  for (let i = 0; i < kinds.length && i < 2; i++) {
+    const mk = kinds[i];
+    const MT = MONSTER_TYPES[mk];
+    const cx = i === 0 ? 300 : 66;
+    const cy = i === 0 ? 64 : 84;
+    const dm = {
+      kind: mk, x: cx - MT.w / 2 + Math.sin(t * 0.0013 + i * 2) * 10, y: cy - MT.h / 2 + Math.sin(t * 0.003 + i) * 6,
+      w: MT.w, h: MT.h, hp: MT.hp, maxHp: MT.hp, phase: t * 0.003 + i, charge: 0
+    };
+    drawMonster(mctx, dm, t);
+  }
+
+  mctx.setTransform(1, 0, 0, 1, 0, 0);
+  // мягкая виньетка для «киношности» (готовый спрайт)
+  mctx.drawImage(getVignette(cw, ch), 0, 0);
 
   if (!unlocked) {
-    mctx.fillStyle = 'rgba(8,10,20,0.62)';
-    mctx.fillRect(0, 0, MW, MH);
+    mctx.fillStyle = 'rgba(8,10,22,0.42)';
+    mctx.fillRect(0, 0, cw, ch);
   }
-  mctx.setTransform(1, 0, 0, 1, 0, 0);
+
+  if (tp < 1) {
+    mctx.globalAlpha = 1 - ease;
+    mctx.drawImage(T.cv, -T.dir * ease * cw * 0.25, 0);
+    mctx.globalAlpha = 1;
+  }
+}
+
+let vignetteCv = null;
+function getVignette(w, h) {
+  if (vignetteCv && vignetteCv.width === w && vignetteCv.height === h) return vignetteCv;
+  vignetteCv = document.createElement('canvas');
+  vignetteCv.width = w; vignetteCv.height = h;
+  const c = vignetteCv.getContext('2d');
+  const g = c.createRadialGradient(w / 2, h * 0.45, Math.min(w, h) * 0.35, w / 2, h * 0.5, Math.max(w, h) * 0.75);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(5,6,16,0.45)');
+  c.fillStyle = g; c.fillRect(0, 0, w, h);
+  const g2 = c.createLinearGradient(0, h * 0.72, 0, h);
+  g2.addColorStop(0, 'rgba(5,6,16,0)');
+  g2.addColorStop(1, 'rgba(5,6,16,0.35)');
+  c.fillStyle = g2; c.fillRect(0, 0, w, h);
+  return vignetteCv;
 }
 
 let skinFilter = 'all';
@@ -3528,6 +3694,7 @@ function showMainMenu() {
   previewIdx = saveData.selectedArena;
   menuAmbient = makeAmbient(MW, MH, 22);
   mainMenuEl.classList.remove('hidden');
+  stripScrolledTo = -1;
   updateAllUI();
 }
 
