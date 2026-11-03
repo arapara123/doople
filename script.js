@@ -362,6 +362,24 @@ const ARENAS = [
     marginColor: 'rgba(255,193,7,0.4)', margin: false,
     platNormal: '#b8860b', platMoving: '#26c6da', platBreak: '#5d4037', platVanish: '#ffe082', platBorder: '#2e1b0a', glow: false,
     ambient: { type: 'dust', color: '#ffcc80' }, monsters: ['gear', 'steambot'], monsterRate: 1.5, diff: 1.55, platSpeed: 3.1, wind: 0, slip: 0, hazard: 'faller', hazardLook: 'gear'
+  },
+  {
+    id: 14, name: 'Небесный сад Сакуры', minXP: 54000000, icon: '🌸', scene: 'sakura',
+    desc: 'Парящие острова, розовая луна и вечный лепесткопад',
+    twist: 'Ветер лепестков сильно сносит и чуть скользит. Лисы-кицунэ летают петлями, они-стражи выдерживают 2 удара, а каменные фонари падают по красным меткам.',
+    bgTop: '#ffe3f1', bgBottom: '#d9a7e8', gridColor: 'rgba(200,90,160,0.16)',
+    marginColor: 'rgba(233,30,99,0.35)', margin: false,
+    platNormal: '#f06292', platMoving: '#7e57c2', platBreak: '#a1887f', platVanish: '#fff0f6', platBorder: '#6a1b4d', glow: false,
+    ambient: { type: 'snow', color: '#ffc1e3' }, monsters: ['kitsune', 'oni'], monsterRate: 1.55, diff: 1.7, platSpeed: 3.3, wind: 1.0, slip: 0.04, hazard: 'faller', hazardLook: 'lantern'
+  },
+  {
+    id: 15, name: 'Врата Бесконечности', minXP: 72000000, icon: '🌌', scene: 'void',
+    desc: 'Чёрная дыра, разломы реальности и радужное сияние края вселенной',
+    twist: 'ФИНАЛ. Молнии и осколки пустоты падают по меткам вперемешку, ветер дёргает героя. Глаза Бездны стреляют, разломы носятся зигзагами. Платформы быстрее всех!',
+    bgTop: '#02010a', bgBottom: '#240a45', gridColor: 'rgba(179,136,255,0.16)',
+    marginColor: 'rgba(255,64,129,0.5)', margin: false,
+    platNormal: '#b388ff', platMoving: '#18ffff', platBreak: '#ff4081', platVanish: '#ffffff', platBorder: '#ffffff', glow: true,
+    ambient: { type: 'motes', color: '#e1bee7' }, monsters: ['voideye', 'riftling'], monsterRate: 1.65, diff: 1.85, platSpeed: 3.5, wind: 0.8, slip: 0.03, hazard: 'both', hazardLook: 'shard'
   }
 ];
 
@@ -392,7 +410,11 @@ const MONSTER_TYPES = {
   ghost:      { w: 42, h: 46, hp: 1, move: 'sine', speed: 1.4, amp: 46 },
   zombie:     { w: 44, h: 50, hp: 2, move: 'patrol', speed: 0.9, range: 28 },
   gear:       { w: 46, h: 46, hp: 2, move: 'patrol', speed: 1.4, range: 36 },
-  steambot:   { w: 46, h: 40, hp: 1, move: 'sweep', speed: 2.0, shoots: true, cd: 190, fire: '#ffcc80' }
+  steambot:   { w: 46, h: 40, hp: 1, move: 'sweep', speed: 2.0, shoots: true, cd: 190, fire: '#ffcc80' },
+  kitsune:    { w: 44, h: 42, hp: 1, move: 'sine', speed: 1.9, amp: 46 },
+  oni:        { w: 50, h: 52, hp: 2, move: 'patrol', speed: 1.3, range: 34 },
+  voideye:    { w: 50, h: 46, hp: 2, move: 'hover', speed: 0.9, range: 38, shoots: true, cd: 150, fire: '#e040fb' },
+  riftling:   { w: 46, h: 42, hp: 1, move: 'sine', speed: 2.4, amp: 58 }
 };
 
 // ==========================================================
@@ -1054,6 +1076,116 @@ const SKINS = [
       ell(c, 4, -8, 3.6, 2.2, '#e1bee7', false); ell(c, 11.5, -8, 3.2, 2.2, '#e1bee7', false);
       c.save(); c.translate(0, -24); c.rotate(t * 0.002); starPoly(c, 5, 2, 4); c.fillStyle = '#ffeb3b'; c.fill(); c.stroke(); c.restore();
     }
+  },
+
+  // ======================= ЛЕГЕНДЫ: герои с игровыми бонусами =======================
+  // perk: coin — множитель монет, xp — множитель опыта, magnet — радиус магнита для монет, revive — число воскрешений за матч
+  {
+    id: 'pharaoh', name: 'Фараон Мидас', rarity: 'legend', rarityName: 'Легенда',
+    desc: 'Всё, к чему он прикасается, превращается в золото.', perkText: '💰 Монеты ×2', perk: { coin: 2 },
+    price: 1000, icon: '🏺',
+    skin: '#d9a066', torso: '#ffd54f', legs: '#f9a825', shoe: '#6d4c41', arm: '#ffd54f', hand: '#d9a066', noEyes: true, bullet: 'orb', bulletColor: '#ffd740',
+    back(c) { pg(c, [[-10, 4], [-22, 25], [9, 25], [11, 4]], '#1565c0'); },
+    look(c, t) {
+      pg(c, [[-17, 8], [-18, -12], [-9, -24], [9, -24], [17, -12], [11, -10], [-6, -10], [-6, 8]], '#ffd54f');
+      c.strokeStyle = '#1565c0'; c.lineWidth = 2;
+      c.beginPath(); for (let i = 0; i < 4; i++) { c.moveTo(-16, -12 + i * 5); c.lineTo(-7, -12 + i * 5); } c.moveTo(-8, -22); c.lineTo(8, -22); c.moveTo(-3, -17); c.lineTo(12, -17); c.stroke();
+      c.strokeStyle = OUT; c.lineWidth = 2;
+      pg(c, [[-1, -24], [2, -34], [5, -24]], '#43a047');
+      ci(c, 2, -30, 1.1, '#e53935', false);
+      ell(c, 4, -7, 3.8, 2.8, '#fff', false); ell(c, 11.5, -7, 3.2, 2.8, '#fff', false);
+      ci(c, 5, -7, 1.6, '#111', false); ci(c, 12, -7, 1.4, '#111', false);
+      c.fillStyle = '#111'; c.fillRect(0, -8.6, 16, 1.4);
+      rr(c, -11, 5, 22, 5, 2, '#29b6f6');
+      for (let i = 0; i < 3; i++) {
+        const a = t * 0.005 + i * 2.094;
+        c.save(); c.translate(Math.cos(a) * 27, -8 + Math.sin(a) * 9); c.scale(Math.max(0.3, Math.abs(Math.cos(t * 0.01 + i))), 1);
+        ci(c, 0, 0, 4.2, '#ffca28'); c.restore();
+      }
+    }
+  },
+  {
+    id: 'professor', name: 'Профессор Сова', rarity: 'legend', rarityName: 'Легенда',
+    desc: 'Мудрая сова в академической шапочке. Знания — это опыт!', perkText: '⭐ Опыт +40%', perk: { xp: 1.4 },
+    price: 2500, icon: '🦉',
+    skin: '#a1887f', torso: '#5d4037', legs: '#4e342e', shoe: '#ffb300', arm: '#8d6e63', hand: '#a1887f', noEyes: true, bullet: 'star', bulletColor: '#80d8ff',
+    look(c, t) {
+      pg(c, [[-11, -17], [-15, -31], [-4, -20]], '#8d6e63'); pg(c, [[4, -20], [13, -31], [14, -15]], '#8d6e63');
+      ell(c, 7, -7, 10, 9, '#efe0c8', false);
+      ci(c, 2.5, -8, 5.2, '#fff'); ci(c, 12.5, -8, 5.2, '#fff');
+      ci(c, 3.5, -8, 2.2, '#111', false); ci(c, 13.5, -8, 2.2, '#111', false);
+      pg(c, [[8, -4], [17, -1], [8, 3]], '#ffb300');
+      pg(c, [[-18, -25], [0, -32], [18, -25], [0, -20]], '#212121');
+      rr(c, -9, -22, 18, 4, 1, '#212121');
+      c.strokeStyle = '#ffd54f'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(16, -26); c.lineTo(19, -14); c.stroke(); c.strokeStyle = OUT; c.lineWidth = 2;
+      ci(c, 19, -12, 2, '#ffd54f');
+      pg(c, [[-6, 5], [6, 5], [0, 14]], '#fff8e1');
+      c.save(); c.translate(-22, -26 + Math.sin(t * 0.005) * 3); c.rotate(t * 0.002); starPoly(c, 5, 2, 5); c.fillStyle = '#ba68c8'; c.fill(); c.stroke(); c.restore();
+    }
+  },
+  {
+    id: 'goblin', name: 'Гоблин-Кладоискатель', rarity: 'legend', rarityName: 'Легенда',
+    desc: 'Каска с фонарём, мешок сокровищ и магнитный нюх на монеты.', perkText: '🧲 Магнит монет + Монеты ×1.5', perk: { coin: 1.5, magnet: 110 },
+    price: 4000, icon: '💰',
+    skin: '#7cb342', torso: '#6d4c41', legs: '#4e342e', shoe: '#3e2723', arm: '#7cb342', hand: '#7cb342', noEyes: true, bullet: 'orb', bulletColor: '#ffeb3b',
+    back(c) {
+      ell(c, -19, 6, 10, 12, '#a1887f'); rr(c, -23, -7, 8, 4, 1.5, '#795548');
+      ci(c, -19, 7, 4.2, '#ffd54f');
+    },
+    look(c, t) {
+      pg(c, [[-13, -10], [-28, -18], [-13, -1]], '#7cb342'); pg(c, [[13, -12], [24, -21], [14, -3]], '#7cb342');
+      c.beginPath(); c.arc(0, -8, 15.8, Math.PI * 1.04, Math.PI * 1.96); c.closePath(); c.fillStyle = '#fbc02d'; c.fill(); c.stroke();
+      ci(c, 9, -18, 3.6, '#fffde7');
+      ell(c, 4, -7, 3.6, 3.6, '#ffeb3b', false); ell(c, 12, -7, 3, 3.4, '#ffeb3b', false);
+      ci(c, 5, -7, 1.3, '#111', false); ci(c, 12.6, -7, 1.2, '#111', false);
+      pg(c, [[9, -4], [18, -1], [9, 1]], '#689f38');
+      c.beginPath(); c.moveTo(1, 4); c.lineTo(12, 4); c.stroke();
+      pg(c, [[4, 4], [6, 8], [8, 4]], '#fff', false);
+      const g = 0.5 + Math.sin(t * 0.01) * 0.5;
+      c.fillStyle = 'rgba(255,235,59,' + (0.4 + g * 0.5) + ')'; c.fillRect(-26 + g * 3, 2, 2, 2); c.fillRect(-12, 16 - g * 3, 2, 2);
+    }
+  },
+  {
+    id: 'angel', name: 'Ангел-Хранитель', rarity: 'legend', rarityName: 'Легенда',
+    desc: 'Белые крылья и сияющий нимб. Спасает от падения один раз за матч.', perkText: '😇 Воскрешение ×1 за матч', perk: { revive: 1 },
+    price: 6500, icon: '😇',
+    skin: '#ffe0c2', torso: '#ffffff', legs: '#fff8e1', shoe: '#ffd54f', arm: '#ffffff', hand: '#ffe0c2', bullet: 'star', bulletColor: '#fff59d',
+    back(c, t) {
+      const f = Math.sin(t * 0.008) * 4;
+      pg(c, [[-8, 0], [-30, -18 - f], [-35, -4 - f * 0.5], [-26, 6], [-31, 14], [-10, 10]], '#ffffff');
+      pg(c, [[-9, 2], [-22, -9 - f], [-21, 3], [-12, 8]], '#e3f2fd', false);
+    },
+    look(c, t) {
+      c.beginPath(); c.arc(0, -8, 15.6, Math.PI * 1.04, Math.PI * 1.96); c.closePath(); c.fillStyle = '#ffe082'; c.fill(); c.stroke();
+      c.strokeStyle = '#ffd54f'; c.lineWidth = 3; c.beginPath(); c.ellipse(0, -28 + Math.sin(t * 0.005) * 1.5, 11, 3.5, 0, 0, 6.283); c.stroke();
+      c.strokeStyle = OUT; c.lineWidth = 2;
+      ell(c, 1, -1, 3, 1.8, 'rgba(255,120,150,0.5)', false);
+      c.beginPath(); c.arc(8, -2, 3, 0.2, Math.PI - 0.2); c.stroke();
+      rr(c, -11, 12, 22, 3, 1, '#ffd54f');
+    }
+  },
+  {
+    id: 'cosmoking', name: 'Властелин Вселенной', rarity: 'legend', rarityName: 'Легенда',
+    desc: 'Повелитель галактик со свитой планет. Все бонусы сразу!', perkText: '👑 Опыт +50% • Монеты ×1.5 • Магнит • Воскрешение', perk: { xp: 1.5, coin: 1.5, magnet: 80, revive: 1 },
+    price: 10000, icon: '🌠',
+    skin: '#5e35b1', torso: '#311b92', legs: '#1a1446', shoe: '#ffd740', arm: '#5e35b1', hand: '#ffd740', torsoW: 24, noEyes: true, bullet: 'orb', bulletColor: '#e040fb',
+    back(c, t) {
+      pg(c, [[-11, 4], [-29, 26], [12, 26], [12, 4]], '#1a1446');
+      c.fillStyle = '#fff';
+      for (let i = 0; i < 6; i++) { c.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(t * 0.004 + i)); c.fillRect(-26 + hash(i + 2) * 30, 8 + hash(i + 7) * 16, 2, 2); }
+      c.globalAlpha = 1;
+    },
+    look(c, t) {
+      pg(c, [[-11, -19], [-13, -33], [-6, -25], [0, -37], [6, -25], [13, -33], [11, -19]], '#ffd740');
+      ci(c, 0, -25, 2, '#e040fb', false); ci(c, -7, -23, 1.5, '#00e5ff', false); ci(c, 7, -23, 1.5, '#69f0ae', false);
+      ell(c, 4, -8, 3.6, 2.2, '#e040fb', false); ell(c, 11.5, -8, 3.2, 2.2, '#e040fb', false);
+      ci(c, 0, 11, 3.4, '#00e5ff'); ci(c, -0.8, 10, 1, '#fff', false);
+      const cols = ['#ff7043', '#29b6f6', '#ffee58'];
+      for (let i = 0; i < 3; i++) {
+        const a = t * 0.004 + i * 2.094;
+        ci(c, Math.cos(a) * 29, -8 + Math.sin(a) * 11, 4.2, cols[i]);
+      }
+    }
   }
 ];
 
@@ -1492,6 +1624,80 @@ function drawMonster(c, m, t) {
       if (m.charge > 0) ci(c, 0, 20, 3 + m.charge * 5, '#ffcc80', false);
       break;
     }
+    case 'kitsune': {
+      const tl = Math.sin(ph * 3) * 4;
+      pg(c, [[-8, 6], [-26, -1 + tl], [-31, -15 + tl], [-19, -8], [-10, -2]], '#fff3e0');
+      pg(c, [[-31, -15 + tl], [-34, -22 + tl], [-26, -15 + tl]], '#7e57c2', false);
+      ell(c, 0, 8, 12, 12, '#ff9800');
+      ell(c, 0, 12, 6, 7, '#fff3e0', false);
+      pg(c, [[-11, -12], [-9, -27], [-2, -17]], '#ff9800');
+      pg(c, [[11, -12], [9, -27], [2, -17]], '#ff9800');
+      pg(c, [[-9, -16], [-8, -23], [-4, -17]], '#3e2723', false);
+      pg(c, [[9, -16], [8, -23], [4, -17]], '#3e2723', false);
+      ci(c, 0, -7, 12, '#ff9800');
+      ell(c, 0, -2, 8, 5.5, '#fff3e0', false);
+      c.strokeStyle = '#e53935'; c.lineWidth = 1.8;
+      c.beginPath(); c.moveTo(-10, -9); c.lineTo(-6, -7); c.moveTo(10, -9); c.lineTo(6, -7); c.stroke();
+      c.strokeStyle = OUT; c.lineWidth = 2;
+      ell(c, -5, -9, 3, 2, '#ffeb3b', false, 0.3); ell(c, 5, -9, 3, 2, '#ffeb3b', false, -0.3);
+      ci(c, -5 + lk * 0.4, -9, 1, '#111', false); ci(c, 5 + lk * 0.4, -9, 1, '#111', false);
+      ci(c, 0, -3, 1.5, '#111', false);
+      ci(c, 17, -19 + Math.sin(ph * 4) * 3, 3.4, '#80deea', false);
+      ci(c, 17, -19 + Math.sin(ph * 4) * 3, 1.4, '#fff', false);
+      break;
+    }
+    case 'oni': {
+      const wob = Math.sin(ph * 2) * 2;
+      rr(c, -14, 15, 10, 12, 3, '#7f1d1d'); rr(c, 4, 15, 10, 12, 3, '#7f1d1d');
+      rr(c, 19, -24 + wob, 9, 38, 3, '#6d4c41');
+      ci(c, 23.5, -18 + wob, 1.8, '#cfd8dc', false); ci(c, 23.5, -10 + wob, 1.8, '#cfd8dc', false); ci(c, 23.5, -2 + wob, 1.8, '#cfd8dc', false);
+      rr(c, -17, -6, 34, 24, 7, '#d32f2f');
+      pg(c, [[-17, 10], [17, 10], [14, 19], [-14, 19]], '#ffca28');
+      c.strokeStyle = '#212121'; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(-9, 10); c.lineTo(-7, 18); c.moveTo(0, 10); c.lineTo(0, 19); c.moveTo(9, 10); c.lineTo(7, 18); c.stroke();
+      c.strokeStyle = OUT; c.lineWidth = 2;
+      ci(c, 19, 2, 6, '#d32f2f');
+      ci(c, 0, -16, 13, '#e53935');
+      pg(c, [[-9, -26], [-7, -38], [-2, -27]], '#fff3c4');
+      pg(c, [[9, -26], [7, -38], [2, -27]], '#fff3c4');
+      pg(c, [[-5, -29], [-3, -34], [0, -29]], '#212121', false);
+      c.lineWidth = 2.6; c.beginPath(); c.moveTo(-10, -22); c.lineTo(-3, -18); c.moveTo(10, -22); c.lineTo(3, -18); c.stroke(); c.lineWidth = 2;
+      ci(c, -5, -16, 2.8, '#ffeb3b', false); ci(c, 5, -16, 2.8, '#ffeb3b', false);
+      ci(c, -5, -16, 1.1, '#111', false); ci(c, 5, -16, 1.1, '#111', false);
+      c.beginPath(); c.moveTo(-6, -8); c.lineTo(6, -8); c.stroke();
+      pg(c, [[-5, -8], [-3, -3], [-1, -8]], '#fff', false); pg(c, [[1, -8], [3, -3], [5, -8]], '#fff', false);
+      if (m.hp < m.maxHp) { c.beginPath(); c.moveTo(-12, -4); c.lineTo(-5, 4); c.lineTo(-9, 12); c.stroke(); }
+      break;
+    }
+    case 'voideye': {
+      const pl = Math.sin(ph * 2) * 2;
+      ci(c, 0, 0, 24 + pl, 'rgba(224,64,251,0.22)', false);
+      c.strokeStyle = '#4a148c'; c.lineWidth = 3;
+      for (let i = -3; i <= 3; i++) {
+        c.beginPath(); c.moveTo(i * 5, 10);
+        c.quadraticCurveTo(i * 6 + Math.sin(ph * 3 + i) * 6, 20, i * 7 - Math.sin(ph * 3 + i) * 5, 28); c.stroke();
+      }
+      c.strokeStyle = OUT; c.lineWidth = 2;
+      pg(c, [[-12, -14], [-8, -26], [-3, -17], [0, -29], [3, -17], [8, -26], [12, -14]], '#311b92');
+      ci(c, 0, 0, 18, '#1a0b2e');
+      ell(c, 0, 0, 13, 10, '#f3e5f5');
+      ci(c, lk * 1.5, 0, 6.5, '#d500f9', false);
+      ci(c, lk * 1.5, 0, 3, '#000', false);
+      ci(c, lk * 1.5 - 2, -2.5, 1.3, '#fff', false);
+      if (m.charge > 0) ci(c, 0, 21, 3 + m.charge * 6, '#e040fb', false);
+      break;
+    }
+    case 'riftling': {
+      c.save(); c.rotate(Math.sin(ph * 2) * 0.25);
+      pg(c, [[-7, -14], [0, -36], [7, -14]], 'rgba(255,64,129,0.6)', false);
+      c.save(); c.rotate(ph * 2); starPoly(c, 22, 10, 6); c.fillStyle = '#7c4dff'; c.fill(); c.stroke(); c.restore();
+      ci(c, 0, 0, 11, '#ff4081');
+      ci(c, -4, -1, 2.6, '#fff', false); ci(c, 4, -1, 2.6, '#fff', false);
+      ci(c, -4 + lk * 0.4, -1, 1.1, '#111', false); ci(c, 4 + lk * 0.4, -1, 1.1, '#111', false);
+      c.beginPath(); c.moveTo(-3, 5); c.lineTo(0, 7); c.lineTo(3, 5); c.stroke();
+      c.restore();
+      break;
+    }
     case 'harpy': {
       const fl = Math.sin(ph * 5) * 8;
       pg(c, [[-8, 0], [-27, -12 - fl], [-23, 4], [-15, 2 + fl * 0.4], [-11, 10]], '#d4a82a');
@@ -1840,8 +2046,82 @@ function drawArenaDeco(c, a, w, h, scroll, t) {
       }
       break;
     }
+    case 'sakura': {
+      const mx = w * 0.28, my = 96 + sink * 0.3;
+      const mg = c.createRadialGradient(mx, my, 10, mx, my, 110);
+      mg.addColorStop(0, 'rgba(255,255,255,0.75)'); mg.addColorStop(1, 'rgba(255,200,230,0)');
+      c.fillStyle = mg; c.fillRect(mx - 120, my - 120, 240, 240);
+      ci(c, mx, my, 34, '#fff7fb', false);
+      ci(c, mx - 10, my - 8, 6, '#f3d3e6', false); ci(c, mx + 11, my + 9, 4, '#f3d3e6', false);
+      layerPeaks(c, w, base - 10, 110, 150, 70, '#e1a6d0', '#ffffff', 61);
+      layerPeaks(c, w, base + 20, 84, 100, 60, '#c97fb8', null, 71);
+      for (let i = 0; i < 3; i++) {
+        const ix = w * (0.2 + i * 0.32) + Math.sin(t * 0.0006 + i * 2) * 8;
+        const iy = h * (0.28 + i * 0.22) + Math.cos(t * 0.0008 + i) * 6 + sink * 0.3;
+        pg(c, [[ix - 44, iy], [ix + 44, iy], [ix + 22, iy + 30], [ix + 6, iy + 50], [ix - 10, iy + 34], [ix - 30, iy + 18]], '#7b5e6e', false);
+        ell(c, ix, iy, 46, 9, '#a5d6a7', false);
+        c.strokeStyle = '#5d4037'; c.lineWidth = 5;
+        c.beginPath(); c.moveTo(ix - 8, iy - 2); c.quadraticCurveTo(ix - 12, iy - 22, ix - 4, iy - 34); c.stroke();
+        ci(c, ix - 6, iy - 40, 15, '#f8bbd9', false); ci(c, ix - 18, iy - 32, 10, '#f48fb1', false); ci(c, ix + 7, iy - 34, 11, '#f8bbd9', false);
+        if (i === 1) {
+          c.fillStyle = '#e53935';
+          c.fillRect(ix + 14, iy - 30, 4, 30); c.fillRect(ix + 32, iy - 30, 4, 30);
+          c.fillRect(ix + 8, iy - 34, 32, 5); c.fillRect(ix + 12, iy - 26, 24, 3);
+        }
+      }
+      for (let i = 0; i < 2; i++) {
+        const fx = ((t * 0.01 * (i + 1) + i * 200) % (w + 300)) - 150;
+        ell(c, fx, base - 40 - i * 60, 150, 22, 'rgba(255,255,255,0.2)', false);
+      }
+      break;
+    }
+    case 'void': {
+      for (let i = 0; i < 46; i++) {
+        const sx = hash(i + 200) * w, sy = (hash(i + 240) * h + fl * (0.15 + hash(i) * 0.3)) % h;
+        c.fillStyle = 'rgba(255,255,255,' + (0.3 + 0.7 * Math.abs(Math.sin(t * 0.002 + i))) + ')';
+        c.fillRect(sx, sy, 1.5 + hash(i + 7) * 1.5, 1.5 + hash(i + 7) * 1.5);
+      }
+      const bx = w * 0.5, by = h * 0.34 + sink * 0.25, kk = h < 400 ? 0.55 : 1;
+      const og = c.createRadialGradient(bx, by, 20 * kk, bx, by, 160 * kk);
+      og.addColorStop(0, 'rgba(124,77,255,0.45)'); og.addColorStop(0.5, 'rgba(224,64,251,0.18)'); og.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = og; c.fillRect(0, 0, w, h);
+      for (let k = 0; k < 3; k++) {
+        c.beginPath(); c.moveTo(0, h * (0.62 + k * 0.1));
+        for (let x = 0; x <= w; x += 14) c.lineTo(x, h * (0.62 + k * 0.1) + Math.sin(x * 0.02 + t * 0.001 + k * 2) * 12 * kk);
+        c.lineTo(w, h); c.lineTo(0, h); c.closePath();
+        c.fillStyle = ['rgba(0,229,255,0.1)', 'rgba(224,64,251,0.1)', 'rgba(105,240,174,0.08)'][k]; c.fill();
+      }
+      c.save(); c.translate(bx, by); c.scale(kk, kk); c.rotate(-0.25);
+      const dcols = ['rgba(255,64,129,0.6)', 'rgba(255,171,64,0.65)', 'rgba(255,241,118,0.75)'];
+      for (let k = 0; k < 3; k++) {
+        c.strokeStyle = dcols[k]; c.lineWidth = 9 - k * 2.5;
+        c.beginPath(); c.ellipse(0, 0, 96 - k * 14, 22 - k * 3.5, 0, Math.PI, 2 * Math.PI); c.stroke();
+      }
+      c.fillStyle = '#000'; c.beginPath(); c.arc(0, 0, 40, 0, 6.283); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,0.6)'; c.lineWidth = 2; c.beginPath(); c.arc(0, 0, 41, 0, 6.283); c.stroke();
+      c.setLineDash([30, 18]); c.lineDashOffset = -t * 0.05;
+      for (let k = 0; k < 3; k++) {
+        c.strokeStyle = dcols[k]; c.lineWidth = 9 - k * 2.5;
+        c.beginPath(); c.ellipse(0, 0, 96 - k * 14, 22 - k * 3.5, 0, 0, Math.PI); c.stroke();
+      }
+      c.setLineDash([]); c.lineDashOffset = 0;
+      c.restore();
+      for (let i = 0; i < 4; i++) {
+        const sx2 = w * (0.12 + i * 0.26), sy2 = h * (0.55 + (i % 2) * 0.2) + Math.sin(t * 0.0012 + i * 2) * 8 + sink * 0.3;
+        c.save(); c.translate(sx2, sy2); c.rotate(t * 0.0004 * (i % 2 ? 1 : -1) + i);
+        pg(c, [[-10, -4], [-3, -12], [9, -7], [11, 5], [0, 11], [-9, 7]], 'rgba(60,35,110,0.75)', false);
+        pg(c, [[-3, -12], [9, -7], [0, 0]], 'rgba(179,136,255,0.4)', false);
+        c.restore();
+      }
+      c.strokeStyle = 'rgba(255,64,129,0.35)'; c.lineWidth = 1.5;
+      for (let i = 0; i < 2; i++) {
+        const rx = w * (0.18 + i * 0.6), ry = h * 0.2 + i * h * 0.3 + sink * 0.3;
+        c.beginPath(); c.moveTo(rx, ry); c.lineTo(rx + 12, ry + 30); c.lineTo(rx - 6, ry + 58); c.lineTo(rx + 8, ry + 92); c.stroke();
+      }
+      break;
+    }
     case 'clockwork': {
-      const gears = [[w * 0.18, 110, 62, 0.00028], [w * 0.84, 250, 78, -0.00022], [w * 0.4, 420, 54, 0.00034], [w * 0.9, 560, 46, -0.0004]];
+      const gears =[[w * 0.18, 110, 62, 0.00028], [w * 0.84, 250, 78, -0.00022], [w * 0.4, 420, 54, 0.00034], [w * 0.9, 560, 46, -0.0004]];
       for (const gr of gears) {
         c.save(); c.translate(gr[0], gr[1] + sink * 0.4); c.rotate(t * gr[3]);
         gearPath(c, gr[2], gr[2] - 10, 12, 0); c.fillStyle = 'rgba(40,22,8,0.28)'; c.fill();
@@ -1953,6 +2233,12 @@ function drawPlatformShape(c, a, p, t) {
       for (let k = 0; k < 6; k++) { c.fillStyle = sc[k % 3]; c.fillRect(p.x + 8 + k * 9, p.y + 6 + (k % 2) * 3, 4, 2); }
     } else if (a.scene === 'graveyard') {
       c.fillStyle = '#7cb342'; for (let k = 0; k < 4; k++) c.fillRect(p.x + 6 + k * 15, p.y - 1, 8, 3);
+    } else if (a.scene === 'sakura') {
+      for (let k = 0; k < 5; k++) ci(c, p.x + 10 + k * 12, p.y + 3 + (k % 2) * 8, 1.8, '#fff0f6', false);
+    } else if (a.scene === 'void') {
+      c.fillStyle = 'rgba(255,255,255,0.75)';
+      for (let k = 0; k < 3; k++) c.fillRect(p.x + 10 + k * (p.w - 24) / 2, p.y + 7, 3, 2);
+      c.fillStyle = 'rgba(255,64,129,0.8)'; c.fillRect(p.x + p.w / 2 - 1, p.y + 2, 2, 2);
     } else if (a.scene === 'clockwork') {
       for (let k = 0; k < 4; k++) ci(c, p.x + 10 + k * (p.w - 20) / 3, p.y + p.h / 2 + 1, 1.5, '#ffe082', false);
     }
@@ -2106,6 +2392,17 @@ function getCurrentArena() { return ARENAS[saveData.selectedArena - 1] || ARENAS
 const SKIN_MAP = {};
 SKINS.forEach((sk) => { SKIN_MAP[sk.id] = sk; });
 function getSkin() { return SKIN_MAP[saveData.selectedSkin] || SKINS[0]; }
+// Бонусы героя (perk): coin — множитель монет, xp — множитель опыта, magnet — радиус притяжения монет, revive — воскрешений за матч
+const NO_PERK = {};
+function getPerk() { return getSkin().perk || NO_PERK; }
+function gainCoins(n) {
+  const m = getPerk().coin || 1;
+  let g = Math.floor(n * m);
+  if (Math.random() < n * m - g) g += 1;
+  saveData.coins += g;
+  saveData.stats.totalCoinsCollected += g;
+  return g;
+}
 
 let toastTimer = null;
 function showArenaToast(title) { showToastText(`🏆 НОВАЯ АРЕНА ОТКРЫТА: ${title}!`); }
@@ -2148,7 +2445,7 @@ let lastVanish = false;
 let monsterCooldown = 0;
 
 const keys = { left: false, right: false };
-const player = { x: W / 2 - 22, y: H - 140, w: 44, h: 44, vx: 0, vy: 0, facing: 1, shootTimer: 0, powerup: null, powerupTimer: 0 };
+const player = { x: W / 2 - 22, y: H - 140, w: 44, h: 44, vx: 0, vy: 0, facing: 1, shootTimer: 0, powerup: null, powerupTimer: 0, invuln: 0, revivesLeft: 0 };
 
 let platforms = [], bullets = [], monsters = [], coins = [], particles = [], hazards = [];
 let gameAmbient = makeAmbient(W, H, 30);
@@ -2268,6 +2565,7 @@ function initGameWorld() {
   player.x = W / 2 - player.w / 2; player.y = H - 120;
   player.vx = 0; player.vy = JUMP_FORCE; player.facing = 1;
   player.shootTimer = 0; player.powerup = null; player.powerupTimer = 0;
+  player.invuln = 0; player.revivesLeft = getPerk().revive || 0;
 
   platforms.push({ x: W / 2 - 34, y: H - 65, w: 68, h: 15, type: 'normal', vx: 0, broken: false, breakVy: 0, item: null, springT: 0 });
   lastCX = W / 2; prevCX = W / 2;
@@ -2373,7 +2671,7 @@ function updateTouchUI() {
 function xpMult(a) { return 1 + 0.3 * (a.id - 1); }
 function fmtXP(n) { return n >= 1e6 ? (n / 1e6).toFixed(n % 1e6 ? 1 : 0).replace('.', ',') + ' млн' : formatNum(n); }
 function addXP(n) {
-  n *= xpMult(getCurrentArena());
+  n *= xpMult(getCurrentArena()) * (getPerk().xp || 1);
   saveData.totalXP += n;
   matchBonusXP += n;
   syncUnlockedArenas(true);
@@ -2386,7 +2684,7 @@ function killMonster(i, reward) {
   score += 100;
   saveData.stats.monstersKilled += 1;
   addXP(60);
-  if (reward) { saveData.coins += 2; saveData.stats.totalCoinsCollected += 2; }
+  if (reward) gainCoins(2);
   writeSaveData();
   playSound('kill');
   updateHUD();
@@ -2394,18 +2692,19 @@ function killMonster(i, reward) {
 
 function updateHazards(dt, arena) {
   hazardTimer -= dt;
-  if (arena.hazard === 'faller' && hazardTimer <= 0) {
+  const hk = hazardTimer <= 0 ? (arena.hazard === 'both' ? (Math.random() < 0.5 ? 'faller' : 'lightning') : arena.hazard) : null;
+  if (hk === 'faller') {
     hazards.push({ kind: 'faller', look: arena.hazardLook || 'crystal', x: clamp(player.x + player.w / 2 + (Math.random() - 0.5) * 220, 24, W - 24), y: -40, warn: 70, falling: false });
     hazardTimer = (190 + Math.random() * 120) / (1 + hardLevel() * 0.6);
     playSound('warn');
   }
-  if (arena.hazard === 'lightning' && hazardTimer <= 0) {
+  if (hk === 'lightning') {
     hazards.push({ kind: 'bolt', x: clamp(player.x + player.w / 2 + (Math.random() - 0.5) * 150, 30, W - 30), warn: 62, strike: 0, seed: Math.random() * 100 });
     hazardTimer = (250 + Math.random() * 150) / (1 + hardLevel() * 0.6);
     playSound('warn');
   }
   const pcx = player.x + player.w / 2, pcy = player.y + player.h / 2;
-  const vulnerable = !player.powerup;
+  const vulnerable = !player.powerup && player.invuln <= 0;
   for (let i = hazards.length - 1; i >= 0; i--) {
     const hz = hazards[i];
     if (hz.kind === 'faller') {
@@ -2463,6 +2762,7 @@ function update(dt) {
   if (player.x > W) player.x = -player.w;
 
   if (player.shootTimer > 0) player.shootTimer = Math.max(0, player.shootTimer - dt);
+  if (player.invuln > 0) player.invuln = Math.max(0, player.invuln - dt);
 
   if ((saveData.selectedSkin === 'sf' || saveData.selectedSkin === 'gold') && Math.random() < 0.35 * dt) {
     particles.push({ x: player.x + 8 + Math.random() * (player.w - 16), y: player.y + player.h - 6, vx: (Math.random() - 0.5) * 1.2, vy: -1 - Math.random() * 1.5, life: 16, color: saveData.selectedSkin === 'sf' ? '#ff1744' : '#ffd54f' });
@@ -2538,12 +2838,18 @@ function update(dt) {
   }
 
   // монеты
+  const magnetR = getPerk().magnet || 0;
   for (const c of coins) {
     if (c.collected) continue;
     c.angle += 0.08 * dt;
+    const cdx = player.x + player.w / 2 - c.x, cdy = player.y + player.h / 2 - c.y;
+    if (magnetR && Math.hypot(cdx, cdy) < magnetR) {
+      const k = Math.min(1, 0.14 * dt);
+      c.x += cdx * k; c.y += cdy * k;
+    }
     if (Math.hypot(player.x + player.w / 2 - c.x, player.y + player.h / 2 - c.y) < c.r + 22) {
       c.collected = true;
-      saveData.coins += 1; saveData.stats.totalCoinsCollected += 1;
+      gainCoins(1);
       addXP(20);
       writeSaveData();
       playSound('coin');
@@ -2599,7 +2905,7 @@ function update(dt) {
         saveData.stats.totalJumps += 1;
         killMonster(i, false);
         playSound('jump');
-      } else if (!player.powerup) {
+      } else if (!player.powerup && player.invuln <= 0) {
         triggerGameOver();
         return;
       }
@@ -2713,6 +3019,19 @@ function drawHazards(t) {
           pg(ctx, [[-15, -6], [-8, -17], [6, -18], [16, -5], [12, 11], [-4, 15], [-14, 8]], '#8d6e63');
           pg(ctx, [[-8, -17], [6, -18], [2, -6], [-9, -4]], 'rgba(255,255,255,0.25)', false);
           ci(ctx, 5, 4, 3, '#6d4c41', false); ci(ctx, -6, 7, 2, '#6d4c41', false);
+        } else if (hz.look === 'lantern') {
+          ctx.strokeStyle = OUT; ctx.rotate(Math.sin(hz.y * 0.05) * 0.15);
+          rr(ctx, -9, -22, 18, 6, 2, '#546e7a');
+          rr(ctx, -12, -17, 24, 6, 2, '#78909c');
+          rr(ctx, -9, -11, 18, 16, 2, '#cfd8dc');
+          ctx.fillStyle = '#ffb74d'; ctx.fillRect(-4, -7, 8, 8); ctx.strokeRect(-4, -7, 8, 8);
+          rr(ctx, -12, 5, 24, 6, 2, '#78909c');
+          rr(ctx, -7, 11, 14, 8, 2, '#546e7a');
+        } else if (hz.look === 'shard') {
+          ctx.strokeStyle = OUT; ctx.rotate(Math.sin(hz.y * 0.04) * 0.25);
+          pg(ctx, [[0, -26], [10, -8], [7, 16], [0, 28], [-8, 14], [-11, -6]], '#7c4dff');
+          pg(ctx, [[0, -26], [10, -8], [0, 0]], 'rgba(255,255,255,0.35)', false);
+          ci(ctx, 0, 2, 3.4, '#ff4081', false);
         } else if (hz.look === 'gear') {
           ctx.strokeStyle = OUT; ctx.rotate(hz.y * 0.05);
           gearPath(ctx, 21, 16, 9, 0); ctx.fillStyle = '#b8860b'; ctx.fill(); ctx.stroke();
@@ -2769,9 +3088,11 @@ function draw(t) {
   stepAmbient(ctx, arena, gameAmbient, W, H, drawDt, windNow);
   drawEntities(t);
   drawHazards(t);
+  if (player.invuln > 0 && Math.floor(player.invuln / 6) % 2 === 0) ctx.globalAlpha = 0.45;
   drawCharacter(ctx, getSkin(), player.x + player.w / 2, player.y + player.h / 2, player.facing, {
     shoot: player.shootTimer > 0, powerup: player.powerup, t
   });
+  ctx.globalAlpha = 1;
 }
 
 // ==========================================================
@@ -2962,7 +3283,7 @@ function drawMenuPreview(t) {
 
 let skinFilter = 'all';
 const RARITY_FILTERS = [
-  ['all', 'Все'], ['owned', 'Купленные'], ['common', 'Обычные'], ['rare', 'Редкие'], ['epic', 'Эпические'], ['mythic', 'Мифические'], ['arcana', 'Аркана']
+  ['all', 'Все'], ['owned', 'Купленные'], ['common', 'Обычные'], ['rare', 'Редкие'], ['epic', 'Эпические'], ['mythic', 'Мифические'], ['arcana', 'Аркана'], ['legend', 'Легенды']
 ];
 
 function renderShop() {
@@ -2983,7 +3304,7 @@ function renderShop() {
     const isEquipped = saveData.selectedSkin === skin.id;
     const item = document.createElement('div');
     item.className = 'list-card';
-    let btnClass = 'buy', btnText = `${skin.price} 🪙`;
+    let btnClass = 'buy', btnText = `${formatNum(skin.price)} 🪙`;
     if (isEquipped) { btnClass = 'equipped'; btnText = 'Выбран ✓'; }
     else if (isOwned) { btnClass = 'select'; btnText = 'Выбрать'; }
     item.innerHTML = `
@@ -2992,6 +3313,7 @@ function renderShop() {
         <div>
           <div class="card-title">${skin.name}<span class="rarity-tag rarity-${skin.rarity}">${skin.rarityName}</span></div>
           <div class="card-desc">${skin.desc}</div>
+          ${skin.perkText ? `<div class="perk-line">${skin.perkText}</div>` : ''}
         </div>
       </div>
       <button class="action-btn ${btnClass}">${btnText}</button>`;
@@ -3105,6 +3427,18 @@ function startGame() {
 
 function triggerGameOver() {
   if (gameState === 'GAMEOVER') return;
+  // Бонус героя «воскрешение»: спасает от смерти (падение, монстр, молния), затем короткая неуязвимость
+  if (gameState === 'PLAYING' && player.revivesLeft > 0) {
+    player.revivesLeft -= 1;
+    player.invuln = 150;
+    player.y = Math.min(player.y, H * 0.5);
+    if (player.y > H * 0.5 || player.y < H * 0.2) player.y = H * 0.44;
+    player.vy = SPRING_FORCE;
+    hazards = hazards.filter((hz) => hz.kind === 'fireball' ? false : hz.kind === 'faller' ? !hz.falling : false);
+    playSound('powerup');
+    showToastText('😇 ВОСКРЕШЕНИЕ! Герой спасён');
+    return;
+  }
   gameState = 'GAMEOVER';
   stopAllLoops();
   playSound('gameover');
