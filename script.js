@@ -5784,7 +5784,7 @@ function updateMetaUI() {
     $id('eventBannerS').textContent = `${ev.cur} ${formatNum(saveData.eventCur[ev.id] || 0)} • ещё ${fmtLeft(eventEndsMs(ev))}`;
   }
   renderBoostRow();
-  if (typeof updateFriendsTile === 'function' && typeof friendsMenuEl !== 'undefined') updateFriendsTile();
+  try { updateFriendsTile(); } catch (e) {}
 }
 // Перерисовать открытое окно мета-игры (после получения награды и т. п.)
 function refreshOpenMeta() {
@@ -6117,6 +6117,7 @@ function renderFriendsList(body) {
   body.querySelectorAll('.fr-card').forEach((card) => {
     const f = fr.find((x) => x.id === card.dataset.id);
     if (!f) return;
+    card.addEventListener('click', (e) => { if (!e.target.closest('.fr-acts')) { playSound('click'); openFriendProfile(f); } });
     card.querySelector('.js-gift').addEventListener('click', () => sendGift(f));
     card.querySelector('.js-ch').addEventListener('click', () => { playSound('click'); startChallenge(f); });
     card.querySelector('.js-rm').addEventListener('click', async () => {
@@ -6130,6 +6131,36 @@ function renderFriendsList(body) {
     });
   });
 }
+
+const friendProfileEl = $id('friendProfileMenu');
+function renderFriendProfile(f) {
+  const body = $id('fpBody');
+  const sc = f.scores || {};
+  const a = ARENAS[(f.arena || 1) - 1] || ARENAS[0];
+  const rows = Object.keys(sc).map(Number).filter((id) => ARENAS[id - 1] && sc[id] > 0).sort((x, y) => x - y);
+  body.innerHTML = `
+    <div class="fp-head">${avatarCanvasHTML(f.skin, 84)}<div><b>${escHTML(f.name)}</b>
+      <small>Код: ${escHTML(f.code || '—')}</small><small>${f.last_seen ? 'был(а) ' + agoText(f.last_seen) : ''}</small></div></div>
+    <div class="fp-grid">
+      <div class="fp-box"><small>🏆 Лучший рекорд</small><b>${formatNum(f.best || 0)}</b></div>
+      <div class="fp-box"><small>🏟 Открыто арен</small><b>${a.id} из ${ARENAS.length}</b></div>
+      <div class="fp-box"><small>⭐ Опыт</small><b>${fmtXP(Math.floor(f.xp || 0))} XP</b></div>
+      <div class="fp-box"><small>🎭 Герой</small><b>${escHTML((SKIN_MAP[f.skin] || SKINS[0]).name)}</b></div>
+    </div>
+    <div class="sec-title">Рекорды по аренам</div>
+    ${rows.length ? rows.map((id) => `<div class="list-card"><div class="card-title">${ARENAS[id - 1].icon} ${escHTML(ARENAS[id - 1].name)}</div><b>${formatNum(sc[id])}</b></div>`).join('') : '<div class="fr-empty"><span>Пока нет рекордов.</span></div>'}
+    <div class="fp-acts">
+      <button class="btn btn-gold btn-sm js-fp-gift" ${f.gifted ? 'disabled' : ''}>🎁 Подарить 50</button>
+      <button class="btn btn-purple btn-sm js-fp-ch">🎯 Вызов</button>
+    </div>`;
+  paintAvatars(body);
+  body.querySelector('.js-fp-gift').addEventListener('click', async () => { await sendGift(f); renderFriendProfile(f); });
+  body.querySelector('.js-fp-ch').addEventListener('click', () => { playSound('click'); startChallenge(f); });
+}
+function openFriendProfile(f) {
+  openModal(friendProfileEl, () => renderFriendProfile(f));
+}
+$id('fpBack').addEventListener('click', () => { playSound('click'); openModal(friendsMenuEl, renderFriends); });
 
 function boardKey() { return net.board === 'arena' ? 'arena' + saveData.selectedArena : net.board === 'week' ? 'week' + weekKeyNow() : net.board; }
 async function loadBoard() {
