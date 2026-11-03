@@ -725,6 +725,15 @@ function pg(c, pts, fill, stroke) {
   if (fill) { c.fillStyle = fill; c.fill(); }
   if (stroke !== false) c.stroke();
 }
+function drawHeart(c, x, y, k, fill) {
+  c.beginPath();
+  c.moveTo(x, y + k * 0.9);
+  c.bezierCurveTo(x - k * 1.7, y - k * 0.2, x - k * 0.9, y - k * 1.5, x, y - k * 0.5);
+  c.bezierCurveTo(x + k * 0.9, y - k * 1.5, x + k * 1.7, y - k * 0.2, x, y + k * 0.9);
+  c.closePath();
+  if (fill) { c.fillStyle = fill; c.fill(); }
+  c.stroke();
+}
 function starPoly(c, r1, r2, n) {
   c.beginPath();
   for (let i = 0; i < n * 2; i++) {
@@ -735,6 +744,19 @@ function starPoly(c, r1, r2, n) {
   }
   c.closePath();
 }
+// Помощники для сезонных скинов (необычные силуэты: у каждого свой образ, не «человечек» из магазина)
+function sGlow(c, x, y, r, rgba) {
+  const g = c.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, rgba); g.addColorStop(1, rgba.replace(/[\d.]+\)$/, '0)'));
+  c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+}
+function sSpark(c, x, y, r, col) { c.save(); c.translate(x, y); starPoly(c, r, r * 0.35, 4); c.fillStyle = col; c.fill(); c.restore(); }
+function sHand(c, shoot, col) { if (shoot) { rr(c, -2.5, -33, 5, 8, 2, col); ci(c, 0, -35, 4.5, col); } }
+function sFace(c, x, y, big) {
+  ci(c, x, y, big, '#fff'); ci(c, x + 0.9, y + 0.3, big * 0.5, '#111', false);
+  ci(c, x + 7.5, y, big, '#fff'); ci(c, x + 8.4, y + 0.3, big * 0.5, '#111', false);
+}
+
 function defaultEyes(c) {
   ci(c, 2, -8, 2.8, '#111', false);
   ci(c, 9.5, -8, 2.8, '#111', false);
@@ -1521,18 +1543,287 @@ const SKINS = [
     }
   },
   {
-    id: 'ranger', name: 'Сезонный Рейнджер', rarity: 'season', rarityName: 'Сезон', season: true,
-    desc: 'Броня чемпиона сезона. Награда 30-го уровня премиум-пропуска.', perkText: '⭐ Опыт +20%', perk: { xp: 1.2 },
-    price: 0, icon: '🎖',
-    skin: '#263238', torso: '#00897b', legs: '#004d40', shoe: '#ffd740', arm: '#00897b', hand: '#ffd740', torsoW: 24, noEyes: true, bullet: 'star', bulletColor: '#64ffda',
-    back(c, t) { const f = Math.sin(t * 0.008) * 2; pg(c, [[-10, 4], [-24 - f, 24], [8, 25], [11, 4]], '#ffb300'); },
-    look(c, t) {
-      pg(c, [[-4, -21], [0, -34], [4, -21]], '#ffd740');
-      rr(c, -3, -15, 19, 10, 4, '#64ffda');
-      c.fillStyle = 'rgba(255,255,255,0.7)'; c.fillRect(0, -13, 8, 2);
-      const g = 0.5 + Math.sin(t * 0.006) * 0.5;
-      c.fillStyle = 'rgba(0,150,136,' + (0.4 + g * 0.4).toFixed(2) + ')'; c.fillRect(3, -9, 10, 1.6);
-      c.save(); c.translate(0, 11); starPoly(c, 4.6, 2, 5); c.fillStyle = '#ffd740'; c.fill(); c.stroke(); c.restore();
+    id: 'ranger', name: 'Ёжик-Листопад', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Осенний ёжик, у которого вместо иголок кленовые листья. Награда 30-го уровня премиум-пропуска.', perkText: '⭐ Опыт +20%', perk: { xp: 1.2 },
+    price: 0, icon: '🦔',
+    skin: '#8d6e63', torso: '#8d6e63', legs: '#5d4037', shoe: '#3e2723', arm: '#ffe0b2', hand: '#ffe0b2', bullet: 'star', bulletColor: '#ff9800',
+    full(c, t, shoot) {
+      const cols = ['#bf360c', '#e65100', '#f9a825', '#8d3a14', '#ef6c00'];
+      const sw = Math.sin(t * 0.004);
+      rr(c, -9, 14, 7, 8, 3, '#5d4037'); rr(c, 3, 14, 7, 8, 3, '#5d4037');
+      for (let i = 0; i < 10; i++) {
+        const a = -1.45 - i * 0.43, bx = -2 + Math.cos(a) * 13, by = 4 + Math.sin(a) * 12, tx = -Math.sin(a), ty = Math.cos(a);
+        const k = 1 + Math.sin(t * 0.005 + i) * 0.06, ex = -2 + Math.cos(a) * 24 * k, ey = 4 + Math.sin(a) * 22 * k;
+        pg(c, [[bx + tx * 4.5, by + ty * 4.5], [ex, ey], [bx - tx * 4.5, by - ty * 4.5]], cols[i % 5]);
+        if (i % 2 === 0) ell(c, ex, ey, 3.2, 1.9, cols[(i + 2) % 5], true, a);
+      }
+      ell(c, -2, 5, 15, 13.5, '#8d6e63');
+      ell(c, 10, 8, 9.5, 8, '#ffe0b2');
+      ci(c, 18.5, 6.5, 2.4, '#212121');
+      ci(c, 9, 1, 3, '#fff'); ci(c, 9.8, 1.2, 1.5, '#111', false);
+      ell(c, 3, 8, 2.4, 1.5, 'rgba(255,100,100,0.4)', false);
+      c.beginPath(); c.arc(13, 11, 2.6, 0.2, Math.PI - 0.2); c.stroke();
+      ell(c, -14, 18 + sw * 2, 3.2, 1.8, '#e65100', true, 0.6 + sw * 0.3);
+      sHand(c, shoot, '#ffe0b2');
+    }
+  },
+
+  // ======================= СЕЗОННЫЕ СКИНЫ: по одному на каждый месяц, идут по кругу (см. SEASON_SKINS) =======================
+  {
+    id: 'icequeen', name: 'Ледяной Кристалл', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Живой кристалл льда с парящей короной. Награда 30-го уровня премиум-пропуска.', perkText: '💰 Монеты ×1.25', perk: { coin: 1.25 },
+    price: 0, icon: '❄️',
+    skin: '#b3e5fc', torso: '#81d4fa', legs: '#4fc3f7', shoe: '#e1f5fe', arm: '#e3f2fd', hand: '#e3f2fd', bullet: 'star', bulletColor: '#b3e5fc',
+    full(c, t, shoot) {
+      const b = Math.sin(t * 0.004) * 2;
+      sGlow(c, 0, 0, 32, 'rgba(179,229,252,0.5)');
+      c.save(); c.translate(0, b);
+      pg(c, [[0, -24], [15, -8], [11, 14], [0, 22], [-11, 14], [-15, -8]], '#b3e5fc');
+      pg(c, [[0, -24], [15, -8], [0, -2]], '#e1f5fe', false);
+      pg(c, [[0, -2], [-15, -8], [-11, 14]], '#81d4fa', false);
+      pg(c, [[0, -2], [15, -8], [11, 14], [0, 22]], '#4fc3f7', false);
+      pg(c, [[0, -24], [15, -8], [11, 14], [0, 22], [-11, 14], [-15, -8]], null);
+      c.beginPath(); c.moveTo(0, -24); c.lineTo(0, 22); c.moveTo(-15, -8); c.lineTo(0, -2); c.lineTo(15, -8); c.globalAlpha = 0.4; c.stroke(); c.globalAlpha = 1;
+      sFace(c, 2, -6, 3);
+      c.beginPath(); c.arc(7, 1, 3, 0.2, Math.PI - 0.2); c.stroke();
+      ell(c, 1, -1, 3, 1.8, 'rgba(255,120,150,0.4)', false);
+      pg(c, [[-17, 2], [-24, 8], [-17, 10]], '#81d4fa'); pg(c, [[17, 2], [24, 8], [17, 10]], '#81d4fa');
+      for (let i = 0; i < 3; i++) { const h = 6 + i % 2 * 4; const x = -8 + i * 8, y = -28 - Math.sin(t * 0.006 + i) * 1.5; pg(c, [[x - 3, y], [x, y - h], [x + 3, y]], '#e1f5fe'); }
+      c.restore();
+      for (let i = 0; i < 3; i++) { const a = t * 0.002 + i * 2.1; sSpark(c, Math.cos(a) * 24, Math.sin(a) * 22, 2.6, '#fff'); }
+      sHand(c, shoot, '#b3e5fc');
+    }
+  },
+  {
+    id: 'samurai', name: 'Снеговик', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Добродушный снеговик в цилиндре, с морковкой и тёплым шарфом. Награда 30-го уровня премиум-пропуска.', perkText: '⭐ Опыт +20%', perk: { xp: 1.2 },
+    price: 0, icon: '⛄',
+    skin: '#ffffff', torso: '#ffffff', legs: '#e3f2fd', shoe: '#e3f2fd', arm: '#6d4c41', hand: '#6d4c41', bullet: 'orb', bulletColor: '#e1f5fe',
+    full(c, t, shoot) {
+      const sw = Math.sin(t * 0.005) * 2, b = Math.sin(t * 0.004);
+      c.strokeStyle = '#6d4c41'; c.lineWidth = 2.6;
+      c.beginPath(); c.moveTo(-10, 6); c.lineTo(-24, -2 + sw); c.moveTo(-19, 1 + sw * 0.7); c.lineTo(-23, 6 + sw); c.moveTo(10, 6); c.lineTo(24, -4 - sw); c.moveTo(19, -1 - sw * 0.7); c.lineTo(23, -7 - sw); c.stroke();
+      c.strokeStyle = OUT; c.lineWidth = 2;
+      ci(c, 0, 10, 12.5, '#fff'); ell(c, -3, 16, 8, 3, 'rgba(144,202,249,0.35)', false);
+      ci(c, 0, 8, 1.8, '#212121', false); ci(c, 0, 14, 1.8, '#212121', false);
+      c.save(); c.translate(0, b);
+      ci(c, 1, -10, 10.5, '#fff'); ell(c, -4, -5, 5, 3, 'rgba(144,202,249,0.3)', false);
+      ci(c, 3, -14, 1.8, '#212121', false); ci(c, 10, -14, 1.8, '#212121', false);
+      pg(c, [[9, -10], [23, -8], [9, -7]], '#ff7043');
+      for (let i = 0; i < 5; i++) ci(c, 2 + i * 2.2, -4.5 + Math.abs(i - 2) * 0.7, 0.9, '#212121', false);
+      ell(c, -3, -9, 2.4, 1.5, 'rgba(255,100,120,0.45)', false);
+      ell(c, 1, -19, 12, 2.6, '#212121'); rr(c, -5, -32, 13, 14, 2, '#212121'); rr(c, -5, -24, 13, 3.4, 0, '#e53935');
+      rr(c, -10, -3, 22, 6, 3, '#e53935');
+      c.fillStyle = '#fff'; c.fillRect(-6, -2.4, 3, 4.8); c.fillRect(2, -2.4, 3, 4.8);
+      rr(c, 6, 2, 5, 11, 2, '#e53935'); c.fillStyle = '#fff'; c.fillRect(6.4, 6, 4.2, 2.4);
+      c.restore();
+      for (let i = 0; i < 3; i++) { const a = t * 0.0016 + i * 2.1; sSpark(c, Math.cos(a) * 25, Math.sin(a) * 21, 2.4, '#fff'); }
+      sHand(c, shoot, '#6d4c41');
+    }
+  },
+  {
+    id: 'cupid', name: 'Сердечко-Купидон', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Милое живое сердечко с крылышками и нимбом. Награда 30-го уровня премиум-пропуска.', perkText: '🧲 Магнит монет', perk: { magnet: 70 },
+    price: 0, icon: '💘',
+    skin: '#f48fb1', torso: '#f8bbd0', legs: '#f48fb1', shoe: '#ffffff', arm: '#ffe0c2', hand: '#ffe0c2', bullet: 'heart', bulletColor: '#ff4081',
+    full(c, t, shoot) {
+      const f = Math.sin(t * 0.014) * 6, b = Math.sin(t * 0.004) * 1.5, k = 1 + Math.sin(t * 0.01) * 0.04;
+      sGlow(c, 0, 0, 30, 'rgba(255,128,171,0.35)');
+      c.save(); c.translate(0, b);
+      ell(c, -17, -6 - f * 0.3, 5, 10, '#fff', true, -0.6 - f * 0.03); ell(c, 17, -6 - f * 0.3, 5, 10, '#fff', true, 0.6 + f * 0.03);
+      rr(c, -7, 12, 5, 8, 2, '#f48fb1'); rr(c, 3, 12, 5, 8, 2, '#f48fb1');
+      c.save(); c.scale(k, k); drawHeart(c, 0, 3, 11.5, '#f06292'); c.restore();
+      ell(c, -7, -6, 3, 1.8, 'rgba(255,255,255,0.55)', false, -0.6);
+      sFace(c, 1, -2, 3);
+      c.beginPath(); c.arc(6, 5, 3, 0.2, Math.PI - 0.2); c.stroke();
+      ell(c, -1, 3, 2.6, 1.6, 'rgba(255,255,255,0.35)', false);
+      c.strokeStyle = '#ffd54f'; c.lineWidth = 2.6; ell(c, 0, -24 + Math.sin(t * 0.006), 8, 2.4, null); c.strokeStyle = OUT; c.lineWidth = 2;
+      c.restore(); sHand(c, shoot, '#ffe0c2');
+    }
+  },
+  {
+    id: 'sprout', name: 'Подсолнух в Горшке', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Весёлый подсолнух, который вырос в горшке и пошёл гулять. Награда 30-го уровня премиум-пропуска.', perkText: '💰 Монеты ×1.25', perk: { coin: 1.25 },
+    price: 0, icon: '🌻',
+    skin: '#ffeb3b', torso: '#7cb342', legs: '#bf6b3a', shoe: '#d98550', arm: '#66bb6a', hand: '#66bb6a', bullet: 'orb', bulletColor: '#f9a825',
+    full(c, t, shoot) {
+      const sw = Math.sin(t * 0.005) * 2;
+      pg(c, [[-11, 3], [11, 3], [8, 21], [-8, 21]], '#bf6b3a');
+      rr(c, -13, 0, 26, 5, 2, '#d98550');
+      ci(c, -3, 13, 1.4, '#8d4a24', false); ci(c, 3, 14, 1.4, '#8d4a24', false);
+      rr(c, -2, -8, 4, 9, 1, '#558b2f');
+      ell(c, -14, 5 + sw * 0.5, 7, 3, '#66bb6a', true, -0.5 + sw * 0.05); ell(c, 14, 5 - sw * 0.5, 7, 3, '#66bb6a', true, 0.5 - sw * 0.05);
+      c.save(); c.translate(0, -16); c.rotate(sw * 0.02);
+      for (let i = 0; i < 10; i++) { const a = i * 0.6283 + t * 0.0006; ell(c, Math.cos(a) * 10, Math.sin(a) * 10, 5.2, 2.6, '#ffd600', true, a); }
+      ci(c, 0, 0, 8.4, '#8d5a2b');
+      c.restore();
+      sFace(c, -2, -17, 2.8);
+      c.beginPath(); c.arc(3, -12, 2.8, 0.2, Math.PI - 0.2); c.stroke();
+      sHand(c, shoot, '#66bb6a');
+    }
+  },
+  {
+    id: 'umbrella', name: 'Тучка-Дождик', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Пушистая тучка с зонтиком и своим дождиком. Награда 30-го уровня премиум-пропуска.', perkText: '⭐ Опыт +20%', perk: { xp: 1.2 },
+    price: 0, icon: '☁️',
+    skin: '#eceff1', torso: '#cfd8dc', legs: '#90a4ae', shoe: '#4fc3f7', arm: '#eceff1', hand: '#eceff1', bullet: 'orb', bulletColor: '#4fc3f7',
+    full(c, t, shoot) {
+      const b = Math.sin(t * 0.004) * 1.5;
+      for (let i = 0; i < 4; i++) {
+        const ph = (t * 0.002 + i * 0.25) % 1, x = -10 + i * 7 + (i % 2) * 2, y = 14 + ph * 10;
+        c.globalAlpha = 1 - ph * 0.6; pg(c, [[x, y - 3], [x + 2, y + 1], [x, y + 3], [x - 2, y + 1]], '#4fc3f7', false); c.globalAlpha = 1;
+      }
+      c.save(); c.translate(0, b);
+      const cl = [[-10, 3, 9], [0, -5, 11], [11, 2, 9], [0, 7, 10]];
+      c.lineWidth = 4.5; for (const q of cl) { c.beginPath(); c.arc(q[0], q[1], q[2], 0, 6.283); c.stroke(); }
+      for (const q of cl) { c.beginPath(); c.arc(q[0], q[1], q[2], 0, 6.283); c.fillStyle = '#eceff1'; c.fill(); }
+      c.lineWidth = 2; ell(c, 0, 14, 12, 3.5, 'rgba(120,144,156,0.25)', false);
+      sFace(c, -1, -2, 3);
+      c.beginPath(); c.arc(5, 4, 3, 0.2, Math.PI - 0.2); c.stroke();
+      ell(c, -3, 4, 2.4, 1.5, 'rgba(255,120,150,0.45)', false);
+      c.beginPath(); c.moveTo(0, -14); c.lineTo(0, -24); c.stroke();
+      c.beginPath(); c.moveTo(-14, -22); c.arc(0, -22, 14, Math.PI, 0); c.quadraticCurveTo(7, -18, 7, -22); c.quadraticCurveTo(0, -18, 0, -22); c.quadraticCurveTo(-7, -18, -7, -22); c.quadraticCurveTo(-14, -18, -14, -22);
+      c.closePath(); c.fillStyle = '#e53935'; c.fill(); c.stroke();
+      pg(c, [[-3, -35], [0, -22], [3, -35]], '#ffd54f', false);
+      c.restore(); sHand(c, shoot, '#eceff1');
+    }
+  },
+  {
+    id: 'bee', name: 'Сотовый Шмель', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Шестигранный улей-шмель с крылышками и жалом. Награда 30-го уровня премиум-пропуска.', perkText: '🧲 Магнит монет', perk: { magnet: 70 },
+    price: 0, icon: '🐝',
+    skin: '#ffca28', torso: '#ffca28', legs: '#212121', shoe: '#212121', arm: '#ffe082', hand: '#212121', bullet: 'orb', bulletColor: '#ffb300',
+    full(c, t, shoot) {
+      const w = Math.sin(t * 0.06) * 3, b = Math.sin(t * 0.005) * 2;
+      c.save(); c.translate(0, b);
+      ell(c, -7, -19, 5, 10 + w, 'rgba(225,245,254,0.85)', true, -0.5); ell(c, 5, -20, 4.5, 9 - w, 'rgba(225,245,254,0.75)', true, 0.4);
+      c.beginPath(); c.moveTo(2, -16); c.quadraticCurveTo(0, -24, -4, -27); c.moveTo(8, -16); c.quadraticCurveTo(10, -24, 15, -26); c.stroke();
+      ci(c, -4, -27, 2, '#212121'); ci(c, 15, -26, 2, '#212121');
+      pg(c, [[-15, 5], [-23, 8], [-15, 11]], '#212121');
+      const hx = [[0, -17], [15, -8], [15, 10], [0, 19], [-15, 10], [-15, -8]];
+      pg(c, hx, '#ffca28', false);
+      c.save(); c.beginPath(); c.moveTo(hx[0][0], hx[0][1]); for (let i = 1; i < 6; i++) c.lineTo(hx[i][0], hx[i][1]); c.closePath(); c.clip();
+      c.fillStyle = '#3e2723'; c.fillRect(-16, 4, 32, 4.5); c.fillRect(-16, 12, 32, 4.5); c.restore();
+      pg(c, hx, null);
+      sFace(c, 1, -5, 3);
+      c.beginPath(); c.arc(6, 0, 2.6, 0.2, Math.PI - 0.2); c.stroke();
+      c.beginPath(); c.moveTo(-6, 18); c.lineTo(-7, 23); c.moveTo(6, 18); c.lineTo(7, 23); c.stroke();
+      c.restore(); sHand(c, shoot, '#ffe082');
+    }
+  },
+  {
+    id: 'surfer', name: 'Капля-Серфер', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Капелька океана на доске для сёрфинга. Награда 30-го уровня премиум-пропуска.', perkText: '💰 Монеты ×1.25', perk: { coin: 1.25 },
+    price: 0, icon: '🏄',
+    skin: '#29b6f6', torso: '#29b6f6', legs: '#0288d1', shoe: '#ff7043', arm: '#4fc3f7', hand: '#4fc3f7', bullet: 'orb', bulletColor: '#ffee58',
+    full(c, t, shoot) {
+      const sw = Math.sin(t * 0.005);
+      c.save(); c.translate(0, 21); c.rotate(sw * 0.08);
+      ell(c, 0, 0, 23, 3.8, '#ff7043'); c.fillStyle = '#fff'; c.fillRect(-14, -1, 28, 1.8); c.restore();
+      c.save(); c.translate(0, sw * 1.5); c.rotate(sw * 0.04);
+      c.beginPath(); c.moveTo(0, -27); c.bezierCurveTo(6, -14, 16, -8, 16, 3); c.bezierCurveTo(16, 13, 9, 18, 0, 18); c.bezierCurveTo(-9, 18, -16, 13, -16, 3); c.bezierCurveTo(-16, -8, -6, -14, 0, -27);
+      c.fillStyle = '#29b6f6'; c.fill(); c.stroke();
+      c.strokeStyle = 'rgba(255,255,255,0.75)'; c.lineWidth = 2.4; c.beginPath(); c.arc(0, 3, 11, Math.PI * 1.05, Math.PI * 1.35); c.stroke(); c.strokeStyle = OUT; c.lineWidth = 2;
+      rr(c, -6, -5, 21, 7, 3, '#212121'); c.fillStyle = 'rgba(255,255,255,0.45)'; c.fillRect(-3, -4, 5, 1.6); c.fillRect(7, -4, 5, 1.6);
+      c.beginPath(); c.arc(6, 8, 3.2, 0.2, Math.PI - 0.2); c.stroke();
+      ci(c, -18, 6, 3.5, '#4fc3f7'); ci(c, 18, 6, 3.5, '#4fc3f7');
+      c.restore();
+      ci(c, -18, 18, 2, '#fff', false); ci(c, 17, 16, 1.6, '#fff', false);
+      sHand(c, shoot, '#4fc3f7');
+    }
+  },
+  {
+    id: 'parrot', name: 'Попугай Ара', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Настоящая яркая птица с длинным хвостом и огромным клювом. Награда 30-го уровня премиум-пропуска.', perkText: '⭐ Опыт +20%', perk: { xp: 1.2 },
+    price: 0, icon: '🦜',
+    skin: '#e53935', torso: '#e53935', legs: '#fdd835', shoe: '#fdd835', arm: '#1e88e5', hand: '#fdd835', bullet: 'star', bulletColor: '#69f0ae',
+    full(c, t, shoot) {
+      const sw = Math.sin(t * 0.007) * 2, f = Math.sin(t * 0.012) * 3;
+      pg(c, [[-5, 10], [-18 - sw, 28], [-11, 29], [-4, 17]], '#1e88e5');
+      pg(c, [[-3, 12], [-9 - sw, 30], [-3, 30], [1, 17]], '#fdd835');
+      pg(c, [[-1, 12], [2 + sw, 29], [7, 28], [5, 14]], '#43a047');
+      c.beginPath(); c.moveTo(-4, 18); c.lineTo(-4, 24); c.moveTo(4, 18); c.lineTo(4, 24); c.strokeStyle = '#ffb300'; c.lineWidth = 2.6; c.stroke(); c.strokeStyle = OUT; c.lineWidth = 2;
+      ell(c, 0, 5, 12, 15, '#e53935');
+      ell(c, -6, 6, 6.5, 11, '#1e88e5', true, 0.2 + f * 0.04); pg(c, [[-10, 14], [-5, 18], [-1, 14]], '#fdd835', false);
+      pg(c, [[-1, -17], [-8, -28 - f * 0.4], [-3, -19], [0, -30 - f * 0.4], [3, -19], [8, -27], [5, -16]], '#fdd835');
+      pg(c, [[-1, -17], [-4, -24], [0, -18]], '#43a047', false);
+      ci(c, 4, -9, 10, '#e53935');
+      ell(c, 6, -9, 5.4, 6, '#fff'); ci(c, 7.2, -9, 2.4, '#111', false);
+      pg(c, [[11, -16], [24, -9], [20, 0], [12, -3]], '#ffb300');
+      pg(c, [[12, -3], [20, 0], [14, 3], [10, -1]], '#6d4c41');
+      sHand(c, shoot, '#e53935');
+    }
+  },
+  {
+    id: 'comet', name: 'Арбузик', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Сочный арбузный ломтик в очках, настоящий символ лета. Награда 30-го уровня премиум-пропуска.', perkText: '🧲 Магнит монет', perk: { magnet: 70 },
+    price: 0, icon: '🍉',
+    skin: '#ef5350', torso: '#ef5350', legs: '#43a047', shoe: '#2e7d32', arm: '#43a047', hand: '#43a047', bullet: 'orb', bulletColor: '#ef5350',
+    full(c, t, shoot) {
+      const sw = Math.sin(t * 0.005), b = Math.sin(t * 0.004) * 1.5;
+      c.save(); c.translate(0, b);
+      rr(c, -9, 10, 6, 11, 3, '#2e7d32'); rr(c, 4, 10, 6, 11, 3, '#2e7d32');
+      c.beginPath(); c.moveTo(-18, -7); c.arc(0, -7, 18, Math.PI, 0, true); c.closePath(); c.fillStyle = '#43a047'; c.fill(); c.stroke();
+      c.beginPath(); c.moveTo(-15.5, -7); c.arc(0, -7, 15.5, Math.PI, 0, true); c.closePath(); c.fillStyle = '#e8f5e9'; c.fill();
+      c.beginPath(); c.moveTo(-14, -7); c.arc(0, -7, 14, Math.PI, 0, true); c.closePath(); c.fillStyle = '#ef5350'; c.fill();
+      c.beginPath(); c.moveTo(-18, -7); c.lineTo(18, -7); c.stroke();
+      for (const q of [[-8, 4], [8, 4], [0, 9], [-11, -1], [12, -1]]) ell(c, q[0], q[1], 1.3, 2.2, '#212121', false, 0.3);
+      rr(c, -8, -6, 21, 7, 3, '#212121'); c.fillStyle = 'rgba(255,255,255,0.45)'; c.fillRect(-5, -5, 5, 1.6); c.fillRect(6, -5, 5, 1.6);
+      c.beginPath(); c.arc(3, 5, 3.2, 0.2, Math.PI - 0.2); c.stroke();
+      ci(c, -20, -3 + sw * 2, 3.5, '#43a047'); ci(c, 20, -3 - sw * 2, 3.5, '#43a047');
+      rr(c, -1.5, -13, 3, 6, 1, '#2e7d32');
+      ell(c, 4, -12, 5, 2.4, '#66bb6a', true, -0.4);
+      c.restore();
+      const g = (t * 0.0012) % 1; ci(c, 17, 4 + g * 14, 1.8 * (1 - g) + 0.5, 'rgba(239,83,80,0.85)', false);
+      for (let i = 0; i < 2; i++) { const a = 0.5 + Math.sin(t * 0.006 + i * 2) * 0.5; sSpark(c, i ? -22 : 23, i ? -22 : -14, 2 + a * 2.4, '#fff176'); }
+      sHand(c, shoot, '#43a047');
+    }
+  },
+  {
+    id: 'scholar', name: 'Живая Книга', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Умная книга в очках со взмахивающими страницами. Награда 30-го уровня премиум-пропуска.', perkText: '💰 Монеты ×1.25', perk: { coin: 1.25 },
+    price: 0, icon: '📖',
+    skin: '#3949ab', torso: '#3949ab', legs: '#283593', shoe: '#ffd54f', arm: '#3949ab', hand: '#fff', bullet: 'arrow', bulletColor: '#ffb300',
+    full(c, t, shoot) {
+      const f = Math.sin(t * 0.012) * 4, b = Math.sin(t * 0.004) * 1.5;
+      c.save(); c.translate(0, b);
+      pg(c, [[-14, -10], [-27, -16 - f], [-26, 6], [-14, 8]], '#fff'); pg(c, [[14, -10], [27, -16 - f], [26, 6], [14, 8]], '#fff');
+      c.globalAlpha = 0.4; c.beginPath(); c.moveTo(-18, -8 - f * 0.4); c.lineTo(-22, 0); c.moveTo(18, -8 - f * 0.4); c.lineTo(22, 0); c.stroke(); c.globalAlpha = 1;
+      rr(c, -8, 16, 6, 7, 2, '#ffd54f'); rr(c, 3, 16, 6, 7, 2, '#ffd54f');
+      rr(c, -14, -18, 28, 35, 3, '#3949ab');
+      rr(c, -14, -18, 6, 35, [3, 0, 0, 3], '#283593');
+      rr(c, 12, -16, 4, 31, 1, '#fff');
+      c.globalAlpha = 0.5; c.beginPath(); c.moveTo(12, -10); c.lineTo(16, -10); c.moveTo(12, -4); c.lineTo(16, -4); c.moveTo(12, 2); c.lineTo(16, 2); c.stroke(); c.globalAlpha = 1;
+      rr(c, -5, -14, 17, 5, 2, '#ffd54f');
+      c.lineWidth = 1.8; ci(c, -1, -2, 5, 'rgba(255,255,255,0.4)'); ci(c, 8, -2, 5, 'rgba(255,255,255,0.4)');
+      c.beginPath(); c.moveTo(4, -2); c.lineTo(3, -2); c.stroke(); c.lineWidth = 2;
+      ci(c, 0, -2, 1.6, '#111', false); ci(c, 9, -2, 1.6, '#111', false);
+      c.beginPath(); c.arc(4.5, 6, 3, 0.2, Math.PI - 0.2); c.stroke();
+      pg(c, [[-1, 17], [5, 17], [5, 26], [2, 23], [-1, 26]], '#e53935');
+      c.save(); c.translate(-12, -20); c.rotate(-0.5); rr(c, -1.8, -9, 3.6, 12, 1, '#ffb300'); pg(c, [[-1.8, 3], [1.8, 3], [0, 7]], '#ffe0b2'); c.restore();
+      c.restore(); sHand(c, shoot, '#3949ab');
+    }
+  },
+  {
+    id: 'vampire', name: 'Тень Графа', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Парящий плащ с красными глазами и клыками. Награда 30-го уровня премиум-пропуска.', perkText: '⭐ Опыт +20%', perk: { xp: 1.2 },
+    price: 0, icon: '🧛',
+    skin: '#212121', torso: '#212121', legs: '#212121', shoe: '#000000', arm: '#212121', hand: '#eceff1', bullet: 'bat', bulletColor: '#4a148c',
+    full(c, t, shoot) {
+      const w = Math.sin(t * 0.008) * 2.5, b = Math.sin(t * 0.004) * 2;
+      sGlow(c, -6, -8, 28, 'rgba(255,245,157,0.35)');
+      c.save(); c.translate(0, b);
+      pg(c, [[-11, -10], [11, -10], [20 + w, 18], [11, 14], [4, 22 - w], [-4, 15], [-11, 22 + w], [-20, 16]], '#212121');
+      pg(c, [[-5, -6], [5, -6], [11, 14], [4, 19 - w], [-4, 13], [-9, 17 + w]], '#b71c1c', false);
+      pg(c, [[-12, -9], [-9, -22], [-3, -10]], '#212121'); pg(c, [[12, -9], [9, -22], [3, -10]], '#212121');
+      pg(c, [[-9, -12], [-8, -19], [-4, -12]], '#b71c1c', false); pg(c, [[9, -12], [8, -19], [4, -12]], '#b71c1c', false);
+      ci(c, 1, -14, 9.5, '#eceff1');
+      c.beginPath(); c.arc(1, -16, 9.8, Math.PI * 1.02, Math.PI * 1.98); c.closePath(); c.fillStyle = '#212121'; c.fill(); c.stroke();
+      pg(c, [[4, -17], [8, -13], [9, -18]], '#212121', false);
+      pg(c, [[2, -14], [7, -14], [4.5, -11]], '#ff1744', false); pg(c, [[7, -14], [12, -14], [9.5, -11]], '#ff1744', false);
+      c.beginPath(); c.moveTo(3, -7); c.lineTo(11, -7); c.stroke();
+      pg(c, [[4, -7], [5.5, -3.5], [7, -7]], '#fff', false); pg(c, [[8, -7], [9.5, -3.5], [11, -7]], '#fff', false);
+      c.restore(); sHand(c, shoot, '#eceff1');
     }
   }
 ];
@@ -1613,6 +1904,72 @@ function drawBase(c, s, shoot) {
   else ci(c, 0, -7, 15, s.skin);
 }
 
+// ----- Времена года: у каждого персонажа свои сезонные аксессуары (меняются сами по дате) -----
+// Зима (дек–фев): шарф, снежок на голове, снежинки. Весна (мар–май): цветок и бабочка.
+// Лето (июн–авг): гавайская гирлянда, очки, солнечные блики. Осень (сен–ноя): листик и падающая листва.
+// Для проверки можно открыть игру с ?season=winter|spring|summer|autumn. У персонажа можно отключить: noSeasonGear: true.
+function currentSeasonOfYear() {
+  try {
+    const q = new URLSearchParams(location.search).get('season');
+    if (q === 'winter' || q === 'spring' || q === 'summer' || q === 'autumn') return q;
+  } catch (e) {}
+  const m = new Date().getMonth();
+  return (m === 11 || m <= 1) ? 'winter' : m <= 4 ? 'spring' : m <= 7 ? 'summer' : 'autumn';
+}
+function drawSeasonGear(c, s, t) {
+  if (s.event || s.season || s.noSeasonGear) return;
+  const se = currentSeasonOfYear(), tw = s.torsoW || 22;
+  c.save();
+  c.lineWidth = 1.6; c.strokeStyle = OUT;
+  if (se === 'winter') {
+    rr(c, -tw / 2 - 1, 4, tw + 2, 6, 3, '#e53935');
+    c.fillStyle = '#fff'; c.fillRect(-tw / 2 + 3, 4.8, 2.6, 4.6); c.fillRect(tw / 2 - 6, 4.8, 2.6, 4.6);
+    rr(c, tw / 2 - 6, 8, 5, 10, 2, '#e53935');
+    c.fillStyle = '#fff'; c.fillRect(tw / 2 - 5.6, 12.5, 4.2, 2.4);
+    ell(c, -5, -21.5, 6, 2.6, '#fff', false); ci(c, 3, -22, 2.4, '#fff', false); ci(c, -11, -18, 1.8, '#fff', false);
+    c.strokeStyle = '#4fc3f7'; c.lineWidth = 1.2;
+    for (let i = 0; i < 3; i++) {
+      const a = t * 0.0014 + i * 2.1, x = Math.cos(a) * 23, y = -6 + Math.sin(a * 1.3 + i) * 22;
+      c.beginPath();
+      for (let k = 0; k < 3; k++) { const r = k * 1.0472; c.moveTo(x + Math.cos(r) * 2.8, y + Math.sin(r) * 2.8); c.lineTo(x - Math.cos(r) * 2.8, y - Math.sin(r) * 2.8); }
+      c.stroke();
+    }
+  } else if (se === 'spring') {
+    const fx = -11, fy = -17;
+    ell(c, fx - 3, fy + 3, 4, 1.8, '#66bb6a', true, 0.6);
+    for (let i = 0; i < 5; i++) { const a = i * 1.2566; ell(c, fx + Math.cos(a) * 2.8, fy + Math.sin(a) * 2.8, 2.5, 1.9, '#f48fb1', true, a); }
+    ci(c, fx, fy, 2, '#ffeb3b', true);
+    const a = t * 0.002, bx = 19 + Math.cos(a) * 4, by = -18 + Math.sin(a * 1.7) * 5, fl = 0.6 + Math.abs(Math.sin(t * 0.02)) * 0.4;
+    ell(c, bx - 2, by, 2.6 * fl, 3.4, '#ba68c8', true, -0.4); ell(c, bx + 2, by, 2.6 * fl, 3.4, '#ce93d8', true, 0.4);
+  } else if (se === 'summer') {
+    for (let i = 0; i < 7; i++) {
+      const x = -9 + i * 3, y = 6.5 + (1 - Math.pow((x) / 10, 2)) * 3;
+      ci(c, x, y, 2.1, ['#ff7043', '#ffeb3b', '#ec407a'][i % 3], true);
+    }
+    if (!s.noEyes) {
+      rr(c, -9, -12, 8.5, 5.5, 2, '#212121'); rr(c, 1.5, -12, 8.5, 5.5, 2, '#212121');
+      c.beginPath(); c.moveTo(-0.5, -10); c.lineTo(1.5, -10); c.stroke();
+      c.fillStyle = 'rgba(255,255,255,0.55)'; c.fillRect(-7, -11, 3, 1.4); c.fillRect(3.5, -11, 3, 1.4);
+    }
+    for (let i = 0; i < 2; i++) {
+      const g = 0.5 + Math.sin(t * 0.006 + i * 2) * 0.5;
+      c.save(); c.translate(i ? -20 : 21, i ? -24 : -4); c.rotate(t * 0.001); starPoly(c, 2 + g * 2.6, 0.9, 4); c.fillStyle = '#fff176'; c.fill(); c.lineWidth = 1; c.stroke(); c.restore();
+    }
+  } else {
+    const lx = 9, ly = -20;
+    c.save(); c.translate(lx, ly); c.rotate(0.5);
+    ell(c, 0, 0, 5, 3, '#e65100', true); ell(c, -3, -2, 2.4, 1.6, '#ff8f00', false, 0.4);
+    c.strokeStyle = '#6d4c41'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(-4, 0); c.lineTo(5, 0); c.moveTo(-1, 0); c.lineTo(1, -2.5); c.stroke();
+    c.restore();
+    const cols = ['#ff8f00', '#bf360c', '#fbc02d'];
+    for (let i = 0; i < 3; i++) {
+      const ph = ((t * 0.0006 + i * 0.37) % 1), x = -22 + i * 22 + Math.sin(ph * 9 + i) * 4, y = -26 + ph * 52;
+      c.save(); c.translate(x, y); c.rotate(ph * 8 + i); ell(c, 0, 0, 3.2, 1.9, cols[i], true); c.restore();
+    }
+  }
+  c.restore();
+}
+
 function drawCharacter(c, skin, cx, cy, facing, o) {
   o = o || {};
   const t = o.t !== undefined ? o.t : performance.now();
@@ -1635,6 +1992,7 @@ function drawCharacter(c, skin, cx, cy, facing, o) {
       ci(c, 0, -29, 5, skin.hand || skin.skin);
     }
   }
+  drawSeasonGear(c, skin, t);
   if (o.powerup === 'propeller') drawPropCap(c, 1, -17, t * 0.05);
   c.restore();
 }
@@ -1673,6 +2031,9 @@ function drawBullet(c, b, skin, t) {
     c.strokeStyle = '#888'; c.lineWidth = 1;
     for (let i = 0; i < 6; i++) { const a = (i / 6) * 6.283; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * 7.5, Math.sin(a) * 7.5); c.stroke(); }
     c.beginPath(); c.arc(0, 0, 4, 0, 6.283); c.stroke();
+  } else if (st === 'heart') {
+    c.rotate(Math.sin(t * 0.01) * 0.2); drawHeart(c, 0, 0, 7, col);
+    ci(c, -3, -3, 1.4, 'rgba(255,255,255,0.8)', false);
   } else if (st === 'bolt') {
     pg(c, [[3, -13], [-5, 1], [0, 1], [-3, 13], [6, -2], [1, -2]], col);
   } else {
@@ -2996,8 +3357,23 @@ function passFree(l) {
   if (l % 3 === 0) return { t: 'boost', k: BOOST_KEYS[l % 4], n: 1 };
   return { t: 'coins', n: 60 + l * 10 };
 }
-function passPrem(l) {
-  if (l === 30) return { t: 'skin', id: 'ranger' };
+// Сезонные скины идут по кругу: каждый месяц — новый скин. Ноябрь 2026 — первый, дальше всё включается само.
+// Чтобы добавить новый скин в цикл, создай его в SKINS (season: true) и вставь id в этот список.
+// Порядок = месяцы подряд, каждый скин подходит под свою пору года (id у некоторых старые, внешний вид новый):
+// ноя — осень (ёжик), дек — зима (кристалл), янв — зима (снеговик), фев — любовь (сердце), мар–май — весна,
+// июн–авг — лето (серфер, попугай, арбуз), сен–окт — осень (книга, граф).
+const SEASON_SKINS = ['ranger', 'icequeen', 'samurai', 'cupid', 'sprout', 'umbrella', 'bee', 'surfer', 'parrot', 'comet', 'scholar', 'vampire'];
+const SEASON_ORIGIN = [2026, 11];
+function seasonSkinId(key) {
+  const p = String(key || seasonKeyNow()).split('-');
+  const n = (Number(p[0]) - SEASON_ORIGIN[0]) * 12 + (Number(p[1]) - SEASON_ORIGIN[1]);
+  return SEASON_SKINS[((n % SEASON_SKINS.length) + SEASON_SKINS.length) % SEASON_SKINS.length];
+}
+function seasonKeyAt(offset) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + offset); return d.getFullYear() + '-' + pad2(d.getMonth() + 1); }
+function seasonLabel(key) { const p = key.split('-'); return (MONTHS_RU[Number(p[1]) - 1] || '') + ' ' + p[0]; }
+function nextSeasonWith(id) { for (let i = 0; i < 24; i++) { const k = seasonKeyAt(i); if (seasonSkinId(k) === id) return k; } return null; }
+function passPrem(l, season) {
+  if (l === 30) return { t: 'skin', id: seasonSkinId(season) };
   if (l === 15 || l === 25) return { t: 'chest', k: 'epic' };
   if (l % 5 === 0) return { t: 'chest', k: 'rare' };
   if (l % 2 === 0) return { t: 'boost', k: BOOST_KEYS[(l / 2) % 4], n: 2 };
@@ -4442,7 +4818,11 @@ function renderShop() {
     if (isEquipped) { btnClass = 'equipped'; btnText = 'Выбран ✓'; }
     else if (isOwned) { btnClass = 'select'; btnText = 'Выбрать'; }
     else if (skin.event) { btnClass = evLive ? 'buy' : 'locked-btn'; btnText = evLive ? `${skin.priceCur} ${ev.cur}` : '🔒 Событие'; }
-    else if (skin.season) { btnClass = 'locked-btn'; btnText = '🔒 Пропуск'; }
+    else if (skin.season) {
+      btnClass = 'locked-btn';
+      const nk = nextSeasonWith(skin.id);
+      btnText = nk === seasonKeyNow() ? '🔒 Пропуск' : '⏳ ' + (nk ? (MONTHS_RU[Number(nk.split('-')[1]) - 1]) : 'Скоро');
+    }
     item.innerHTML = `
       <div class="card-left">
         <canvas class="skin-thumb" width="104" height="104"></canvas>
@@ -4469,7 +4849,13 @@ function renderShop() {
       setTryOn(skin.id);
       if (isEquipped) return;
       if (!isOwned && skin.event) { if (evLive) buyEventSkin(skin); else { playSound('break'); metaToast('🔒', 'Скин события', 'Появится в магазине во время события'); } return; }
-      if (!isOwned && skin.season) { playSound('break'); metaToast('🎖', 'Награда пропуска', '30 уровень премиум-линии сезона'); return; }
+      if (!isOwned && skin.season) {
+        playSound('break');
+        const nk = nextSeasonWith(skin.id);
+        if (nk === seasonKeyNow()) metaToast('🎖', 'Награда пропуска', '30 уровень премиум-линии сезона');
+        else metaToast('⏳', 'Сезонный скин', nk ? 'Вернётся в сезон «' + seasonLabel(nk) + '»' : 'Скоро появится');
+        return;
+      }
       if (isOwned) {
         saveData.selectedSkin = skin.id; writeSaveData(); playSound('jump'); renderShop();
       } else if (saveData.coins >= skin.price) {
@@ -5518,9 +5904,28 @@ function renderUpg() {
 }
 
 // ---------- Боевой пропуск ----------
+// Новый сезон начинается сам: когда месяц сменился, всё, что игрок заработал, но не успел забрать, выдаётся автоматически
+function settleSeason(P) {
+  const L = Math.min(PASS_LEVELS, Math.floor((P.sp || 0) / PASS_SP));
+  let n = 0, skin = '';
+  for (let l = 1; l <= L; l++) {
+    if (!P.cf.includes(l)) { grantReward(passFree(l)); n++; }
+    if (P.premium && !P.cp.includes(l)) { const r = passPrem(l, P.season); grantReward(r); n++; if (r.t === 'skin') skin = r.id; }
+  }
+  return { n, skin };
+}
 function ensureSeason() {
   const sk = seasonKeyNow();
-  if (saveData.pass.season !== sk) saveData.pass = { season: sk, sp: 0, premium: false, cf: [], cp: [] };
+  const P = saveData.pass;
+  if (P.season === sk) return;
+  let res = null;
+  if (P.season) { try { res = settleSeason(P); } catch (e) {} }
+  saveData.pass = { season: sk, sp: 0, premium: false, cf: [], cp: [] };
+  writeSaveData();
+  setTimeout(() => {
+    if (res && res.n) metaToast('🎖', 'Сезон закончился: награды выданы', res.n + ' непринятых наград добавлено в инвентарь');
+    metaToast('🆕', 'Начался новый сезон «' + seasonLabel(sk) + '»', 'Скин сезона: ' + ((SKIN_MAP[seasonSkinId(sk)] || {}).name || ''));
+  }, 800);
 }
 function passLevel() { return Math.min(PASS_LEVELS, Math.floor(saveData.pass.sp / PASS_SP)); }
 function addSP(n) {
@@ -5545,7 +5950,7 @@ function claimPass(l, prem, quiet) {
   if (l > passLevel()) return null;
   if (prem ? (!P.premium || P.cp.includes(l)) : P.cf.includes(l)) return null;
   (prem ? P.cp : P.cf).push(l);
-  return grantReward(prem ? passPrem(l) : passFree(l));
+  return grantReward(prem ? passPrem(l, P.season) : passFree(l));
 }
 function seasonName() { const [y, m] = saveData.pass.season.split('-'); return `${MONTHS_RU[Number(m) - 1] || ''} ${y}`; }
 function passLabel(r) {
@@ -5571,7 +5976,9 @@ function renderPass() {
   const P = saveData.pass, L = passLevel();
   const into = P.sp - L * PASS_SP;
   const pct = L >= PASS_LEVELS ? 100 : (into / PASS_SP) * 100;
-  const owned = saveData.ownedSkins.includes('ranger');
+  const sId = seasonSkinId(P.season), sSkin = SKIN_MAP[sId];
+  const owned = saveData.ownedSkins.includes(sId);
+  const nextKey = seasonKeyAt(1), nextSkin = SKIN_MAP[seasonSkinId(nextKey)];
   $id('passHead').innerHTML = `
     <div class="ps-top">
       <div class="ps-lvl"><small>уровень</small><b>${L}</b><small>из ${PASS_LEVELS}</small></div>
@@ -5586,12 +5993,12 @@ function renderPass() {
       <canvas class="ps-prem-skin" width="132" height="132"></canvas>
       <div class="ps-prem-txt">
         <b>${P.premium ? 'Премиум активен' : 'Премиум-пропуск'}</b>
-        <small>${P.premium ? 'Забирай награды обеих линий.' : 'Вторая линия наград: больше монет, золотые сундуки и'} скин «Сезонный Рейнджер» на 30 уровне${owned ? ' (уже твой)' : ''}.</small>
+        <small>${P.premium ? 'Забирай награды обеих линий.' : 'Вторая линия наград: больше монет, золотые сундуки и'} скин «${sSkin ? sSkin.name : ''}» на 30 уровне${owned ? ' (уже твой)' : ''}.</small>
         ${P.premium ? '' : `<button id="passBuyBtn" class="btn btn-gold btn-sm">Открыть за ${formatNum(PASS_PREMIUM_PRICE)} 🪙</button>`}
       </div>
     </div>
-    <div class="ps-how">Очки сезона дают матчи (высота и монстры) и задания.</div>`;
-  drawPassSkin($id('passHead').querySelector('.ps-prem-skin'), 'ranger');
+    <div class="ps-how">Очки сезона дают матчи (высота и монстры) и задания. Сезон длится месяц и сменяется сам. Дальше: «${seasonLabel(nextKey)}» — скин «${nextSkin ? nextSkin.name : ''}».</div>`;
+  drawPassSkin($id('passHead').querySelector('.ps-prem-skin'), sId);
   const bb = $id('passBuyBtn');
   if (bb) bb.addEventListener('click', () => {
     if (saveData.coins < PASS_PREMIUM_PRICE) { playSound('break'); metaToast('🪙', 'Не хватает монет', `Премиум стоит ${formatNum(PASS_PREMIUM_PRICE)} 🪙`); return; }
@@ -5602,7 +6009,7 @@ function renderPass() {
     renderPass(); updateAllUI();
   });
   const cell = (l, prem) => {
-    const r = prem ? passPrem(l) : passFree(l);
+    const r = prem ? passPrem(l, P.season) : passFree(l);
     const v = rewardView(r);
     const got = (prem ? P.cp : P.cf).includes(l);
     const locked = prem && !P.premium;
