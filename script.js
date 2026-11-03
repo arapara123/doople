@@ -3273,26 +3273,73 @@ function b64encode(str) {
   const bytes = new TextEncoder().encode(str);
   let bin = '';
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin);
+  // Base64URL без "+", "/" и "=" — не обрывается при выделении на телефонах
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 function b64decode(b64) {
-  const bin = atob(b64);
+  let clean = String(b64 || '')
+    .replace(/[\s\u200B-\u200D\uFEFF"'`<>]/g, '')
+    .replace(/-/g, '+')
+    .replace(/_/g, '/')
+    .replace(/[^A-Za-z0-9+/=]/g, '')
+    .replace(/=+$/, '');
+  const rem = clean.length % 4;
+  if (rem === 1) clean = clean.slice(0, -1);
+  else if (rem === 2) clean += '==';
+  else if (rem === 3) clean += '=';
+  const bin = atob(clean);
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return new TextDecoder().decode(bytes);
+  return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
 }
 function makeSaveCode() {
   flushLocal();
   return SAVE_PREFIX + b64encode(JSON.stringify(saveData));
 }
+function tryRecoverJson(raw) {
+  const s = String(raw || '').trim();
+  if (!s.startsWith('{')) return null;
+  try { return JSON.parse(s); } catch (e) {}
+  const suffixes = ['', '}', '"}', ']}', '"]}', '}}', '"} }', '0}', '0}}', 'false}', 'null}'];
+  for (let i = s.length; i > 2; i--) {
+    let sub = s.slice(0, i).trim().replace(/[,:]+$/, '');
+    for (const suf of suffixes) {
+      try {
+        const obj = JSON.parse(sub + suf);
+        if (obj && typeof obj === 'object' && !Array.isArray(obj)) return obj;
+      } catch (e) {}
+    }
+  }
+  return null;
+}
 function parseSaveCode(text) {
-  let s = String(text || '').trim();
+  let s = String(text || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
   if (!s) throw new Error('empty');
-  let json = s;
-  if (s.startsWith(SAVE_PREFIX)) json = b64decode(s.slice(SAVE_PREFIX.length).replace(/\s+/g, ''));
-  const obj = JSON.parse(json);
+  let json = '';
+  if (s.startsWith('{')) {
+    json = s;
+  } else {
+    const match = s.match(/dju\d*\s*[:_-]?\s*([A-Za-z0-9+/=_-]{8,})/i);
+    if (match) {
+      json = b64decode(match[1]);
+    } else {
+      const compact = s.replace(/\s+/g, '');
+      const b64Match = compact.match(/(eyJ[A-Za-z0-9+/=_-]{8,})/);
+      if (b64Match) {
+        json = b64decode(b64Match[1]);
+      } else if (/^[A-Za-z0-9+/=_-]{12,}$/.test(compact)) {
+        json = b64decode(compact);
+      } else {
+        const fb = s.indexOf('{'), lb = s.lastIndexOf('}');
+        if (fb !== -1 && lb > fb) json = s.slice(fb, lb + 1);
+        else throw new Error('bad');
+      }
+    }
+  }
+  const obj = tryRecoverJson(json);
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('bad');
-  if (!('totalXP' in obj || 'coins' in obj || 'ownedSkins' in obj || 'bestScore' in obj)) throw new Error('bad');
+  const knownKeys = ['totalXP', 'coins', 'ownedSkins', 'bestScore', 'selectedArena', 'highestUnlockedArena', 'selectedSkin', 'arenaBest', 'stats', 'settings'];
+  if (!knownKeys.some((k) => k in obj)) throw new Error('bad');
   return obj;
 }
 
@@ -3335,9 +3382,19 @@ function downloadSaveFile() {
 }
 
 function applyImportedSave(text) {
-  if (gameState === 'PAUSED' || gameState === 'PLAYING') { showSaveMsg('Загрузка прогресса доступна только из главного меню.', false); playSound('break'); return; }
+  if (gameState === 'PLAYING') { showSaveMsg('Загрузка прогресса доступна только в меню или на паузе.', false); playSound('break'); return; }
   let obj;
-  try { obj = parseSaveCode(text); } catch (e) { showSaveMsg('❌ Код не распознан. Проверь, что он скопирован целиком.', false); playSound('break'); return; }
+  try {
+    obj = parseSaveCode(text);
+  } catch (e) {
+    if (e && e.message === 'empty') {
+      showSaveMsg('📋 Поле пустое. Вставь сюда код сохранения и нажми «Загрузить из кода».', false);
+    } else {
+      showSaveMsg('❌ Код не распознан. Проверь, что он скопирован целиком.', false);
+    }
+    playSound('break');
+    return;
+  }
   // на всякий случай запоминаем текущий прогресс — вдруг загрузили не тот код
   try { localStorage.setItem(SAVE_KEY + '_before_import', JSON.stringify(saveData)); } catch (e) {}
   saveData = normalizeSave(obj);
