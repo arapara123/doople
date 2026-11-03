@@ -139,17 +139,7 @@ function iconize(root) {
   while (walker.nextNode()) list.push(walker.currentNode);
   list.forEach(iconizeText);
 }
-(function watchIcons() {
-  const root = document.querySelector('.game-wrapper') || document.body;
-  iconize(root);
-  if (!window.MutationObserver) return;
-  new MutationObserver((muts) => {
-    for (const m of muts) {
-      if (m.type === 'characterData') iconize(m.target);
-      else for (const n of m.addedNodes) iconize(n);
-    }
-  }).observe(root, { childList: true, subtree: true, characterData: true });
-})();
+// (замена эмодзи на иконки отключена: интерфейс снова с эмодзи)
 // Те же иконки для холста (колесо фортуны, замки на миниатюрах)
 const iconPathCache = {};
 function drawIcon(c, name, x, y, size, color, fill, lw) {
@@ -2959,14 +2949,14 @@ const CHEST_KEYS = Object.keys(CHESTS);
 // ---------- Колесо фортуны (раз в день бесплатно) ----------
 const WHEEL_COST = 120;
 const WHEEL = [
-  { r: { t: 'coins', n: 50 }, w: 22, label: '50', icon: 'coin', col: '#fffbf2' },
-  { r: { t: 'boost', k: 'magnet', n: 1 }, w: 12, label: 'Магнит', icon: 'magnet', col: '#a9d4f5' },
-  { r: { t: 'coins', n: 120 }, w: 18, label: '120', icon: 'coin', col: '#fffbf2' },
-  { r: { t: 'boost', k: 'shield', n: 1 }, w: 10, label: 'Щит', icon: 'shield', col: '#f5b3a1' },
-  { r: { t: 'coins', n: 250 }, w: 12, label: '250', icon: 'coin', col: '#fffbf2' },
-  { r: { t: 'boost', k: 'jet', n: 1 }, w: 10, label: 'Джет', icon: 'rocket', col: '#b9e0a5' },
-  { r: { t: 'chest', k: 'common' }, w: 12, label: 'Сундук', icon: 'chest', col: '#fffbf2' },
-  { r: { t: 'coins', n: 1000 }, w: 4, label: '1000', icon: 'gem', col: '#f7d774' }
+  { r: { t: 'coins', n: 50 }, w: 22, label: '50', icon: '🪙', col: '#5b9bff' },
+  { r: { t: 'boost', k: 'magnet', n: 1 }, w: 12, label: 'Магнит', icon: '🧲', col: '#c06bf0' },
+  { r: { t: 'coins', n: 120 }, w: 18, label: '120', icon: '🪙', col: '#2ed3b7' },
+  { r: { t: 'boost', k: 'shield', n: 1 }, w: 10, label: 'Щит', icon: '🛡', col: '#ff7043' },
+  { r: { t: 'coins', n: 250 }, w: 12, label: '250', icon: '🪙', col: '#26a69a' },
+  { r: { t: 'boost', k: 'jet', n: 1 }, w: 10, label: 'Джет', icon: '🚀', col: '#ff5c8a' },
+  { r: { t: 'chest', k: 'common' }, w: 12, label: 'Сундук', icon: '📦', col: '#8bc34a' },
+  { r: { t: 'coins', n: 1000 }, w: 4, label: '1000', icon: '💎', col: '#ffb300' }
 ];
 
 // ---------- Прокачка бонусов ----------
@@ -3259,7 +3249,7 @@ function gainCoins(n) {
 }
 
 let toastTimer = null;
-function showArenaToast(title) { showToastText(`🏆 Открыта новая арена: ${title}`); }
+function showArenaToast(title) { showToastText(`🏆 НОВАЯ АРЕНА ОТКРЫТА: ${title}!`); }
 function showToastText(text) {
   const toast = document.getElementById('arenaToast');
   toast.textContent = text;
@@ -3841,7 +3831,7 @@ function update(dt) {
       climb = newHeightScore;
       score += delta * comboMult();
       addXP(delta * 1.5);
-      if (!hardWarned && climb >= HARD_START) { hardWarned = true; showToastText('⚠ Выше 10 000 — сложность растёт'); playSound('warn'); }
+      if (!hardWarned && climb >= HARD_START) { hardWarned = true; showToastText('⚠ ВЫШЕ 10 000: СЛОЖНОСТЬ РАСТЁТ!'); playSound('warn'); }
     }
     updateHUD();
 
@@ -4037,22 +4027,22 @@ function drawEventPickup(c, coin) {
 // Счётчик комбо: рисуется прямо на холсте (без перестройки страницы), только когда комбо идёт
 function drawComboBadge() {
   const m = comboMult();
-  const cols = ['#6f675b', '#3b82c4', '#3f9a34', '#c98a00', '#d9542b', '#c2185b'];
+  const cols = ['#9aa3c7', '#4fc3f7', '#69f0ae', '#ffd54f', '#ff7043', '#ff4081'];
   const col = cols[Math.min(m, 5)];
   const k = 1 + (comboPulse / 10) * 0.12;
   const w = 128, h = 30, x = W / 2, y = comboY;
   ctx.save();
   ctx.translate(x, y + h / 2);
   ctx.scale(k, k);
-  ctx.fillStyle = '#fffbf2';
-  ctx.strokeStyle = '#26231f'; ctx.lineWidth = 2;
+  ctx.fillStyle = 'rgba(16,19,36,0.82)';
+  ctx.strokeStyle = col; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, 15); ctx.fill(); ctx.stroke();
   ctx.fillStyle = col;
   ctx.fillRect(-w / 2 + 12, h / 2 - 6, (w - 24) * clamp(comboTimer / COMBO_TIME, 0, 1), 3);
   ctx.font = '900 14px system-ui, -apple-system, sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#26231f';
-  ctx.fillText('комбо ' + combo, -14, -2);
+  ctx.fillStyle = '#fff';
+  ctx.fillText('КОМБО ' + combo, -14, -2);
   ctx.fillStyle = col;
   ctx.fillText('×' + m, 40, -2);
   ctx.restore();
@@ -4226,10 +4216,10 @@ function updateAllUI() {
   $('tileStatsSub').textContent = `${formatNum(saveData.stats.gamesPlayed)} игр`;
 
   $('menuSkinName').textContent = getSkin().name;
-  $('menuPlayArena').textContent = sel.name;
-  $('menuArenaNum').textContent = `Арена ${pv.id} из ${ARENAS.length}`;
-  $('menuArenaMult').textContent = `⭐ опыт ×${xpMult(pv).toFixed(1)}`;
-  $('menuArenaTitle').textContent = pv.name;
+  $('menuPlayArena').textContent = `${sel.icon} ${sel.name}`;
+  $('menuArenaNum').textContent = `АРЕНА ${pv.id} / ${ARENAS.length}`;
+  $('menuArenaMult').textContent = `⭐ ОПЫТ ×${xpMult(pv).toFixed(1)}`;
+  $('menuArenaTitle').textContent = `${pv.icon} ${pv.name}`;
   $('menuArenaDesc').textContent = pv.desc;
   $('menuArenaTwist').textContent = pv.twist;
   updateAvatar();
@@ -4261,7 +4251,7 @@ function updateAllUI() {
     const span = next.minXP - ha.minXP;
     const pct = Math.min(100, (Math.max(0, saveData.totalXP - ha.minXP) / span) * 100);
     $('menuXpFill').style.width = `${pct}%`;
-    $('menuXpLabel').textContent = `До арены ${next.id}: ${next.name}`;
+    $('menuXpLabel').textContent = `До арены ${next.id}: ${next.icon} ${next.name}`;
     $('menuXpText').textContent = `${fmtXP(Math.floor(saveData.totalXP))} / ${fmtXP(next.minXP)}`;
   } else {
     $('menuXpFill').style.width = '100%';
@@ -4520,7 +4510,7 @@ function renderArenas() {
     cc.scale(128 / 362, 96 / 272);
     drawArenaScene(cc, arena, 362, 272, 0, 0);
     cc.restore();
-    if (!unlocked) { cc.fillStyle = 'rgba(38,35,31,0.55)'; cc.fillRect(0, 0, 128, 96); drawIcon(cc, 'lock', 64, 48, 30, '#ffffff', null, 2.2); }
+    if (!unlocked) { cc.fillStyle = 'rgba(8,10,20,0.6)'; cc.fillRect(0, 0, 128, 96); cc.font = '30px serif'; cc.textAlign = 'center'; cc.fillText('🔒', 64, 58); }
     card.querySelector('button').addEventListener('click', () => {
       if (!unlocked || isSelected) return;
       saveData.selectedArena = arena.id; previewIdx = arena.id;
@@ -4536,7 +4526,7 @@ function renderStats() {
   const items = [
     { label: '🎮 Сыграно матчей', val: formatNum(s.gamesPlayed) },
     { label: '🏆 Лучший счёт (все арены)', val: formatNum(saveData.bestScore) },
-    ...ARENAS.map((a) => ({ label: `Рекорд: ${a.name}`, val: saveData.arenaBest[a.id] ? formatNum(saveData.arenaBest[a.id]) : '—' })),
+    ...ARENAS.map((a) => ({ label: `${a.icon} Рекорд: ${a.name}`, val: saveData.arenaBest[a.id] ? formatNum(saveData.arenaBest[a.id]) : '—' })),
     { label: '📈 Суммарный счёт', val: formatNum(s.totalScore) },
     { label: '⭐ Нафармлено опыта', val: `${formatNum(saveData.totalXP)} XP` },
     { label: '🏟 Открыто арен', val: `${saveData.highestUnlockedArena} из ${ARENAS.length}` },
@@ -4606,7 +4596,7 @@ function triggerGameOver() {
     player.vy = SPRING_FORCE;
     hazards = hazards.filter((hz) => hz.kind === 'fireball' ? false : hz.kind === 'faller' ? !hz.falling : false);
     playSound('powerup');
-    showToastText('😇 Второй шанс — герой спасён');
+    showToastText('😇 ВОСКРЕШЕНИЕ! Герой спасён');
     return;
   }
   gameState = 'GAMEOVER';
@@ -5376,22 +5366,23 @@ function buildWheelFace() {
     const a0 = -Math.PI / 2 + i * seg;
     c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, R, a0, a0 + seg); c.closePath();
     c.fillStyle = WHEEL[i].col; c.fill();
-    c.strokeStyle = '#26231f'; c.lineWidth = 4; c.stroke();
-    c.save();
-    c.rotate(a0 + seg / 2);
-    c.translate(R * 0.72, 0); c.rotate(Math.PI / 2);
-    const ic = WHEEL[i].icon;
-    drawIcon(c, ic, 0, 0, S * 0.1, '#26231f', ic === 'coin' ? '#f2c230' : ic === 'gem' ? '#a9d4f5' : null, 2.2);
-    c.restore();
+    c.fillStyle = 'rgba(255,255,255,' + (i % 2 ? 0.08 : 0.16) + ')'; c.fill();
+    c.strokeStyle = 'rgba(10,12,30,0.55)'; c.lineWidth = 3; c.stroke();
     c.save();
     c.rotate(a0 + seg / 2);
     c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.font = `800 ${Math.round(S * 0.046)}px system-ui, -apple-system, sans-serif`;
-    c.fillStyle = '#26231f';
-    c.fillText(WHEEL[i].label, R * 0.42, 0);
+    c.font = `${Math.round(S * 0.075)}px system-ui, sans-serif`;
+    c.fillText(WHEEL[i].icon, R * 0.7, 0);
+    c.font = `900 ${Math.round(S * 0.045)}px system-ui, sans-serif`;
+    c.fillStyle = '#fff'; c.strokeStyle = 'rgba(0,0,0,0.45)'; c.lineWidth = 4;
+    c.strokeText(WHEEL[i].label, R * 0.44, 0); c.fillText(WHEEL[i].label, R * 0.44, 0);
     c.restore();
   }
-  c.beginPath(); c.arc(0, 0, R, 0, Math.PI * 2); c.lineWidth = 6; c.strokeStyle = '#26231f'; c.stroke();
+  c.beginPath(); c.arc(0, 0, R, 0, Math.PI * 2); c.lineWidth = 10; c.strokeStyle = '#14172a'; c.stroke();
+  for (let i = 0; i < n * 2; i++) {
+    const a = (i / (n * 2)) * Math.PI * 2;
+    ci(c, Math.cos(a) * R, Math.sin(a) * R, 4.5, i % 2 ? '#ffe082' : '#fff8e1', false);
+  }
   wheel.face = f;
 }
 function drawWheel(t) {
@@ -5415,10 +5406,11 @@ function drawWheel(t) {
   wctx.rotate(wheel.angle);
   wctx.drawImage(wheel.face, -S / 2, -S / 2);
   wctx.setTransform(1, 0, 0, 1, 0, 0);
-  wctx.strokeStyle = '#26231f'; wctx.lineWidth = 4; wctx.lineJoin = 'round';
-  ci(wctx, S / 2, S / 2, S * 0.07, '#fffbf2');
-  ci(wctx, S / 2, S / 2, S * 0.02, '#26231f', false);
-  pg(wctx, [[S / 2 - 15, 4], [S / 2 + 15, 4], [S / 2, 40]], '#e0574f');
+  wctx.strokeStyle = '#14172a'; wctx.lineWidth = 4; wctx.lineJoin = 'round';
+  ci(wctx, S / 2, S / 2, S * 0.09, '#fffdf6');
+  wctx.font = `${Math.round(S * 0.07)}px system-ui`; wctx.textAlign = 'center'; wctx.textBaseline = 'middle';
+  wctx.fillText('🎰', S / 2, S / 2 + 2);
+  pg(wctx, [[S / 2 - 16, 2], [S / 2 + 16, 2], [S / 2, 40]], '#ff3d57');
 }
 function wheelFree() { return saveData.wheelDay !== todayKey(); }
 function spinWheel() {
