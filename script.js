@@ -425,6 +425,7 @@ const OUT = '#1a1a1a';
 const COARSE = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
 let LOW_FX = COARSE;   // экономный режим (см. настройки «Графика»)
 let autoLow = false;   // включается сам, если игра тормозит
+let idleDirty = true;   // нужно ли перерисовать игровое поле под меню/паузой
 
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 function hash(n) { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); }
@@ -1328,11 +1329,8 @@ function drawBullet(c, b, skin, t) {
   } else if (st === 'bolt') {
     pg(c, [[3, -13], [-5, 1], [0, 1], [-3, 13], [6, -2], [1, -2]], col);
   } else {
-    const g = c.createRadialGradient(0, 0, 1, 0, 0, 12);
-    g.addColorStop(0, '#ffffff'); g.addColorStop(0.45, col); g.addColorStop(1, 'rgba(255,255,255,0)');
-    c.fillStyle = g; c.beginPath(); c.arc(0, 0, 12, 0, 6.283); c.fill();
-    ci(c, 0, 0, 6, col);
-    ci(c, -2, -2, 1.8, 'rgba(255,255,255,0.85)', false);
+    // светящийся шар — готовый спрайт (градиент не создаётся заново каждый кадр)
+    c.drawImage(getOrbSprite(col), -15, -15);
   }
   c.restore();
 }
@@ -1798,6 +1796,35 @@ function drawArenaBase(c, a, w, h, scroll) {
   c.stroke();
 }
 
+// Быстрая версия основы фона для игры: градиент и клетка заранее нарисованы в отдельных холстах,
+// каждый кадр их просто копируем (два drawImage вместо градиента и ~60 линий).
+const baseCache = { key: '', grad: null, grid: null };
+function drawArenaBaseCached(c, a, w, h, scroll) {
+  const gs = 24;
+  const key = a.id + ':' + w + 'x' + h;
+  if (baseCache.key !== key) {
+    baseCache.key = key;
+    const g1 = document.createElement('canvas');
+    g1.width = w; g1.height = h;
+    const gc = g1.getContext('2d', { alpha: false });
+    const g = gc.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, a.bgTop); g.addColorStop(1, a.bgBottom);
+    gc.fillStyle = g; gc.fillRect(0, 0, w, h);
+    const g2 = document.createElement('canvas');
+    g2.width = w; g2.height = h + gs;
+    const lc = g2.getContext('2d');
+    lc.strokeStyle = a.gridColor; lc.lineWidth = 1;
+    lc.beginPath();
+    for (let x = 0; x < w; x += gs) { lc.moveTo(x, 0); lc.lineTo(x, h + gs); }
+    for (let y = 0; y < h + gs; y += gs) { lc.moveTo(0, y); lc.lineTo(w, y); }
+    lc.stroke();
+    baseCache.grad = g1; baseCache.grid = g2;
+  }
+  c.drawImage(baseCache.grad, 0, 0);
+  const offY = ((scroll % gs) + gs) % gs;
+  c.drawImage(baseCache.grid, 0, offY - gs);
+}
+
 function drawArenaDeco(c, a, w, h, scroll, t) {
   const sink = Math.min(scroll * 0.12, h * 0.5);
   const base = h + sink;
@@ -2258,6 +2285,73 @@ function drawPlatformShape(c, a, p, t) {
 }
 
 // ==========================================================
+// 8.5. КЭШ СПРАЙТОВ: платформы, снаряды и огненные шары рисуются один раз и потом просто копируются.
+// Это убирает тысячи операций рисования (и создание градиентов/теней) в каждом кадре.
+// ==========================================================
+const orbSprites = new Map();
+function getOrbSprite(col) {
+  let s = orbSprites.get(col);
+  if (s) return s;
+  s = document.createElement('canvas');
+  s.width = 30; s.height = 30;
+  const c = s.getContext('2d');
+  c.translate(15, 15);
+  const g = c.createRadialGradient(0, 0, 1, 0, 0, 12);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(0.45, col); g.addColorStop(1, 'rgba(255,255,255,0)');
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, 12, 0, 6.283); c.fill();
+  c.strokeStyle = OUT; c.lineWidth = 1.8;
+  ci(c, 0, 0, 6, col);
+  ci(c, -2, -2, 1.8, 'rgba(255,255,255,0.85)', false);
+  orbSprites.set(col, s);
+  return s;
+}
+
+const fireSprites = new Map();
+function getFireballSprite(col, r) {
+  const key = col + ':' + r;
+  let s = fireSprites.get(key);
+  if (s) return s;
+  s = document.createElement('canvas');
+  s.width = 32; s.height = 48;
+  const c = s.getContext('2d');
+  c.translate(16, 30);
+  const g = c.createRadialGradient(0, 0, 1, 0, 0, r + 6);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(0.45, col); g.addColorStop(1, 'rgba(255,120,0,0)');
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, r + 6, 0, 6.283); c.fill();
+  pg(c, [[-4, -4], [4, -4], [0, -22]], col, false);
+  fireSprites.set(key, s);
+  return s;
+}
+
+const PLAT_PAD = 14;
+const platSprites = new Map();
+let platSpritesArena = -1;
+function getPlatSprite(a, type, w, h) {
+  if (platSpritesArena !== a.id) { platSprites.clear(); platSpritesArena = a.id; }
+  const key = type + ':' + w + ':' + h + ':' + (LOW_FX ? 1 : 0);
+  let s = platSprites.get(key);
+  if (s) return s;
+  s = document.createElement('canvas');
+  s.width = w + PLAT_PAD * 2; s.height = h + PLAT_PAD * 2;
+  const c = s.getContext('2d');
+  c.translate(PLAT_PAD, PLAT_PAD);
+  drawPlatformShape(c, a, { x: 0, y: 0, w, h, type, broken: false }, 0);
+  platSprites.set(key, s);
+  return s;
+}
+function drawPlatformFast(c, a, p) {
+  if (p.broken) { drawPlatformShape(c, a, p, 0); return; }
+  c.drawImage(getPlatSprite(a, p.type, p.w, p.h), p.x - PLAT_PAD, p.y - PLAT_PAD);
+}
+
+// Удаление элементов из массива «на месте», без создания нового массива каждый кадр (меньше работы сборщику мусора)
+function compactInPlace(arr, keep) {
+  let j = 0;
+  for (let i = 0; i < arr.length; i++) { const v = arr[i]; if (keep(v)) arr[j++] = v; }
+  arr.length = j;
+}
+
+// ==========================================================
 // 9. СОХРАНЕНИЯ
 // ==========================================================
 const defaultSave = {
@@ -2289,7 +2383,7 @@ function normalizeSave(parsed) {
   st.shootY = clamp(Number.isFinite(Number(st.shootY)) ? Number(st.shootY) : 0.9, 0.05, 0.95);
   st.shootOpacity = clamp(Number(st.shootOpacity) || 90, 30, 100);
   if (!['auto', 'low', 'high'].includes(st.quality)) st.quality = 'auto';
-  if (![0, 30, 60].includes(Number(st.fpsCap))) st.fpsCap = 0;
+  if (![0, 30, 60, 120].includes(Number(st.fpsCap))) st.fpsCap = 0;
   st.fpsCap = Number(st.fpsCap);
   out.settings = st;
   out.promos = Array.isArray(out.promos) ? out.promos.filter((x) => typeof x === 'string') : [];
@@ -2336,13 +2430,21 @@ function flushLocal() {
     localStorage.setItem(SAVE_KEY_BAK, json);
   } catch (e) {}
 }
+// Запись на диск выполняем в «свободное» время браузера, чтобы не ловить фриз посреди прыжка
+function whenIdle(fn) {
+  if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(fn, { timeout: 1500 });
+  else fn();
+}
 function writeSaveData() {
   saveData.savedAt = Date.now();
   localDirty = true;
-  if (!localTimer) localTimer = setTimeout(flushLocal, 700);
+  // Во время матча пишем редко (раз в 5 сек / в облако раз в 30 сек). При паузе, конце матча и сворачивании — сразу.
+  let playing = false;
+  try { playing = gameState === 'PLAYING'; } catch (e) {}
+  if (!localTimer) localTimer = setTimeout(() => whenIdle(flushLocal), playing ? 5000 : 700);
   if (cloud) {
     cloudDirty = true;
-    if (!cloudTimer) cloudTimer = setTimeout(flushCloud, 2000);
+    if (!cloudTimer) cloudTimer = setTimeout(() => whenIdle(flushCloud), playing ? 30000 : 2000);
   }
 }
 loadSaveData();
@@ -2418,7 +2520,7 @@ function showToastText(text) {
 // 10. МИР, ФИЗИКА (1.0x)
 // ==========================================================
 const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', { alpha: false });
 const W = 420;
 let H = 680; // высота подстраивается под экран (см. fitCanvas)
 
@@ -2554,6 +2656,7 @@ function spawnRow(y, safe) {
 
 let hardWarned = false;
 function initGameWorld() {
+  idleDirty = true;
   hardWarned = false;
   touchPointers.clear(); keys.left = false; keys.right = false;
   hudLast.score = -1; hudLast.scoreT = 0;
@@ -2628,21 +2731,31 @@ function applyTouchDir() {
   keys.left = dir < 0;
   keys.right = dir > 0;
 }
-function touchDirFromEvent(e) {
+// Середину экрана запоминаем при касании: pointermove на 120 Гц приходит очень часто,
+// а getBoundingClientRect в нём заставлял браузер пересчитывать вёрстку — отсюда подлагивания.
+let touchMidX = 0;
+function refreshTouchMid() {
   const rect = canvas.getBoundingClientRect();
-  return e.clientX - rect.left < rect.width / 2 ? -1 : 1;
+  touchMidX = rect.left + rect.width / 2;
+}
+function touchDirFromEvent(e) {
+  return e.clientX < touchMidX ? -1 : 1;
 }
 canvas.addEventListener('pointerdown', (e) => {
   if (gameState !== 'PLAYING') return;
   if (e.pointerType === 'mouse') { shootBullet(); return; }
   e.preventDefault();
   try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+  if (touchPointers.size === 0) refreshTouchMid();
   touchPointers.set(e.pointerId, touchDirFromEvent(e));
   applyTouchDir();
 });
 canvas.addEventListener('pointermove', (e) => {
-  if (!touchPointers.has(e.pointerId)) return;
-  touchPointers.set(e.pointerId, touchDirFromEvent(e));
+  const prev = touchPointers.get(e.pointerId);
+  if (prev === undefined) return;
+  const d = touchDirFromEvent(e);
+  if (d === prev) return;
+  touchPointers.set(e.pointerId, d);
   applyTouchDir();
 });
 function endTouch(e) {
@@ -2732,6 +2845,11 @@ function updateHazards(dt, arena) {
     }
   }
 }
+
+function keepParticle(pt) { return pt.life > 0; }
+function keepPlatform(p) { return p.y < H + 60; }
+function keepMonster(m) { return m.baseY < H + 80; }
+function keepCoin(c) { return !c.collected && c.y < H + 60; }
 
 function update(dt) {
   const arena = getCurrentArena();
@@ -2916,11 +3034,11 @@ function update(dt) {
   if (gameState !== 'PLAYING') return;
 
   if (particles.length > 150) particles.splice(0, particles.length - 150);
-  for (let i = particles.length - 1; i >= 0; i--) {
+  for (let i = 0; i < particles.length; i++) {
     const pt = particles[i];
     pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.life -= dt;
-    if (pt.life <= 0) particles.splice(i, 1);
   }
+  compactInPlace(particles, keepParticle);
 
   // камера
   const threshold = H * 0.44;
@@ -2945,9 +3063,9 @@ function update(dt) {
     for (const hz of hazards) if (hz.kind === 'fireball') hz.y += diff;
     genY += diff;
 
-    platforms = platforms.filter((p) => p.y < H + 60);
-    monsters = monsters.filter((m) => m.baseY < H + 80);
-    coins = coins.filter((c) => !c.collected && c.y < H + 60);
+    compactInPlace(platforms, keepPlatform);
+    compactInPlace(monsters, keepMonster);
+    compactInPlace(coins, keepCoin);
 
     while (genY > -60) {
       genY -= nextGap();
@@ -2966,8 +3084,8 @@ function drawEntities(t) {
   const arena = getCurrentArena();
 
   for (const p of platforms) {
-    if (p.y < -40) continue;
-    drawPlatformShape(ctx, arena, p, t);
+    if (p.y < -40 || p.y > H + 30) continue;
+    drawPlatformFast(ctx, arena, p);
     if (p.broken) continue;
     const cx = p.x + p.w / 2;
     if (p.item === 'spring') drawSpringShape(ctx, cx, p.y, 11 + 10 * (p.springT / 20));
@@ -3059,12 +3177,7 @@ function drawHazards(t) {
         ctx.stroke(); ctx.shadowBlur = 0;
       }
     } else if (hz.kind === 'fireball') {
-      ctx.save(); ctx.translate(hz.x, hz.y);
-      const g = ctx.createRadialGradient(0, 0, 1, 0, 0, hz.r + 6);
-      g.addColorStop(0, '#ffffff'); g.addColorStop(0.45, hz.color); g.addColorStop(1, 'rgba(255,120,0,0)');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, hz.r + 6, 0, 6.283); ctx.fill();
-      ctx.fillStyle = hz.color; pg(ctx, [[-4, -4], [4, -4], [0, -22]], hz.color, false);
-      ctx.restore();
+      ctx.drawImage(getFireballSprite(hz.color, hz.r), hz.x - 16, hz.y - 30);
     }
   }
 }
@@ -3074,17 +3187,21 @@ const decoCtx = decoCanvas.getContext('2d');
 let decoT = -1e9, decoKey = '';
 function draw(t) {
   const arena = getCurrentArena();
-  drawArenaBase(ctx, arena, W, H, cameraY);
-  // декорации фона (горы, здания, облака...) тяжёлые, а двигаются медленно — обновляем их реже и просто копируем слой
-  const key = arena.id + ':' + W + 'x' + H;
+  drawArenaBaseCached(ctx, arena, W, H, cameraY);
+  // декорации фона (горы, здания, облака...) тяжёлые, а двигаются медленно — обновляем их реже и просто копируем слой.
+  // Если устройство не справляется (autoLow), слой рисуется в половинном разрешении — в 4 раза меньше работы.
+  const ds = autoLow ? 0.5 : 1;
+  const dw = Math.round(W * ds), dh = Math.round(H * ds);
+  const key = arena.id + ':' + W + 'x' + H + ':' + ds;
   const interval = autoLow ? 66 : (LOW_FX ? 45 : 33);
   if (decoKey !== key || t - decoT >= interval) {
-    if (decoCanvas.width !== W || decoCanvas.height !== H) { decoCanvas.width = W; decoCanvas.height = H; }
-    else decoCtx.clearRect(0, 0, W, H);
+    if (decoCanvas.width !== dw || decoCanvas.height !== dh) { decoCanvas.width = dw; decoCanvas.height = dh; }
+    else { decoCtx.setTransform(1, 0, 0, 1, 0, 0); decoCtx.clearRect(0, 0, dw, dh); }
+    decoCtx.setTransform(ds, 0, 0, ds, 0, 0);
     drawArenaDeco(decoCtx, arena, W, H, cameraY, t);
     decoKey = key; decoT = t;
   }
-  ctx.drawImage(decoCanvas, 0, 0);
+  ctx.drawImage(decoCanvas, 0, 0, W, H);
   stepAmbient(ctx, arena, gameAmbient, W, H, drawDt, windNow);
   drawEntities(t);
   drawHazards(t);
@@ -3106,7 +3223,7 @@ const statsMenuEl = document.getElementById('statsMenu');
 const gameOverMenuEl = document.getElementById('gameOverMenu');
 const promoMenuEl = document.getElementById('promoMenu');
 const menuCanvas = document.getElementById('menuCanvas');
-const mctx = menuCanvas.getContext('2d');
+const mctx = menuCanvas.getContext('2d', { alpha: false });
 const MW = 362, MH = 170;
 
 const numFmt = new Intl.NumberFormat('ru-RU');
@@ -3153,6 +3270,7 @@ function setPreview(idx) {
 }
 
 function updateAllUI() {
+  idleDirty = true;
   updateHUD();
   const sel = getCurrentArena();
   const pv = ARENAS[previewIdx - 1];
@@ -3516,6 +3634,7 @@ const sbPrev = document.getElementById('sbPreview');
 const sbBtn = document.getElementById('sbPreviewBtn');
 
 function applySettings() {
+  idleDirty = true;
   const st = saveData.settings;
   shootBtnEl.style.setProperty('--sb-x', st.shootX.toFixed(4));
   shootBtnEl.style.setProperty('--sb-y', st.shootY.toFixed(4));
@@ -3550,6 +3669,21 @@ function renderSettings() {
   document.getElementById('sbOpacityVal').textContent = st.shootOpacity + '%';
   document.querySelectorAll('#qualitySeg .seg-btn').forEach((b) => b.classList.toggle('active', b.dataset.v === st.quality));
   document.querySelectorAll('#fpsSeg .seg-btn').forEach((b) => b.classList.toggle('active', b.dataset.v === String(st.fpsCap)));
+  updateFpsInfo();
+}
+
+// Подсказка в настройках: какая частота у экрана и что сейчас делает игра
+function updateFpsInfo() {
+  const el = document.getElementById('fpsInfo');
+  if (!el) return;
+  const st = saveData.settings;
+  const hz = typeof displayHz === 'number' ? displayHz : 60;
+  const cap = effectiveCap();
+  const now = cap ? cap : hz;
+  let txt = `📺 Экран: ${hz} Гц • игра: до ${now} к/с`;
+  if (st.fpsCap === 0 && autoCap60) txt += ' (авто снизило до 60 — так плавнее на этом устройстве)';
+  if (st.fpsCap === 120 && hz < 100) txt += '. Браузер даёт только ' + hz + ' Гц: на iPhone Safari и Telegram часто ограничивают страницы 60 Гц, на Android включи 120 Гц в настройках экрана.';
+  el.textContent = txt;
 }
 
 let sbDragging = false;
@@ -3593,6 +3727,7 @@ document.getElementById('qualitySeg').addEventListener('click', (e) => {
 document.getElementById('fpsSeg').addEventListener('click', (e) => {
   const b = e.target.closest('.seg-btn'); if (!b) return;
   saveData.settings.fpsCap = Number(b.dataset.v);
+  autoCap60 = false; nextFrameAt = 0; // выбор игрока важнее авто-снижения
   renderSettings(); writeSaveData(); playSound('click');
 });
 function openSettings() {
@@ -3842,43 +3977,132 @@ fitCanvas();
 initGameWorld();
 updateAllUI();
 let lastTime = performance.now();
-let lastIdleDraw = 0;
 let lastMenuDraw = 0;
 let loopDt = 1, drawDt = 1; // шаг времени в «кадрах по 60 Гц»: при 120 Гц ≈ 0.5
 
-let perfEma = 0.6, slowCount = 0;
+// ---------- Частота экрана (60 / 90 / 120 / 144 Гц) ----------
+// Меряем реальный интервал между кадрами браузера. Берём медиану (устойчиво к случайным рывкам)
+// и запоминаем самый короткий результат — если игра просела, это не «понижает» экран в наших глазах.
+const COMMON_HZ = [30, 48, 50, 60, 72, 75, 90, 100, 120, 144, 165, 240];
+let refreshMs = 1000 / 60, displayHz = 60, hzMeasured = false;
+let rafPrev = 0;
+const rafSamples = [];
+function trackRefresh(now) {
+  if (rafPrev) {
+    const d = now - rafPrev;
+    if (d > 3 && d < 40) {
+      rafSamples.push(d);
+      if (rafSamples.length >= 48) {
+        rafSamples.sort((a, b) => a - b);
+        const med = rafSamples[24];
+        rafSamples.length = 0;
+        let hz = 1000 / med;
+        let best = COMMON_HZ[0];
+        for (const c of COMMON_HZ) if (Math.abs(c - hz) < Math.abs(best - hz)) best = c;
+        // в меню нагрузка маленькая — замер честный; во время матча частоту только повышаем
+        if (!hzMeasured || best > displayHz || gameState !== 'PLAYING') { displayHz = best; refreshMs = 1000 / best; }
+        hzMeasured = true;
+      }
+    }
+  }
+  rafPrev = now;
+}
+
+// ---------- Ограничение FPS и авто-режим ----------
+// fpsCap: 0 = «Авто» (частота экрана), 120, 60, 30.
+// В «Авто» игра сама переходит на ровные 60, если устройство не тянет 120 — ровные 60 выглядят плавнее, чем «рваные» 80–120.
+let autoCap60 = false;
+function effectiveCap() {
+  const user = saveData.settings.fpsCap;
+  const cap = user || (autoCap60 ? 60 : 0);
+  if (!cap || cap >= displayHz - 4) return 0; // экран и так не быстрее лимита — ничего не пропускаем
+  return cap;
+}
+function targetFrameMs() {
+  const cap = effectiveCap();
+  if (!cap) return refreshMs;
+  return refreshMs * Math.max(1, Math.round((1000 / cap) / refreshMs));
+}
+let nextFrameAt = 0;
+
+// ---------- Слежение за производительностью ----------
+let perfFrames = 0, perfLate = 0, perfWarmup = 60, prevLoopState = '';
+function perfCheck(rawMs, target) {
+  if (perfWarmup > 0) { perfWarmup--; return; }
+  perfFrames++;
+  if (rawMs > target * 1.6) perfLate++;
+  if (perfFrames < 120) return;
+  const ratio = perfLate / perfFrames;
+  perfFrames = 0; perfLate = 0;
+  if (ratio < 0.18) return;
+  if (!autoLow && saveData.settings.quality === 'auto') {
+    autoLow = true; LOW_FX = true; // шаг 1: упрощаем эффекты
+    perfWarmup = 30;
+  } else if (!autoCap60 && saveData.settings.fpsCap === 0 && displayHz > 75) {
+    autoCap60 = true;               // шаг 2: ровные 60 вместо дёрганых 120
+    nextFrameAt = 0;
+    perfWarmup = 30;
+  }
+}
+
+let settingsInfoT = 0;
 function gameLoop(currentTime) {
-  const cap = saveData.settings.fpsCap;
-  if (cap && currentTime - lastTime < 1000 / cap - 2) { requestAnimationFrame(gameLoop); return; }
-  const rawDt = (currentTime - lastTime) / 16.667;
-  lastTime = currentTime;
-  const dt = Math.min(Math.max(rawDt, 0.1), 2.5);
-  loopDt = dt;
-  if (gameState === 'PLAYING' && !cap) {
-    perfEma = perfEma * 0.96 + Math.min(rawDt, 4) * 0.04;
-    if (perfEma > 1.75) {
-      if (!autoLow && saveData.settings.quality === 'auto' && ++slowCount > 90) { autoLow = true; LOW_FX = true; }
-    } else slowCount = 0;
-  }
-
-  if (gameState === 'PLAYING') {
-    drawDt = dt;
-    update(dt);
-    draw(currentTime);
-  } else if (currentTime - lastIdleDraw > 700) { // на паузе/в меню игровое поле почти не видно — рисуем редко: тяжёлый кадр не должен рвать анимацию витрины
-    drawDt = Math.min((currentTime - lastIdleDraw) / 16.667, 3);
-    lastIdleDraw = currentTime;
-    draw(currentTime);
-  }
-  updateTouchUI();
-  // Витрина арены: тяжёлые слои закэшированы, поэтому рисуем на каждом кадре (плавный прыжок)
-  if (!mainMenuEl.classList.contains('hidden')) {
-    loopDt = Math.min(Math.max((currentTime - lastMenuDraw) / 16.667, 0.1), 3); // шаг времени для частиц витрины
-    lastMenuDraw = currentTime;
-    drawMenuPreview(currentTime);
-  }
-
+  // Следующий кадр заказываем сразу: даже если в кадре случится ошибка, игра не «застынет» навсегда
   requestAnimationFrame(gameLoop);
+  trackRefresh(currentTime);
+
+  // ограничение FPS: пропускаем лишние кадры экрана, держа ровный ритм
+  const cap = effectiveCap();
+  if (cap) {
+    const interval = 1000 / cap;
+    const tol = Math.min(3, refreshMs * 0.4);
+    if (currentTime < nextFrameAt - tol) return;
+    nextFrameAt = (currentTime - nextFrameAt > interval) ? currentTime + interval : nextFrameAt + interval;
+  }
+
+  try {
+    let rawMs = currentTime - lastTime;
+    lastTime = currentTime;
+    // Убираем «дрожание» таймера: если кадр пришёл почти вовремя, считаем его ровно одним кадром экрана.
+    // Так движение на 120 Гц идёт идеально ровно, без микрорывков от неточных отметок времени.
+    const target = targetFrameMs();
+    let frameMs = Math.abs(rawMs - target) < target * 0.25 ? target : rawMs;
+    const dt = Math.min(Math.max(frameMs / 16.667, 0.05), 3);
+    loopDt = dt;
+
+    if (gameState === 'PLAYING') {
+      if (prevLoopState !== 'PLAYING') { perfWarmup = 60; perfFrames = 0; perfLate = 0; }
+      perfCheck(rawMs, target);
+      drawDt = dt;
+      // Физика шагами не больше одного «кадра 60 Гц»: после рывка игра догоняет время, а не «проскакивает» платформы
+      let rem = dt;
+      while (rem > 1e-4 && gameState === 'PLAYING') {
+        const step = Math.min(rem, 1);
+        update(step);
+        rem -= step;
+      }
+      draw(currentTime);
+    } else if (idleDirty || prevLoopState !== gameState) {
+      // В меню и на паузе поле под окном неподвижно — перерисовываем его только когда что-то поменялось
+      idleDirty = false;
+      drawDt = 0;
+      draw(currentTime);
+    }
+    prevLoopState = gameState;
+    updateTouchUI();
+    // Витрина арены: тяжёлые слои закэшированы, поэтому рисуем на каждом кадре (плавный прыжок)
+    if (!mainMenuEl.classList.contains('hidden')) {
+      loopDt = Math.min(Math.max((currentTime - lastMenuDraw) / 16.667, 0.05), 3); // шаг времени для частиц витрины
+      lastMenuDraw = currentTime;
+      drawMenuPreview(currentTime);
+    }
+    if (!settingsMenuEl.classList.contains('hidden') && currentTime - settingsInfoT > 1000) {
+      settingsInfoT = currentTime;
+      updateFpsInfo();
+    }
+  } catch (err) {
+    console.error('Ошибка в кадре:', err);
+  }
 }
 requestAnimationFrame(gameLoop);
 

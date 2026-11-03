@@ -1126,3 +1126,7 @@ body { height: var(--tg-viewport-stable-height, 100dvh); }
 #mainMenu { backdrop-filter: none; -webkit-backdrop-filter: none; }
 .hero::after { animation: none; display: none; }
 .game-title { animation: none; }
+
+/* Строка с частотой экрана в настройках */
+.fps-info { margin: 8px 0 0; font-weight: 700; color: #3949ab; }
+.fps-info:empty { display: none; }
