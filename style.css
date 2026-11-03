@@ -1067,3 +1067,30 @@ body { height: var(--tg-viewport-stable-height, 100dvh); }
   padding: 0; line-height: 1;
 }
 .game-wrapper .shoot-btn:active { transform: translate(-50%, calc(-50% + 3px)); }
+
+/* ==========================================================
+   СОХРАНЕНИЕ ПРОГРЕССА (экспорт / импорт)
+   ========================================================== */
+.save-code {
+  display: block;
+  width: 100%;
+  margin: 4px 0 8px;
+  padding: 8px 10px;
+  font: 600 11px/1.3 ui-monospace, Menlo, Consolas, monospace;
+  color: var(--ink);
+  background: #fff;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: inset 0 2px 0 rgba(31, 34, 51, 0.1);
+  resize: none;
+  outline: none;
+  word-break: break-all;
+  /* глобально выделение отключено — для поля с кодом его нужно вернуть */
+  user-select: text;
+  -webkit-user-select: text;
+}
+.save-code:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); }
+.save-row2 { margin-top: 8px; }
+.set-section .promo-msg { min-height: 0; margin: 8px 0 0; }
+.set-section .promo-msg:empty { display: none; }
+#persistInfo:empty { display: none; }

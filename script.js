@@ -2015,12 +2015,17 @@ function normalizeSave(parsed) {
   return out;
 }
 
+const SAVE_KEY_BAK = SAVE_KEY + '_bak';              // страховочная копия (на случай повреждения основной)
 function loadSaveData() {
-  try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (raw) saveData = normalizeSave(JSON.parse(raw));
-  } catch (e) { console.warn('Ошибка чтения сохранения:', e); }
+  let loaded = false;
+  for (const key of [SAVE_KEY, SAVE_KEY_BAK]) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) { saveData = normalizeSave(JSON.parse(raw)); loaded = true; break; }
+    } catch (e) { console.warn('Ошибка чтения сохранения (' + key + '):', e); }
+  }
   saveData = normalizeSave(saveData);
+  return loaded;
 }
 
 // Запись: сразу в localStorage, в облако Telegram — не чаще раза в 2 сек (и принудительно при паузе/конце матча)
@@ -2039,7 +2044,11 @@ function flushLocal() {
   clearTimeout(localTimer); localTimer = null;
   if (!localDirty) return;
   localDirty = false;
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(saveData)); } catch (e) {}
+  try {
+    const json = JSON.stringify(saveData);
+    localStorage.setItem(SAVE_KEY, json);
+    localStorage.setItem(SAVE_KEY_BAK, json);
+  } catch (e) {}
 }
 function writeSaveData() {
   saveData.savedAt = Date.now();
@@ -3216,12 +3225,145 @@ document.getElementById('fpsSeg').addEventListener('click', (e) => {
   saveData.settings.fpsCap = Number(b.dataset.v);
   renderSettings(); writeSaveData(); playSound('click');
 });
-function openSettings() { playSound('click'); openModal(settingsMenuEl, renderSettings); }
+function openSettings() {
+  playSound('click');
+  openModal(settingsMenuEl, () => { renderSettings(); saveMsgEl.className = 'promo-msg'; saveMsgEl.textContent = ''; refreshPersistInfo(); });
+  requestPersist();
+}
 document.getElementById('openSettingsBtn').addEventListener('click', openSettings);
 document.getElementById('pauseSettingsBtn').addEventListener('click', openSettings);
 document.getElementById('closeSettingsBtn').addEventListener('click', () => {
   if (gameState === 'PAUSED') { hideAllModals(); document.getElementById('pauseMenu').classList.remove('hidden'); }
   else showMainMenu();
+});
+
+// ==========================================================
+// СОХРАНЕНИЕ ПРОГРЕССА: защита хранилища, экспорт и импорт
+// ==========================================================
+const SAVE_PREFIX = 'DJU1:';
+const saveCodeEl = document.getElementById('saveCode');
+const saveMsgEl = document.getElementById('saveMsg');
+const saveFileInput = document.getElementById('saveFileInput');
+
+// Просим браузер не удалять данные игры автоматически (особенно важно на iPhone и при нехватке места)
+async function requestPersist() {
+  try {
+    if (navigator.storage && navigator.storage.persist && navigator.storage.persisted) {
+      if (!(await navigator.storage.persisted())) await navigator.storage.persist();
+    }
+  } catch (e) {}
+}
+async function refreshPersistInfo() {
+  const el = document.getElementById('persistInfo');
+  if (!el) return;
+  let txt = 'Сделай копию кода сохранения — это самая надёжная защита прогресса.';
+  try {
+    if (navigator.storage && navigator.storage.persisted) {
+      txt = (await navigator.storage.persisted())
+        ? '🔒 Хранилище защищено: браузер не удалит прогресс сам. Копия кода всё равно не помешает.'
+        : '⚠ Браузер может удалить данные сайта при нехватке места или долгом простое. Сделай копию кода.';
+    }
+  } catch (e) {}
+  el.textContent = txt;
+}
+
+function showSaveMsg(text, ok) { saveMsgEl.textContent = text; saveMsgEl.className = 'promo-msg ' + (ok ? 'ok' : 'err'); }
+
+function b64encode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+function b64decode(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+function makeSaveCode() {
+  flushLocal();
+  return SAVE_PREFIX + b64encode(JSON.stringify(saveData));
+}
+function parseSaveCode(text) {
+  let s = String(text || '').trim();
+  if (!s) throw new Error('empty');
+  let json = s;
+  if (s.startsWith(SAVE_PREFIX)) json = b64decode(s.slice(SAVE_PREFIX.length).replace(/\s+/g, ''));
+  const obj = JSON.parse(json);
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('bad');
+  if (!('totalXP' in obj || 'coins' in obj || 'ownedSkins' in obj || 'bestScore' in obj)) throw new Error('bad');
+  return obj;
+}
+
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
+  } catch (e) {}
+  try {
+    saveCodeEl.focus(); saveCodeEl.select(); saveCodeEl.setSelectionRange(0, text.length);
+    return document.execCommand('copy');
+  } catch (e) { return false; }
+}
+
+async function exportSaveCode() {
+  const code = makeSaveCode();
+  saveCodeEl.value = code;
+  const copied = await copyText(code);
+  playSound('click');
+  showSaveMsg(copied
+    ? '✅ Код скопирован. Вставь его в заметки или отправь себе в мессенджер.'
+    : '✅ Код готов в поле выше: выдели его и скопируй вручную.', true);
+}
+
+function downloadSaveFile() {
+  const code = makeSaveCode();
+  saveCodeEl.value = code;
+  try {
+    const blob = new Blob([code], { type: 'text/plain' });
+    const a = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = 'doodle-jump-save-' + new Date().toISOString().slice(0, 10) + '.txt';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    playSound('click');
+    showSaveMsg('✅ Файл сохранения скачан. Если загрузка не началась, скопируй код из поля выше.', true);
+  } catch (e) {
+    showSaveMsg('Не удалось скачать файл — скопируй код из поля выше.', false);
+  }
+}
+
+function applyImportedSave(text) {
+  if (gameState === 'PAUSED' || gameState === 'PLAYING') { showSaveMsg('Загрузка прогресса доступна только из главного меню.', false); playSound('break'); return; }
+  let obj;
+  try { obj = parseSaveCode(text); } catch (e) { showSaveMsg('❌ Код не распознан. Проверь, что он скопирован целиком.', false); playSound('break'); return; }
+  // на всякий случай запоминаем текущий прогресс — вдруг загрузили не тот код
+  try { localStorage.setItem(SAVE_KEY + '_before_import', JSON.stringify(saveData)); } catch (e) {}
+  saveData = normalizeSave(obj);
+  syncUnlockedArenas(false);
+  previewIdx = saveData.selectedArena;
+  applySettings();
+  writeSaveData();   // обновляет savedAt, чтобы загруженный прогресс победил облачный в Telegram
+  flushCloud();
+  updateAllUI();
+  renderSettings();
+  playSound('powerup');
+  showSaveMsg('✅ Прогресс загружен: ' + formatNum(saveData.coins) + ' 🪙, ' + formatNum(saveData.totalXP) + ' XP, скинов: ' + saveData.ownedSkins.length + '.', true);
+}
+
+document.getElementById('saveExportBtn').addEventListener('click', exportSaveCode);
+document.getElementById('saveFileBtn').addEventListener('click', downloadSaveFile);
+document.getElementById('saveImportBtn').addEventListener('click', () => applyImportedSave(saveCodeEl.value));
+document.getElementById('saveLoadFileBtn').addEventListener('click', () => { playSound('click'); saveFileInput.click(); });
+saveFileInput.addEventListener('change', () => {
+  const f = saveFileInput.files && saveFileInput.files[0];
+  if (!f) return;
+  if (f.size > 2000000) { showSaveMsg('❌ Файл слишком большой для сохранения.', false); saveFileInput.value = ''; return; }
+  const rd = new FileReader();
+  rd.onload = () => { saveCodeEl.value = String(rd.result || ''); applyImportedSave(saveCodeEl.value); saveFileInput.value = ''; };
+  rd.onerror = () => { showSaveMsg('❌ Не удалось прочитать файл.', false); saveFileInput.value = ''; };
+  rd.readAsText(f);
 });
 
 document.getElementById('startBtn').addEventListener('click', startGame);
@@ -3274,6 +3416,7 @@ initGameWorld();
 updateAllUI();
 let lastTime = performance.now();
 let lastIdleDraw = 0;
+let lastMenuDraw = 0;
 let loopDt = 1, drawDt = 1; // шаг времени в «кадрах по 60 Гц»: при 120 Гц ≈ 0.5
 
 let perfEma = 0.6, slowCount = 0;
@@ -3295,13 +3438,18 @@ function gameLoop(currentTime) {
     drawDt = dt;
     update(dt);
     draw(currentTime);
-  } else if (currentTime - lastIdleDraw > 90) { // на паузе/в меню рисуем реже — экономим батарею
+  } else if (currentTime - lastIdleDraw > 220) { // на паузе/в меню игровое поле почти не видно — рисуем редко, экономим батарею
     drawDt = Math.min((currentTime - lastIdleDraw) / 16.667, 3);
     lastIdleDraw = currentTime;
     draw(currentTime);
   }
   updateTouchUI();
-  if (!mainMenuEl.classList.contains('hidden')) drawMenuPreview(currentTime);
+  // Витрина арены в меню тяжёлая (полная сцена с декорациями): 30 кадров/с хватает, на слабых телефонах ещё реже
+  if (!mainMenuEl.classList.contains('hidden') && currentTime - lastMenuDraw > (LOW_FX ? 50 : 33)) {
+    loopDt = Math.min((currentTime - lastMenuDraw) / 16.667, 3); // шаг времени для частиц витрины (кадры реже — шаг больше)
+    lastMenuDraw = currentTime;
+    drawMenuPreview(currentTime);
+  }
 
   requestAnimationFrame(gameLoop);
 }
@@ -3342,3 +3490,7 @@ setTimeout(fitCanvas, 900);
 
 // Разблокируем звук при первом касании (требование мобильных браузеров)
 window.addEventListener('pointerdown', () => ensureAudio(), { once: true });
+
+// Просим браузер хранить прогресс постоянно (при запуске и при первом касании — Safari/Firefox ждут действия игрока)
+requestPersist();
+window.addEventListener('pointerdown', () => requestPersist(), { once: true });

@@ -4,7 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Doodle Jump Ultimate — Арены, Герои и Статистика</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- Установка как приложение (PWA): работает офлайн на iPhone, Android и ПК -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#12151c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Doodle Jump">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+  <!-- Скрипт Telegram нужен только внутри Telegram. Вне его он не грузится, поэтому игра стартует мгновенно и без интернета -->
+  <script>
+    (function () {
+      var h = (location.hash || '') + (location.search || '');
+      if (/tgWebApp/i.test(h) || /Telegram/i.test(navigator.userAgent)) {
+        document.write('<script src="https://telegram.org/js/telegram-web-app.js"><\/script>');
+      }
+    })();
+  </script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -195,6 +214,23 @@
               <button class="seg-btn" data-v="30">30</button>
             </div>
           </div>
+
+          <div class="set-section">
+            <div class="set-title">💾 Сохранение прогресса</div>
+            <p class="modal-sub">Прогресс хранится на этом устройстве и работает без интернета. Чтобы не потерять его (смена телефона, очистка браузера) или перенести на другое устройство — скопируй код и вставь там в это же поле.</p>
+            <p id="persistInfo" class="modal-sub"></p>
+            <textarea id="saveCode" class="save-code" rows="3" placeholder="Здесь появится код сохранения. Чтобы загрузить прогресс — вставь код сюда и нажми «Загрузить»." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
+            <div class="menu-grid-2">
+              <button id="saveExportBtn" class="btn btn-secondary btn-sm">📤 Копировать код</button>
+              <button id="saveFileBtn" class="btn btn-outline btn-sm">⬇ Скачать файл</button>
+            </div>
+            <div class="menu-grid-2 save-row2">
+              <button id="saveImportBtn" class="btn btn-gold btn-sm">📥 Загрузить из кода</button>
+              <button id="saveLoadFileBtn" class="btn btn-outline btn-sm">📂 Из файла</button>
+            </div>
+            <input id="saveFileInput" type="file" accept=".txt,.json,text/plain,application/json" class="hidden">
+            <div id="saveMsg" class="promo-msg"></div>
+          </div>
         </div>
 
         <div class="modal-footer">
@@ -242,5 +278,13 @@
   </div>
 
   <script src="script.js"></script>
+  <script>
+    // Офлайн-режим: service worker кэширует игру при первом открытии (нужен https или localhost)
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('Service worker:', e); });
+      });
+    }
+  </script>
 </body>
 </html>
