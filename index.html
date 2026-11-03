@@ -64,9 +64,16 @@
           </div>
           <div class="mm-top-right">
             <div class="mm-coins">🪙 <span id="menuCoins">0</span></div>
+            <button id="openPromoBtn" class="mm-icon" title="Промокоды" aria-label="Промокоды">🎟</button>
             <button id="openSettingsBtn" class="mm-icon" title="Настройки" aria-label="Настройки">⚙</button>
           </div>
         </header>
+
+        <!-- Награда дня и сезонное событие -->
+        <div class="mm-banners">
+          <button id="dailyBanner" class="mm-banner daily"><span class="mm-banner-ico">📅</span><span class="mm-banner-txt"><b id="dailyBannerT">Награда дня</b><small id="dailyBannerS"></small></span></button>
+          <button id="eventBanner" class="mm-banner event hidden"><span class="mm-banner-ico" id="eventBannerIco">🎃</span><span class="mm-banner-txt"><b id="eventBannerT"></b><small id="eventBannerS"></small></span></button>
+        </div>
 
         <!-- Витрина арены -->
         <section class="mm-hero">
@@ -102,6 +109,8 @@
           <div class="mm-stat"><span class="mm-stat-ico">🎭</span><div><b id="menuSkinName">—</b><small>Твой герой</small></div></div>
         </div>
 
+        <div id="boostRow" class="mm-boosts hidden"></div>
+
         <button id="startBtn" class="mm-play">
           <span class="mm-play-ico">▶</span>
           <span class="mm-play-txt"><b>ИГРАТЬ</b><small id="menuPlayArena">—</small></span>
@@ -109,9 +118,13 @@
 
         <nav class="mm-tiles">
           <button id="openShopBtn" class="mm-tile t-skins"><span class="mm-tile-ico">👕</span><b>Скины</b><small id="tileSkinsSub"></small></button>
+          <button id="openQuestsBtn" class="mm-tile t-quests"><span class="mm-tile-ico">🎯</span><b>Задания</b><small id="tileQuestsSub"></small><i id="dotQuests" class="mm-dot hidden"></i></button>
+          <button id="openChestBtn" class="mm-tile t-promo"><span class="mm-tile-ico">🎰</span><b>Сундуки</b><small id="tileChestSub"></small><i id="dotChest" class="mm-dot hidden"></i></button>
+          <button id="openPassBtn" class="mm-tile t-pass"><span class="mm-tile-ico">🎖</span><b>Пропуск</b><small id="tilePassSub"></small><i id="dotPass" class="mm-dot hidden"></i></button>
+          <button id="openUpgBtn" class="mm-tile t-upg"><span class="mm-tile-ico">🛠</span><b>Прокачка</b><small id="tileUpgSub"></small></button>
+          <button id="openAchBtn" class="mm-tile t-ach"><span class="mm-tile-ico">🏅</span><b>Награды</b><small id="tileAchSub"></small></button>
           <button id="openArenasBtn" class="mm-tile t-arenas"><span class="mm-tile-ico">🏟</span><b>Арены</b><small id="tileArenasSub"></small></button>
           <button id="openStatsBtn" class="mm-tile t-stats"><span class="mm-tile-ico">📊</span><b>Статы</b><small id="tileStatsSub"></small></button>
-          <button id="openPromoBtn" class="mm-tile t-promo"><span class="mm-tile-ico">🎁</span><b>Коды</b><small>награды</small></button>
         </nav>
 
         <div class="mm-hint">
@@ -129,6 +142,8 @@
           <div class="stat-pill">🪙 <span id="shopCoins">0</span></div>
         </div>
 
+        <div class="try-stage"><canvas id="tryCanvas" width="724" height="240"></canvas><div id="tryLabel" class="try-label"></div></div>
+        <p class="modal-sub try-hint">Нажми на карточку героя, чтобы примерить его до покупки.</p>
         <div id="skinFilters" class="filter-row"></div>
         <div id="skinsList" class="scroll-list"></div>
 
@@ -207,6 +222,16 @@
           </div>
 
           <div class="set-section">
+            <div class="set-title">🎵 Музыка</div>
+            <p class="modal-sub">У каждой арены своя мелодия. Она создаётся прямо в игре, поэтому работает без интернета.</p>
+            <div id="musicSeg" class="seg">
+              <button class="seg-btn" data-v="1">Вкл</button>
+              <button class="seg-btn" data-v="0">Выкл</button>
+            </div>
+            <label class="set-row"><span>Громкость</span><input id="musicVol" type="range" min="0" max="100" step="5"><b id="musicVolVal">60%</b></label>
+          </div>
+
+          <div class="set-section">
             <div class="set-title">🎨 Графика</div>
             <p class="modal-sub">«Авто» сама упрощает эффекты, если игра начинает тормозить. «Эконом» — максимум плавности.</p>
             <div id="qualitySeg" class="seg">
@@ -277,6 +302,8 @@
           <p>Лучший рекорд (все арены): <strong id="finalBest">0</strong></p>
           <p class="xp-earned-line">Получено опыта: <strong id="finalXpEarned">+0 XP</strong> ⭐</p>
           <p>Баланс монет: 🪙 <strong id="finalCoins">0</strong></p>
+          <p class="combo-line">Макс. комбо: <strong id="finalCombo">0</strong> 🔥 • Сезон: <strong id="finalSP">+0</strong> 🎖</p>
+          <p id="finalExtra" class="final-extra hidden"></p>
         </div>
         <div class="menu-actions">
           <button id="restartBtn" class="btn btn-primary">🔄 Играть ещё раз</button>
@@ -288,6 +315,103 @@
         </div>
       </div>
     </div>
+
+    <!-- Награда дня -->
+    <div id="dailyMenu" class="overlay hidden">
+      <div class="notebook-card modal-card">
+        <div class="modal-header"><h2>📅 Награда дня</h2><div class="stat-pill" id="dailyStreak">🔥</div></div>
+        <p class="modal-sub" id="dailySub"></p>
+        <div id="dailyGrid" class="daily-grid"></div>
+        <button id="dailyClaimBtn" class="btn btn-primary btn-large">Забрать</button>
+        <div class="modal-footer"><button class="btn btn-secondary js-back">⬅ Назад в меню</button></div>
+      </div>
+    </div>
+
+    <!-- Задания -->
+    <div id="questsMenu" class="overlay hidden">
+      <div class="notebook-card modal-card">
+        <div class="modal-header"><h2>🎯 Задания</h2><div class="stat-pill">🪙 <span class="js-coins">0</span></div></div>
+        <div id="questsList" class="scroll-list"></div>
+        <div class="modal-footer"><button class="btn btn-secondary js-back">⬅ Назад в меню</button></div>
+      </div>
+    </div>
+
+    <!-- Достижения -->
+    <div id="achMenu" class="overlay hidden">
+      <div class="notebook-card modal-card">
+        <div class="modal-header"><h2>🏅 Достижения</h2><div class="stat-pill" id="achCount">0</div></div>
+        <div id="achList" class="scroll-list ach-grid"></div>
+        <div class="modal-footer"><button class="btn btn-secondary js-back">⬅ Назад в меню</button></div>
+      </div>
+    </div>
+
+    <!-- Сундуки и колесо фортуны -->
+    <div id="chestMenu" class="overlay hidden">
+      <div class="notebook-card modal-card">
+        <div class="modal-header"><h2>🎰 Сундуки</h2><div class="stat-pill">🪙 <span class="js-coins">0</span></div></div>
+        <div class="scroll-list">
+          <div class="wheel-box">
+            <canvas id="wheelCanvas" width="440" height="440"></canvas>
+            <div class="wheel-side">
+              <div class="sec-title">Колесо фортуны</div>
+              <p class="modal-sub" id="wheelSub"></p>
+              <button id="wheelBtn" class="btn btn-gold btn-sm">Крутить</button>
+            </div>
+          </div>
+          <div class="sec-title">Сундуки</div>
+          <div id="chestList" class="chest-list"></div>
+          <div class="sec-title">Мои бонусы на старт <small>выбираются в меню над кнопкой «Играть»</small></div>
+          <div id="boostInv" class="boost-grid"></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary js-back">⬅ Назад в меню</button></div>
+      </div>
+    </div>
+
+    <!-- Прокачка -->
+    <div id="upgMenu" class="overlay hidden">
+      <div class="notebook-card modal-card">
+        <div class="modal-header"><h2>🛠 Прокачка</h2><div class="stat-pill">🪙 <span class="js-coins">0</span></div></div>
+        <p class="modal-sub">Улучшения действуют во всех матчах и на всех аренах.</p>
+        <div id="upgList" class="scroll-list"></div>
+        <div class="modal-footer"><button class="btn btn-secondary js-back">⬅ Назад в меню</button></div>
+      </div>
+    </div>
+
+    <!-- Боевой пропуск -->
+    <div id="passMenu" class="overlay hidden">
+      <div class="notebook-card modal-card">
+        <div class="modal-header"><h2>🎖 Пропуск</h2><div class="stat-pill">🪙 <span class="js-coins">0</span></div></div>
+        <div id="passHead" class="pass-head"></div>
+        <div id="passList" class="scroll-list pass-list"></div>
+        <div class="modal-footer">
+          <button id="passClaimAll" class="btn btn-primary">🎁 Забрать всё доступное</button>
+          <button class="btn btn-secondary js-back">⬅ Назад в меню</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Сезонное событие -->
+    <div id="eventMenu" class="overlay hidden">
+      <div class="notebook-card modal-card">
+        <div class="modal-header"><h2 id="eventTitle">Событие</h2></div>
+        <div id="eventBody" class="scroll-list"></div>
+        <div class="modal-footer"><button class="btn btn-secondary js-back">⬅ Назад в меню</button></div>
+      </div>
+    </div>
+
+    <!-- Окно с добычей -->
+    <div id="lootBox" class="loot hidden">
+      <div class="loot-card">
+        <div class="loot-burst" aria-hidden="true"></div>
+        <div id="lootIco" class="loot-ico">🎁</div>
+        <div id="lootTitle" class="loot-title"></div>
+        <div id="lootList" class="loot-list"></div>
+        <button id="lootOk" class="btn btn-primary">Забрать</button>
+      </div>
+    </div>
+
+    <!-- Уведомления -->
+    <div id="metaToasts" class="meta-toasts"></div>
   </div>
 
   <script src="script.js"></script>
