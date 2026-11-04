@@ -1577,7 +1577,7 @@ const SKINS = [
     }
   },
   {
-    id: 'timekeeper', name: 'Хранитель Времени', rarity: 'legend', rarityName: 'Легенда', pass: true,
+    id: 'timekeeper', name: 'Повелитель Эпох', rarity: 'legend', rarityName: 'Легенда', pass: true,
     desc: 'Эксклюзив пропуска: награда 50-го уровня премиум-линии. Время подчиняется ему.', perkText: '⏳ Опыт +35% • Монеты ×1.35 • Магнит • Воскрешение', perk: { xp: 1.35, coin: 1.35, magnet: 80, revive: 1 },
     price: 0, icon: '⏳',
     skin: '#d7ccc8', torso: '#00695c', legs: '#004d40', shoe: '#ffd740', arm: '#00695c', hand: '#ffd740', torsoW: 24, noEyes: true, bullet: 'orb', bulletColor: '#18ffff',
@@ -6263,7 +6263,7 @@ function renderPass() {
       <canvas class="ps-prem-skin" width="132" height="132"></canvas>
       <div class="ps-prem-txt">
         <b>${P.premium ? 'Премиум активен' : 'Премиум-пропуск'}</b>
-        <small>${P.premium ? 'Забирай награды обеих линий.' : 'Вторая линия наград: больше монет, золотые сундуки и'} скин «${sSkin ? sSkin.name : ''}» на 30 уровне и легенду «Хранитель Времени» на 50-м${owned ? ' (сезонный скин уже твой)' : ''}.</small>
+        <small>${P.premium ? 'Забирай награды обеих линий.' : 'Вторая линия наград: больше монет, золотые сундуки и'} скин «${sSkin ? sSkin.name : ''}» на 30 уровне и легенду «Повелитель Эпох» на 50-м${owned ? ' (сезонный скин уже твой)' : ''}.</small>
         ${P.premium ? '' : `<button id="passBuyBtn" class="btn btn-gold btn-sm">Открыть за ${formatNum(PASS_PREMIUM_PRICE)} 🪙</button>`}
       </div>
     </div>
