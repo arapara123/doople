@@ -1374,7 +1374,7 @@ const SKINS = [
   // perk: coin — множитель монет, xp — множитель опыта, magnet — радиус магнита для монет, revive — число воскрешений за матч
   {
     id: 'pharaoh', name: 'Фараон Мидас', rarity: 'legend', rarityName: 'Легенда',
-    desc: 'Всё, к чему он прикасается, превращается в золото.', perkText: '💰 Монеты ×1.6', perk: { coin: 1.6 },
+    desc: 'Всё, к чему он прикасается, превращается в золото.',
     price: 1000, icon: '🏺',
     skin: '#d9a066', torso: '#ffd54f', legs: '#f9a825', shoe: '#6d4c41', arm: '#ffd54f', hand: '#d9a066', noEyes: true, bullet: 'orb', bulletColor: '#ffd740',
     back(c) { pg(c, [[-10, 4], [-22, 25], [9, 25], [11, 4]], '#1565c0'); },
@@ -1398,7 +1398,7 @@ const SKINS = [
   },
   {
     id: 'professor', name: 'Профессор Сова', rarity: 'legend', rarityName: 'Легенда',
-    desc: 'Мудрая сова в академической шапочке. Знания — это опыт!', perkText: '⭐ Опыт +30%', perk: { xp: 1.3 },
+    desc: 'Мудрая сова в академической шапочке.',
     price: 2500, icon: '🦉',
     skin: '#a1887f', torso: '#5d4037', legs: '#4e342e', shoe: '#ffb300', arm: '#8d6e63', hand: '#a1887f', noEyes: true, bullet: 'star', bulletColor: '#80d8ff',
     look(c, t) {
@@ -1417,7 +1417,7 @@ const SKINS = [
   },
   {
     id: 'goblin', name: 'Гоблин-Кладоискатель', rarity: 'legend', rarityName: 'Легенда',
-    desc: 'Каска с фонарём, мешок сокровищ и магнитный нюх на монеты.', perkText: '🧲 Магнит монет + Монеты ×1.35', perk: { coin: 1.35, magnet: 100 },
+    desc: 'Каска с фонарём, мешок сокровищ и магнитный нюх на монеты.', perkText: '🧲 Магнит монет', perk: {magnet: 100},
     price: 4000, icon: '💰',
     skin: '#7cb342', torso: '#6d4c41', legs: '#4e342e', shoe: '#3e2723', arm: '#7cb342', hand: '#7cb342', noEyes: true, bullet: 'orb', bulletColor: '#ffeb3b',
     back(c) {
@@ -1439,7 +1439,7 @@ const SKINS = [
   },
   {
     id: 'angel', name: 'Ангел-Хранитель', rarity: 'legend', rarityName: 'Легенда',
-    desc: 'Белые крылья и сияющий нимб. Спасает от падения один раз за матч.', perkText: '😇 Воскрешение ×1 • Монеты ×1.1', perk: { revive: 1, coin: 1.1 },
+    desc: 'Белые крылья и сияющий нимб.',
     price: 6500, icon: '😇',
     skin: '#ffe0c2', torso: '#ffffff', legs: '#fff8e1', shoe: '#ffd54f', arm: '#ffffff', hand: '#ffe0c2', bullet: 'star', bulletColor: '#fff59d',
     back(c, t) {
@@ -1458,7 +1458,7 @@ const SKINS = [
   },
   {
     id: 'cosmoking', name: 'Властелин Вселенной', rarity: 'legend', rarityName: 'Легенда',
-    desc: 'Повелитель галактик со свитой планет. Все бонусы сразу!', perkText: '👑 Опыт +30% • Монеты ×1.3 • Магнит • Воскрешение', perk: { xp: 1.3, coin: 1.3, magnet: 80, revive: 1 },
+    desc: 'Повелитель галактик со свитой планет.', perkText: '🧲 Магнит монет', perk: {magnet: 80},
     price: 10000, icon: '🌠',
     skin: '#5e35b1', torso: '#311b92', legs: '#1a1446', shoe: '#ffd740', arm: '#5e35b1', hand: '#ffd740', torsoW: 24, noEyes: true, bullet: 'orb', bulletColor: '#e040fb',
     back(c, t) {
@@ -1482,7 +1482,7 @@ const SKINS = [
 
   {
     id: 'clover', name: 'Король Клевера', rarity: 'legend', rarityName: 'Легенда',
-    desc: 'Счастливчик в цилиндре: удача сама летит в карман.', perkText: '🍀 Монеты ×1.15', perk: { coin: 1.15 },
+    desc: 'Счастливчик в цилиндре: удача сама летит в карман.',
     price: 450, icon: '🍀',
     skin: '#ffe0c2', torso: '#2e7d32', legs: '#1b5e20', shoe: '#ffd54f', arm: '#2e7d32', hand: '#ffffff', bullet: 'star', bulletColor: '#69f0ae',
     back(c, t) {
@@ -1501,7 +1501,7 @@ const SKINS = [
   },
   {
     id: 'moonfox', name: 'Лунный Лис', rarity: 'legend', rarityName: 'Легенда',
-    desc: 'Хитрый лис с лунным знаком. Быстро учится и притягивает монеты.', perkText: '🦊 Опыт +20% • Магнит', perk: { xp: 1.2, magnet: 50 },
+    desc: 'Хитрый лис с лунным знаком. Притягивает монеты.', perkText: '🧲 Магнит монет', perk: {magnet: 50},
     price: 1600, icon: '🦊',
     skin: '#ff9800', torso: '#ef6c00', legs: '#e65100', shoe: '#fff3e0', arm: '#ff9800', hand: '#fff3e0', bullet: 'orb', bulletColor: '#fff59d',
     back(c, t) {
@@ -1521,7 +1521,7 @@ const SKINS = [
   },
   {
     id: 'thunder', name: 'Громовержец', rarity: 'legend', rarityName: 'Легенда',
-    desc: 'Живая молния. Бьёт в цель и даёт второй шанс после падения.', perkText: '⚡ Воскрешение ×1', perk: { revive: 1 },
+    desc: 'Живая молния. Бьёт точно в цель.',
     price: 3200, icon: '⚡',
     skin: '#ffe0c2', torso: '#283593', legs: '#1a237e', shoe: '#ffeb3b', arm: '#283593', hand: '#ffeb3b', bullet: 'star', bulletColor: '#ffeb3b',
     back(c, t) {
@@ -1536,7 +1536,7 @@ const SKINS = [
   },
   {
     id: 'alchemist', name: 'Алхимик Золота', rarity: 'legend', rarityName: 'Легенда',
-    desc: 'Превращает всё в золото. Очки, колба и пузырьки удачи.', perkText: '⚗️ Монеты ×1.45 • Опыт +20% • Магнит', perk: { coin: 1.45, xp: 1.2, magnet: 80 },
+    desc: 'Превращает всё в золото. Очки, колба и пузырьки удачи.', perkText: '🧲 Магнит монет', perk: {magnet: 80},
     price: 7500, icon: '⚗️',
     skin: '#ffe0c2', torso: '#6a1b9a', legs: '#4a148c', shoe: '#ffd54f', arm: '#6a1b9a', hand: '#ffe0c2', bullet: 'orb', bulletColor: '#76ff03',
     back(c, t) {
@@ -1556,7 +1556,7 @@ const SKINS = [
   },
   {
     id: 'eternal', name: 'Вечный Дракон', rarity: 'legend', rarityName: 'Легенда',
-    desc: 'Древний золотой дракон. Самый мощный герой магазина — усиливает всё.', perkText: '🐉 Опыт +40% • Монеты ×1.4 • Магнит • Воскрешение', perk: { xp: 1.4, coin: 1.4, magnet: 90, revive: 1 },
+    desc: 'Древний золотой дракон. Самый величественный герой магазина.', perkText: '🧲 Магнит монет', perk: {magnet: 90},
     price: 15000, icon: '🐉',
     skin: '#ffb300', torso: '#c62828', legs: '#8e0000', shoe: '#ffd740', arm: '#ffb300', hand: '#ffd740', torsoW: 24, bullet: 'orb', bulletColor: '#ff6d00',
     back(c, t) {
@@ -1578,7 +1578,7 @@ const SKINS = [
   },
   {
     id: 'timekeeper', name: 'Повелитель Эпох', rarity: 'legend', rarityName: 'Легенда', pass: true,
-    desc: 'Эксклюзив пропуска: награда 50-го уровня премиум-линии. Время подчиняется ему.', perkText: '⏳ Опыт +35% • Монеты ×1.35 • Магнит • Воскрешение', perk: { xp: 1.35, coin: 1.35, magnet: 80, revive: 1 },
+    desc: 'Эксклюзив пропуска: награда 50-го уровня премиум-линии. Время подчиняется ему.', perkText: '🧲 Магнит монет', perk: {magnet: 80},
     price: 0, icon: '⏳',
     skin: '#d7ccc8', torso: '#00695c', legs: '#004d40', shoe: '#ffd740', arm: '#00695c', hand: '#ffd740', torsoW: 24, noEyes: true, bullet: 'orb', bulletColor: '#18ffff',
     back(c, t) {
@@ -1668,7 +1668,7 @@ const SKINS = [
   },
   {
     id: 'ranger', name: 'Ёжик-Листопад', rarity: 'season', rarityName: 'Сезон', season: true,
-    desc: 'Осенний ёжик, у которого вместо иголок кленовые листья. Награда 30-го уровня премиум-пропуска.', perkText: '⭐ Опыт +20%', perk: { xp: 1.2 },
+    desc: 'Осенний ёжик, у которого вместо иголок кленовые листья. Награда 30-го уровня премиум-пропуска.',
     price: 0, icon: '🦔',
     skin: '#8d6e63', torso: '#8d6e63', legs: '#5d4037', shoe: '#3e2723', arm: '#ffe0b2', hand: '#ffe0b2', bullet: 'star', bulletColor: '#ff9800',
     full(c, t, shoot) {
@@ -1694,7 +1694,7 @@ const SKINS = [
 
   {
     id: 'santa', name: 'Малыш Дед Мороз', rarity: 'season', rarityName: 'Сезон', season: true,
-    desc: 'Новогодний герой с белой бородой и мешком подарков. Награда 30-го уровня премиум-пропуска.', perkText: '💰 Монеты ×1.25', perk: { coin: 1.25 },
+    desc: 'Новогодний герой с белой бородой и мешком подарков. Награда 30-го уровня премиум-пропуска.',
     price: 0, icon: '🎅',
     skin: '#ffccbc', torso: '#e53935', legs: '#c62828', shoe: '#4e342e', arm: '#e53935', hand: '#ffffff', bullet: 'star', bulletColor: '#fff59d',
     full(c, t, shoot) {
@@ -1718,7 +1718,7 @@ const SKINS = [
   },
   {
     id: 'tulip', name: 'Фея Тюльпана', rarity: 'season', rarityName: 'Сезон', season: true,
-    desc: 'Весенняя фея в бутоне тюльпана с листьями-крылышками. Награда 30-го уровня премиум-пропуска.', perkText: '⭐ Опыт +20%', perk: { xp: 1.2 },
+    desc: 'Весенняя фея в бутоне тюльпана с листьями-крылышками. Награда 30-го уровня премиум-пропуска.',
     price: 0, icon: '🌷',
     skin: '#ffccbc', torso: '#f06292', legs: '#66bb6a', shoe: '#43a047', arm: '#ffccbc', hand: '#ffccbc', bullet: 'heart', bulletColor: '#f48fb1',
     full(c, t, shoot) {
@@ -1763,7 +1763,7 @@ const SKINS = [
   },
   {
     id: 'firecracker', name: 'Новогодняя Хлопушка', rarity: 'season', rarityName: 'Сезон', season: true,
-    desc: 'Живая хлопушка, из которой сыплются конфетти и искры. Награда 30-го уровня премиум-пропуска.', perkText: '⭐ Опыт +20%', perk: { xp: 1.2 },
+    desc: 'Живая хлопушка, из которой сыплются конфетти и искры. Награда 30-го уровня премиум-пропуска.',
     price: 0, icon: '🎉',
     skin: '#ffd54f', torso: '#7e57c2', legs: '#5e35b1', shoe: '#ffd54f', arm: '#ffd54f', hand: '#ffd54f', bullet: 'star', bulletColor: '#ff80ab',
     full(c, t, shoot) {
@@ -1808,7 +1808,7 @@ const SKINS = [
   },
   {
     id: 'pumpkin', name: 'Тыквоголовый', rarity: 'season', rarityName: 'Сезон', season: true,
-    desc: 'Добрая светящаяся тыква с зелёным хвостиком. Награда 30-го уровня премиум-пропуска.', perkText: '💰 Монеты ×1.25', perk: { coin: 1.25 },
+    desc: 'Добрая светящаяся тыква с зелёным хвостиком. Награда 30-го уровня премиум-пропуска.',
     price: 0, icon: '🎃',
     skin: '#ff9800', torso: '#37474f', legs: '#263238', shoe: '#212121', arm: '#37474f', hand: '#ff9800', bullet: 'orb', bulletColor: '#ffab00',
     full(c, t, shoot) {
@@ -1828,7 +1828,7 @@ const SKINS = [
   // ======================= СЕЗОННЫЕ СКИНЫ: по одному на каждый месяц, идут по кругу (см. SEASON_SKINS) =======================
   {
     id: 'icequeen', name: 'Ледяной Кристалл', rarity: 'season', rarityName: 'Сезон', season: true,
-    desc: 'Живой кристалл льда с парящей короной. Награда 30-го уровня премиум-пропуска.', perkText: '💰 Монеты ×1.25', perk: { coin: 1.25 },
+    desc: 'Живой кристалл льда с парящей короной. Награда 30-го уровня премиум-пропуска.',
     price: 0, icon: '❄️',
     skin: '#b3e5fc', torso: '#81d4fa', legs: '#4fc3f7', shoe: '#e1f5fe', arm: '#e3f2fd', hand: '#e3f2fd', bullet: 'star', bulletColor: '#b3e5fc',
     full(c, t, shoot) {
@@ -1853,7 +1853,7 @@ const SKINS = [
   },
   {
     id: 'samurai', name: 'Снеговик', rarity: 'season', rarityName: 'Сезон', season: true,
-    desc: 'Добродушный снеговик в цилиндре, с морковкой и тёплым шарфом. Награда 30-го уровня премиум-пропуска.', perkText: '⭐ Опыт +20%', perk: { xp: 1.2 },
+    desc: 'Добродушный снеговик в цилиндре, с морковкой и тёплым шарфом. Награда 30-го уровня премиум-пропуска.',
     price: 0, icon: '⛄',
     skin: '#ffffff', torso: '#ffffff', legs: '#e3f2fd', shoe: '#e3f2fd', arm: '#6d4c41', hand: '#6d4c41', bullet: 'orb', bulletColor: '#e1f5fe',
     full(c, t, shoot) {
@@ -1900,7 +1900,7 @@ const SKINS = [
   },
   {
     id: 'sprout', name: 'Подсолнух в Горшке', rarity: 'season', rarityName: 'Сезон', season: true,
-    desc: 'Весёлый подсолнух, который вырос в горшке и пошёл гулять. Награда 30-го уровня премиум-пропуска.', perkText: '💰 Монеты ×1.25', perk: { coin: 1.25 },
+    desc: 'Весёлый подсолнух, который вырос в горшке и пошёл гулять. Награда 30-го уровня премиум-пропуска.',
     price: 0, icon: '🌻',
     skin: '#ffeb3b', torso: '#7cb342', legs: '#bf6b3a', shoe: '#d98550', arm: '#66bb6a', hand: '#66bb6a', bullet: 'orb', bulletColor: '#f9a825',
     full(c, t, shoot) {
@@ -1921,7 +1921,7 @@ const SKINS = [
   },
   {
     id: 'umbrella', name: 'Тучка-Дождик', rarity: 'season', rarityName: 'Сезон', season: true,
-    desc: 'Пушистая тучка с зонтиком и своим дождиком. Награда 30-го уровня премиум-пропуска.', perkText: '⭐ Опыт +20%', perk: { xp: 1.2 },
+    desc: 'Пушистая тучка с зонтиком и своим дождиком. Награда 30-го уровня премиум-пропуска.',
     price: 0, icon: '☁️',
     skin: '#eceff1', torso: '#cfd8dc', legs: '#90a4ae', shoe: '#4fc3f7', arm: '#eceff1', hand: '#eceff1', bullet: 'orb', bulletColor: '#4fc3f7',
     full(c, t, shoot) {
@@ -1970,7 +1970,7 @@ const SKINS = [
   },
   {
     id: 'surfer', name: 'Капля-Серфер', rarity: 'season', rarityName: 'Сезон', season: true,
-    desc: 'Капелька океана на доске для сёрфинга. Награда 30-го уровня премиум-пропуска.', perkText: '💰 Монеты ×1.25', perk: { coin: 1.25 },
+    desc: 'Капелька океана на доске для сёрфинга. Награда 30-го уровня премиум-пропуска.',
     price: 0, icon: '🏄',
     skin: '#29b6f6', torso: '#29b6f6', legs: '#0288d1', shoe: '#ff7043', arm: '#4fc3f7', hand: '#4fc3f7', bullet: 'orb', bulletColor: '#ffee58',
     full(c, t, shoot) {
@@ -1991,7 +1991,7 @@ const SKINS = [
   },
   {
     id: 'parrot', name: 'Попугай Ара', rarity: 'season', rarityName: 'Сезон', season: true,
-    desc: 'Настоящая яркая птица с длинным хвостом и огромным клювом. Награда 30-го уровня премиум-пропуска.', perkText: '⭐ Опыт +20%', perk: { xp: 1.2 },
+    desc: 'Настоящая яркая птица с длинным хвостом и огромным клювом. Награда 30-го уровня премиум-пропуска.',
     price: 0, icon: '🦜',
     skin: '#e53935', torso: '#e53935', legs: '#fdd835', shoe: '#fdd835', arm: '#1e88e5', hand: '#fdd835', bullet: 'star', bulletColor: '#69f0ae',
     full(c, t, shoot) {
@@ -2038,7 +2038,7 @@ const SKINS = [
   },
   {
     id: 'scholar', name: 'Живая Книга', rarity: 'season', rarityName: 'Сезон', season: true,
-    desc: 'Умная книга в очках со взмахивающими страницами. Награда 30-го уровня премиум-пропуска.', perkText: '💰 Монеты ×1.25', perk: { coin: 1.25 },
+    desc: 'Умная книга в очках со взмахивающими страницами. Награда 30-го уровня премиум-пропуска.',
     price: 0, icon: '📖',
     skin: '#3949ab', torso: '#3949ab', legs: '#283593', shoe: '#ffd54f', arm: '#3949ab', hand: '#fff', bullet: 'arrow', bulletColor: '#ffb300',
     full(c, t, shoot) {
@@ -2063,7 +2063,7 @@ const SKINS = [
   },
   {
     id: 'vampire', name: 'Тень Графа', rarity: 'season', rarityName: 'Сезон', season: true,
-    desc: 'Парящий плащ с красными глазами и клыками. Награда 30-го уровня премиум-пропуска.', perkText: '⭐ Опыт +20%', perk: { xp: 1.2 },
+    desc: 'Парящий плащ с красными глазами и клыками. Награда 30-го уровня премиум-пропуска.',
     price: 0, icon: '🧛',
     skin: '#212121', torso: '#212121', legs: '#212121', shoe: '#000000', arm: '#212121', hand: '#eceff1', bullet: 'bat', bulletColor: '#4a148c',
     full(c, t, shoot) {
