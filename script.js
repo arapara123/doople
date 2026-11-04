@@ -5307,7 +5307,13 @@ function openModal(el, render) {
 // ==========================================================
 const PROMOS = {
   jump500: { coins: 500 },
-  jump1000: { coins: 1000 }
+  jump1000: { coins: 1000 },
+  jump10000: { coins: 10000 },
+  jump20000: { coins: 20000 },
+  jump30000: { coins: 30000 },
+  jump40000: { coins: 40000 },
+  jump50000: { coins: 50000 },
+  passbonus: { pass: true } // открывает премиум боевого пропуска текущего сезона
 };
 
 function showPromoMsg(text, ok) {
@@ -5323,6 +5329,18 @@ function redeemPromo() {
   const promo = Object.prototype.hasOwnProperty.call(PROMOS, code) ? PROMOS[code] : null;
   if (!promo) { showPromoMsg('❌ Такого промокода нет.', false); playSound('break'); return; }
   if (saveData.promos.includes(code)) { showPromoMsg('⚠ Этот промокод уже активирован.', false); playSound('break'); return; }
+  if (promo.pass) {
+    ensureSeason();
+    if (saveData.pass.premium) { showPromoMsg('⚠ Премиум-пропуск уже активен в этом сезоне.', false); playSound('break'); return; }
+    saveData.promos.push(code);
+    saveData.pass.premium = true;
+    writeSaveData(); flushCloud();
+    input.value = '';
+    playSound('arena_up');
+    updateAllUI();
+    showPromoMsg('✅ Премиум-пропуск активирован! 💎', true);
+    return;
+  }
   saveData.promos.push(code);
   saveData.coins += promo.coins;
   writeSaveData(); flushCloud();
