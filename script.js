@@ -1374,7 +1374,7 @@ const SKINS = [
   // perk: coin — множитель монет, xp — множитель опыта, magnet — радиус магнита для монет, revive — число воскрешений за матч
   {
     id: 'pharaoh', name: 'Фараон Мидас', rarity: 'legend', rarityName: 'Легенда',
-    desc: 'Всё, к чему он прикасается, превращается в золото.', perkText: '💰 Монеты ×2', perk: { coin: 2 },
+    desc: 'Всё, к чему он прикасается, превращается в золото.', perkText: '💰 Монеты ×1.6', perk: { coin: 1.6 },
     price: 1000, icon: '🏺',
     skin: '#d9a066', torso: '#ffd54f', legs: '#f9a825', shoe: '#6d4c41', arm: '#ffd54f', hand: '#d9a066', noEyes: true, bullet: 'orb', bulletColor: '#ffd740',
     back(c) { pg(c, [[-10, 4], [-22, 25], [9, 25], [11, 4]], '#1565c0'); },
@@ -1398,7 +1398,7 @@ const SKINS = [
   },
   {
     id: 'professor', name: 'Профессор Сова', rarity: 'legend', rarityName: 'Легенда',
-    desc: 'Мудрая сова в академической шапочке. Знания — это опыт!', perkText: '⭐ Опыт +40%', perk: { xp: 1.4 },
+    desc: 'Мудрая сова в академической шапочке. Знания — это опыт!', perkText: '⭐ Опыт +30%', perk: { xp: 1.3 },
     price: 2500, icon: '🦉',
     skin: '#a1887f', torso: '#5d4037', legs: '#4e342e', shoe: '#ffb300', arm: '#8d6e63', hand: '#a1887f', noEyes: true, bullet: 'star', bulletColor: '#80d8ff',
     look(c, t) {
@@ -1417,7 +1417,7 @@ const SKINS = [
   },
   {
     id: 'goblin', name: 'Гоблин-Кладоискатель', rarity: 'legend', rarityName: 'Легенда',
-    desc: 'Каска с фонарём, мешок сокровищ и магнитный нюх на монеты.', perkText: '🧲 Магнит монет + Монеты ×1.5', perk: { coin: 1.5, magnet: 110 },
+    desc: 'Каска с фонарём, мешок сокровищ и магнитный нюх на монеты.', perkText: '🧲 Магнит монет + Монеты ×1.35', perk: { coin: 1.35, magnet: 100 },
     price: 4000, icon: '💰',
     skin: '#7cb342', torso: '#6d4c41', legs: '#4e342e', shoe: '#3e2723', arm: '#7cb342', hand: '#7cb342', noEyes: true, bullet: 'orb', bulletColor: '#ffeb3b',
     back(c) {
@@ -1439,7 +1439,7 @@ const SKINS = [
   },
   {
     id: 'angel', name: 'Ангел-Хранитель', rarity: 'legend', rarityName: 'Легенда',
-    desc: 'Белые крылья и сияющий нимб. Спасает от падения один раз за матч.', perkText: '😇 Воскрешение ×1 за матч', perk: { revive: 1 },
+    desc: 'Белые крылья и сияющий нимб. Спасает от падения один раз за матч.', perkText: '😇 Воскрешение ×1 • Монеты ×1.1', perk: { revive: 1, coin: 1.1 },
     price: 6500, icon: '😇',
     skin: '#ffe0c2', torso: '#ffffff', legs: '#fff8e1', shoe: '#ffd54f', arm: '#ffffff', hand: '#ffe0c2', bullet: 'star', bulletColor: '#fff59d',
     back(c, t) {
@@ -1458,7 +1458,7 @@ const SKINS = [
   },
   {
     id: 'cosmoking', name: 'Властелин Вселенной', rarity: 'legend', rarityName: 'Легенда',
-    desc: 'Повелитель галактик со свитой планет. Все бонусы сразу!', perkText: '👑 Опыт +50% • Монеты ×1.5 • Магнит • Воскрешение', perk: { xp: 1.5, coin: 1.5, magnet: 80, revive: 1 },
+    desc: 'Повелитель галактик со свитой планет. Все бонусы сразу!', perkText: '👑 Опыт +30% • Монеты ×1.3 • Магнит • Воскрешение', perk: { xp: 1.3, coin: 1.3, magnet: 80, revive: 1 },
     price: 10000, icon: '🌠',
     skin: '#5e35b1', torso: '#311b92', legs: '#1a1446', shoe: '#ffd740', arm: '#5e35b1', hand: '#ffd740', torsoW: 24, noEyes: true, bullet: 'orb', bulletColor: '#e040fb',
     back(c, t) {
@@ -1477,6 +1477,130 @@ const SKINS = [
         const a = t * 0.004 + i * 2.094;
         ci(c, Math.cos(a) * 29, -8 + Math.sin(a) * 11, 4.2, cols[i]);
       }
+    }
+  },
+
+  {
+    id: 'clover', name: 'Король Клевера', rarity: 'legend', rarityName: 'Легенда',
+    desc: 'Счастливчик в цилиндре: удача сама летит в карман.', perkText: '🍀 Монеты ×1.15', perk: { coin: 1.15 },
+    price: 450, icon: '🍀',
+    skin: '#ffe0c2', torso: '#2e7d32', legs: '#1b5e20', shoe: '#ffd54f', arm: '#2e7d32', hand: '#ffffff', bullet: 'star', bulletColor: '#69f0ae',
+    back(c, t) {
+      pg(c, [[-9, 4], [-21, 22], [-4, 20]], '#1b5e20');
+    },
+    look(c, t) {
+      rr(c, -14, -21, 28, 4, 2, '#1b5e20');
+      rr(c, -9, -36, 18, 16, 2, '#2e7d32');
+      rr(c, -9, -25, 18, 3.5, 0, '#ffd54f', false);
+      ci(c, 0, 11, 3, '#69f0ae'); ci(c, -3, 11, 3, '#69f0ae'); ci(c, 0, 8, 3, '#69f0ae'); ci(c, 3, 11, 3, '#69f0ae');
+      for (let i = 0; i < 2; i++) {
+        const a = t * 0.005 + i * 3.14159;
+        ci(c, Math.cos(a) * 26, -8 + Math.sin(a) * 9, 3.6, '#ffd740');
+      }
+    }
+  },
+  {
+    id: 'moonfox', name: 'Лунный Лис', rarity: 'legend', rarityName: 'Легенда',
+    desc: 'Хитрый лис с лунным знаком. Быстро учится и притягивает монеты.', perkText: '🦊 Опыт +20% • Магнит', perk: { xp: 1.2, magnet: 50 },
+    price: 1600, icon: '🦊',
+    skin: '#ff9800', torso: '#ef6c00', legs: '#e65100', shoe: '#fff3e0', arm: '#ff9800', hand: '#fff3e0', bullet: 'orb', bulletColor: '#fff59d',
+    back(c, t) {
+      const f = Math.sin(t * 0.006) * 4;
+      pg(c, [[-9, 6], [-24, 2 - f], [-34, 12 - f], [-28, 24], [-12, 20]], '#ff9800');
+      pg(c, [[-30, 14 - f], [-34, 12 - f], [-28, 24], [-25, 20]], '#fff3e0', false);
+    },
+    look(c, t) {
+      pg(c, [[-13, -17], [-12, -33], [-3, -21]], '#ff9800');
+      pg(c, [[13, -17], [12, -33], [3, -21]], '#ff9800');
+      pg(c, [[-11, -20], [-11, -28], [-6, -22]], '#fff3e0', false);
+      pg(c, [[11, -20], [11, -28], [6, -22]], '#fff3e0', false);
+      c.beginPath(); c.arc(0, -15, 5, Math.PI * 0.15, Math.PI * 1.1); c.strokeStyle = '#fff59d'; c.lineWidth = 2.4; c.stroke();
+      c.strokeStyle = OUT; c.lineWidth = 2;
+      ci(c, 0, 11, 3, '#fff59d');
+    }
+  },
+  {
+    id: 'thunder', name: 'Громовержец', rarity: 'legend', rarityName: 'Легенда',
+    desc: 'Живая молния. Бьёт в цель и даёт второй шанс после падения.', perkText: '⚡ Воскрешение ×1', perk: { revive: 1 },
+    price: 3200, icon: '⚡',
+    skin: '#ffe0c2', torso: '#283593', legs: '#1a237e', shoe: '#ffeb3b', arm: '#283593', hand: '#ffeb3b', bullet: 'star', bulletColor: '#ffeb3b',
+    back(c, t) {
+      c.globalAlpha = 0.5 + 0.5 * Math.abs(Math.sin(t * 0.01));
+      pg(c, [[-10, 2], [-22, -4], [-17, 4], [-30, 10], [-16, 12], [-22, 22], [-8, 12]], '#ffeb3b', false);
+      c.globalAlpha = 1;
+    },
+    look(c, t) {
+      pg(c, [[-12, -18], [-10, -32], [-4, -24], [0, -37], [5, -25], [12, -31], [12, -18]], '#ffeb3b');
+      pg(c, [[2, 3], [-5, 11], [0, 11], [-3, 19], [6, 9], [1, 9]], '#ffeb3b');
+    }
+  },
+  {
+    id: 'alchemist', name: 'Алхимик Золота', rarity: 'legend', rarityName: 'Легенда',
+    desc: 'Превращает всё в золото. Очки, колба и пузырьки удачи.', perkText: '⚗️ Монеты ×1.45 • Опыт +20% • Магнит', perk: { coin: 1.45, xp: 1.2, magnet: 80 },
+    price: 7500, icon: '⚗️',
+    skin: '#ffe0c2', torso: '#6a1b9a', legs: '#4a148c', shoe: '#ffd54f', arm: '#6a1b9a', hand: '#ffe0c2', bullet: 'orb', bulletColor: '#76ff03',
+    back(c, t) {
+      pg(c, [[-10, 3], [-24, 24], [8, 24], [10, 3]], '#4a148c');
+    },
+    look(c, t) {
+      rr(c, -13, -14, 26, 4, 2, '#ffd54f');
+      ci(c, 5, -12, 4.6, '#b2ebf2'); ci(c, 12, -12, 4.6, '#b2ebf2');
+      ci(c, 5, -12, 1.6, '#222', false); ci(c, 12, -12, 1.6, '#222', false);
+      pg(c, [[-3, 4], [-3, 10], [-8, 18], [8, 18], [3, 10], [3, 4]], '#e0f7fa');
+      pg(c, [[-6, 14], [6, 14], [8, 18], [-8, 18]], '#76ff03', false);
+      for (let i = 0; i < 3; i++) {
+        const k = (t * 0.003 + i / 3) % 1;
+        ci(c, -4 + i * 4 + Math.sin(t * 0.01 + i) * 2, 4 - k * 14, 1.6, '#b9f6ca', false);
+      }
+    }
+  },
+  {
+    id: 'eternal', name: 'Вечный Дракон', rarity: 'legend', rarityName: 'Легенда',
+    desc: 'Древний золотой дракон. Самый мощный герой магазина — усиливает всё.', perkText: '🐉 Опыт +40% • Монеты ×1.4 • Магнит • Воскрешение', perk: { xp: 1.4, coin: 1.4, magnet: 90, revive: 1 },
+    price: 15000, icon: '🐉',
+    skin: '#ffb300', torso: '#c62828', legs: '#8e0000', shoe: '#ffd740', arm: '#ffb300', hand: '#ffd740', torsoW: 24, bullet: 'orb', bulletColor: '#ff6d00',
+    back(c, t) {
+      const f = Math.sin(t * 0.007) * 6;
+      pg(c, [[-8, 0], [-34, -22 - f], [-42, -2 - f * 0.5], [-33, 6], [-38, 18], [-10, 12]], '#c62828');
+      pg(c, [[-9, 2], [-28, -12 - f], [-27, 2], [-12, 8]], '#ffb300', false);
+      pg(c, [[-9, 8], [-22, 20], [-30, 30], [-8, 18]], '#ffb300');
+    },
+    look(c, t) {
+      pg(c, [[-8, -19], [-12, -35], [-3, -22]], '#fff3e0');
+      pg(c, [[8, -19], [12, -35], [3, -22]], '#fff3e0');
+      pg(c, [[-5, -22], [0, -30], [5, -22]], '#ffd740', false);
+      ci(c, 0, 11, 4, '#ffd740'); ci(c, 0, 11, 1.8, '#ff6d00', false);
+      for (let i = 0; i < 3; i++) {
+        const a = t * 0.005 + i * 2.094;
+        ci(c, Math.cos(a) * 30, -8 + Math.sin(a) * 12, 3.8, '#ff6d00');
+      }
+    }
+  },
+  {
+    id: 'timekeeper', name: 'Хранитель Времени', rarity: 'legend', rarityName: 'Легенда', pass: true,
+    desc: 'Эксклюзив пропуска: награда 50-го уровня премиум-линии. Время подчиняется ему.', perkText: '⏳ Опыт +35% • Монеты ×1.35 • Магнит • Воскрешение', perk: { xp: 1.35, coin: 1.35, magnet: 80, revive: 1 },
+    price: 0, icon: '⏳',
+    skin: '#d7ccc8', torso: '#00695c', legs: '#004d40', shoe: '#ffd740', arm: '#00695c', hand: '#ffd740', torsoW: 24, noEyes: true, bullet: 'orb', bulletColor: '#18ffff',
+    back(c, t) {
+      c.save(); c.translate(-2, -4);
+      c.strokeStyle = '#18ffff'; c.lineWidth = 2.4; c.globalAlpha = 0.8;
+      c.beginPath(); c.arc(0, 0, 30, 0, 6.283); c.stroke();
+      c.lineWidth = 1.6;
+      for (let i = 0; i < 12; i++) { const a = i * 0.5236; c.beginPath(); c.moveTo(Math.cos(a) * 27, Math.sin(a) * 27); c.lineTo(Math.cos(a) * 30, Math.sin(a) * 30); c.stroke(); }
+      const a1 = t * 0.004, a2 = t * 0.0005;
+      c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a1) * 24, Math.sin(a1) * 24); c.stroke();
+      c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a2) * 16, Math.sin(a2) * 16); c.stroke();
+      c.restore();
+    },
+    look(c, t) {
+      c.save(); c.translate(0, -28);
+      gearPath(c, 5, 8, 8, t * 0.003); c.fillStyle = '#ffd740'; c.fill(); c.stroke();
+      c.restore();
+      c.strokeStyle = '#18ffff'; c.lineWidth = 2.4;
+      c.beginPath(); c.arc(5, -4, 2.4, 0, 6.283); c.stroke(); c.beginPath(); c.arc(11.5, -4, 2.4, 0, 6.283); c.stroke();
+      c.strokeStyle = OUT; c.lineWidth = 2;
+      pg(c, [[-5, 3], [5, 3], [1, 11], [5, 19], [-5, 19], [-1, 11]], '#b2ebf2');
+      pg(c, [[-3, 16], [3, 16], [4, 19], [-4, 19]], '#ffd740', false);
     }
   },
 
@@ -1565,6 +1689,139 @@ const SKINS = [
       c.beginPath(); c.arc(13, 11, 2.6, 0.2, Math.PI - 0.2); c.stroke();
       ell(c, -14, 18 + sw * 2, 3.2, 1.8, '#e65100', true, 0.6 + sw * 0.3);
       sHand(c, shoot, '#ffe0b2');
+    }
+  },
+
+  {
+    id: 'santa', name: 'Малыш Дед Мороз', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Новогодний герой с белой бородой и мешком подарков. Награда 30-го уровня премиум-пропуска.', perkText: '💰 Монеты ×1.25', perk: { coin: 1.25 },
+    price: 0, icon: '🎅',
+    skin: '#ffccbc', torso: '#e53935', legs: '#c62828', shoe: '#4e342e', arm: '#e53935', hand: '#ffffff', bullet: 'star', bulletColor: '#fff59d',
+    full(c, t, shoot) {
+      const b = Math.sin(t * 0.005) * 1.5;
+      ell(c, -16, 8, 8, 9, '#8d6e63');
+      rr(c, -9, 15, 7, 8, 3, '#4e342e'); rr(c, 3, 15, 7, 8, 3, '#4e342e');
+      c.save(); c.translate(0, b);
+      ell(c, 0, 4, 14, 14, '#e53935');
+      rr(c, -14, 8, 28, 3.5, 1, '#212121'); rr(c, -2, 7.5, 5, 4.5, 1, '#ffd54f');
+      ell(c, 3, -4, 10.5, 9, '#ffccbc');
+      ell(c, 2, 3, 11, 8, '#ffffff');
+      ci(c, 5, -5, 2.2, '#fff'); ci(c, 5.7, -5, 1.2, '#111', false); ci(c, 11, -5, 2.2, '#fff'); ci(c, 11.7, -5, 1.2, '#111', false);
+      ci(c, 8.5, -1, 2, '#ef9a9a', false);
+      pg(c, [[-9, -9], [0, -27 - Math.sin(t * 0.006) * 1.5], [13, -9]], '#e53935');
+      rr(c, -10, -12, 24, 5, 2.5, '#ffffff');
+      ci(c, 0, -28 - Math.sin(t * 0.006) * 1.5, 3.4, '#ffffff');
+      c.restore();
+      for (let i = 0; i < 3; i++) { const a = t * 0.003 + i * 2.1; sSpark(c, Math.cos(a) * 25, Math.sin(a) * 22, 2.4, '#fff'); }
+      sHand(c, shoot, '#ffffff');
+    }
+  },
+  {
+    id: 'tulip', name: 'Фея Тюльпана', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Весенняя фея в бутоне тюльпана с листьями-крылышками. Награда 30-го уровня премиум-пропуска.', perkText: '⭐ Опыт +20%', perk: { xp: 1.2 },
+    price: 0, icon: '🌷',
+    skin: '#ffccbc', torso: '#f06292', legs: '#66bb6a', shoe: '#43a047', arm: '#ffccbc', hand: '#ffccbc', bullet: 'heart', bulletColor: '#f48fb1',
+    full(c, t, shoot) {
+      const f = Math.sin(t * 0.012) * 5, b = Math.sin(t * 0.004) * 1.5;
+      sGlow(c, 0, 0, 30, 'rgba(244,143,177,0.35)');
+      ell(c, -18, 0 - f * 0.3, 5, 11, '#81c784', true, -0.7 - f * 0.03); ell(c, 18, 0 - f * 0.3, 5, 11, '#81c784', true, 0.7 + f * 0.03);
+      rr(c, -6, 12, 4.5, 10, 2, '#66bb6a'); rr(c, 3, 12, 4.5, 10, 2, '#66bb6a');
+      c.save(); c.translate(0, b);
+      ell(c, 0, -2, 11, 14, '#f8bbd0');
+      pg(c, [[-12, -8], [-9, -22], [-3, -13], [0, -24], [3, -13], [9, -22], [12, -8], [0, 4]], '#f06292');
+      ell(c, 0, -5, 7.5, 7, '#ffccbc');
+      sFace(c, -5, -6, 2.6);
+      c.beginPath(); c.arc(1, -1, 2.4, 0.2, Math.PI - 0.2); c.stroke();
+      ell(c, -6, -2, 2, 1.3, 'rgba(255,100,130,0.45)', false);
+      c.restore();
+      for (let i = 0; i < 3; i++) { const a = t * 0.0025 + i * 2.1; sSpark(c, Math.cos(a) * 25, Math.sin(a) * 21, 2.4, '#fff59d'); }
+      sHand(c, shoot, '#ffccbc');
+    }
+  },
+  {
+    id: 'bunny', name: 'Пасхальный Кролик', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Кролик-яйцо с расписным узором и длинными ушами. Награда 30-го уровня премиум-пропуска.', perkText: '🧲 Магнит монет', perk: { magnet: 70 },
+    price: 0, icon: '🐰',
+    skin: '#fff8e1', torso: '#ce93d8', legs: '#ba68c8', shoe: '#fff8e1', arm: '#fff8e1', hand: '#fff8e1', bullet: 'orb', bulletColor: '#f8bbd0',
+    full(c, t, shoot) {
+      const w = Math.sin(t * 0.007) * 3, b = Math.sin(t * 0.004) * 1.5;
+      rr(c, -8, 15, 7, 8, 3, '#fff8e1'); rr(c, 3, 15, 7, 8, 3, '#fff8e1');
+      c.save(); c.translate(0, b);
+      ell(c, -7, -23, 4, 11, '#fff8e1', true, -0.15 - w * 0.02); ell(c, 8, -23, 4, 11, '#fff8e1', true, 0.15 + w * 0.02);
+      ell(c, -7, -23, 1.8, 7, '#f8bbd0', false, -0.15 - w * 0.02); ell(c, 8, -23, 1.8, 7, '#f8bbd0', false, 0.15 + w * 0.02);
+      ell(c, 0, 0, 14, 17, '#ce93d8');
+      c.save(); c.beginPath(); c.ellipse(0, 0, 14, 17, 0, 0, 6.283); c.clip();
+      rr(c, -16, 4, 32, 4, 0, '#ffd54f', false); rr(c, -16, 10, 32, 3, 0, '#81d4fa', false);
+      for (let i = 0; i < 4; i++) ci(c, -10 + i * 7, 6, 1.4, '#fff', false);
+      c.restore();
+      ell(c, 0, 0, 14, 17, null);
+      sFace(c, -4, -7, 3);
+      ci(c, 3, -2, 1.6, '#f06292', false);
+      c.beginPath(); c.arc(3, -1, 2.6, 0.2, Math.PI - 0.2); c.stroke();
+      c.restore(); sHand(c, shoot, '#fff8e1');
+    }
+  },
+  {
+    id: 'firecracker', name: 'Новогодняя Хлопушка', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Живая хлопушка, из которой сыплются конфетти и искры. Награда 30-го уровня премиум-пропуска.', perkText: '⭐ Опыт +20%', perk: { xp: 1.2 },
+    price: 0, icon: '🎉',
+    skin: '#ffd54f', torso: '#7e57c2', legs: '#5e35b1', shoe: '#ffd54f', arm: '#ffd54f', hand: '#ffd54f', bullet: 'star', bulletColor: '#ff80ab',
+    full(c, t, shoot) {
+      const b = Math.sin(t * 0.005) * 1.5;
+      const cols = ['#ff5252', '#40c4ff', '#ffd740', '#69f0ae', '#e040fb'];
+      rr(c, -8, 15, 7, 8, 3, '#5e35b1'); rr(c, 3, 15, 7, 8, 3, '#5e35b1');
+      c.save(); c.translate(0, b);
+      pg(c, [[-14, 18], [14, 18], [8, -10], [-8, -10]], '#7e57c2');
+      pg(c, [[-9, -4], [9, -4], [8, -10], [-8, -10]], '#ffd54f', false);
+      pg(c, [[-12, 10], [12, 10], [13, 14], [-13, 14]], '#ffd54f', false);
+      pg(c, [[-14, 18], [14, 18], [8, -10], [-8, -10]], null);
+      sFace(c, -4, 3, 3);
+      c.beginPath(); c.arc(3, 8, 2.6, 0.2, Math.PI - 0.2); c.stroke();
+      for (let i = 0; i < 9; i++) {
+        const k = (t * 0.0016 + i / 9) % 1, a = -1.57 + (hash(i + 3) - 0.5) * 1.8;
+        const x = Math.cos(a) * (6 + k * 26), y = -12 + Math.sin(a) * (6 + k * 26) + k * k * 14;
+        c.globalAlpha = 1 - k * 0.7; rr(c, x - 2, y - 1.2, 4, 2.4, 1, cols[i % 5], false);
+      }
+      c.globalAlpha = 1;
+      c.restore(); sHand(c, shoot, '#ffd54f');
+    }
+  },
+  {
+    id: 'owl', name: 'Сова-Сказочница', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Мудрая сова с большими глазами и осенним пером. Награда 30-го уровня премиум-пропуска.', perkText: '🧲 Магнит монет', perk: { magnet: 70 },
+    price: 0, icon: '🦉',
+    skin: '#8d6e63', torso: '#6d4c41', legs: '#ffb300', shoe: '#ffb300', arm: '#8d6e63', hand: '#8d6e63', bullet: 'orb', bulletColor: '#ffcc80',
+    full(c, t, shoot) {
+      const f = Math.sin(t * 0.007) * 3, b = Math.sin(t * 0.004) * 1.5;
+      rr(c, -7, 15, 5, 8, 2, '#ffb300'); rr(c, 3, 15, 5, 8, 2, '#ffb300');
+      c.save(); c.translate(0, b);
+      pg(c, [[-12, -8], [-14, -22], [-4, -15]], '#6d4c41'); pg(c, [[12, -8], [14, -22], [4, -15]], '#6d4c41');
+      ell(c, 0, 1, 15, 17, '#8d6e63');
+      ell(c, 0, 8, 9, 9, '#d7ccc8');
+      for (let i = 0; i < 3; i++) c.fillRect(-4 + i * 4, 5 + i % 2 * 4, 2, 2);
+      ell(c, -15, 3 - f * 0.3, 5, 11, '#6d4c41', true, 0.3); ell(c, 15, 3 - f * 0.3, 5, 11, '#6d4c41', true, -0.3);
+      ci(c, -5, -5, 6, '#fff3e0'); ci(c, 6, -5, 6, '#fff3e0');
+      ci(c, -4, -5, 2.6, '#111', false); ci(c, 7, -5, 2.6, '#111', false);
+      pg(c, [[0, -2], [-2.5, 2], [2.5, 2]], '#ffb300');
+      c.restore(); sHand(c, shoot, '#8d6e63');
+    }
+  },
+  {
+    id: 'pumpkin', name: 'Тыквоголовый', rarity: 'season', rarityName: 'Сезон', season: true,
+    desc: 'Добрая светящаяся тыква с зелёным хвостиком. Награда 30-го уровня премиум-пропуска.', perkText: '💰 Монеты ×1.25', perk: { coin: 1.25 },
+    price: 0, icon: '🎃',
+    skin: '#ff9800', torso: '#37474f', legs: '#263238', shoe: '#212121', arm: '#37474f', hand: '#ff9800', bullet: 'orb', bulletColor: '#ffab00',
+    full(c, t, shoot) {
+      const b = Math.sin(t * 0.005) * 1.5, g = 0.75 + 0.25 * Math.sin(t * 0.01);
+      rr(c, -8, 15, 7, 8, 3, '#263238'); rr(c, 3, 15, 7, 8, 3, '#263238');
+      c.save(); c.translate(0, b);
+      rr(c, -11, 6, 22, 12, 4, '#37474f');
+      sGlow(c, 0, -6, 28, 'rgba(255,171,0,' + (0.3 * g) + ')');
+      ell(c, -8, -6, 9, 13, '#fb8c00'); ell(c, 8, -6, 9, 13, '#fb8c00'); ell(c, 0, -6, 8, 14, '#ff9800');
+      rr(c, -2, -24, 4, 7, 1.5, '#558b2f');
+      pg(c, [[-7, -9], [-3, -9], [-5, -13]], '#ffeb3b'); pg(c, [[3, -9], [7, -9], [5, -13]], '#ffeb3b');
+      c.beginPath(); c.moveTo(-8, 0); c.lineTo(-4, 4); c.lineTo(0, 0); c.lineTo(4, 4); c.lineTo(8, 0); c.fillStyle = '#ffeb3b'; c.fill(); c.stroke();
+      c.restore(); sHand(c, shoot, '#ff9800');
     }
   },
 
@@ -3295,7 +3552,8 @@ const BOOSTS = {
   jet: { name: 'Джет-старт', icon: '🚀', desc: 'Матч начинается с долгого полёта на джетпаке' },
   shield: { name: 'Щит', icon: '🛡', desc: 'Один раз спасает от смерти в матче' },
   coin2: { name: 'Монеты ×2', icon: '💰', desc: 'Все монеты за матч удваиваются' },
-  magnet: { name: 'Магнит', icon: '🧲', desc: 'Монеты весь матч летят к герою' }
+  magnet: { name: 'Магнит', icon: '🧲', desc: 'Монеты весь матч летят к герою' },
+  xp2: { name: 'Опыт ×2', icon: '⭐', desc: 'Весь опыт за матч удваивается' }
 };
 const BOOST_KEYS = Object.keys(BOOSTS);
 
@@ -3348,13 +3606,15 @@ const QUEST_TYPES = {
 const QUEST_REWARD = { d: { coins: 120, xp: 4000, sp: 50 }, w: { coins: 600, xp: 25000, sp: 200 } };
 
 // ---------- Боевой пропуск (сезон = календарный месяц) ----------
-const PASS_LEVELS = 30, PASS_SP = 100, PASS_PREMIUM_PRICE = 3000;
+const PASS_LEVELS = 50, PASS_SP = 100, PASS_PREMIUM_PRICE = 4500;
+const PASS_SKIN_ID = 'timekeeper'; // эксклюзивная легенда за 50 уровень премиум-линии
 const MONTHS_RU = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 function passFree(l) {
-  if (l === 30) return { t: 'chest', k: 'epic' };
+  if (l === 30 || l === 50) return { t: 'chest', k: 'epic' };
   if (l % 10 === 0) return { t: 'chest', k: 'rare' };
   if (l % 5 === 0) return { t: 'chest', k: 'common' };
-  if (l % 3 === 0) return { t: 'boost', k: BOOST_KEYS[l % 4], n: 1 };
+  if (l > 30 && l % 4 === 0) return { t: 'xp', n: 15000 + (l - 30) * 2000 };
+  if (l % 3 === 0) return { t: 'boost', k: BOOST_KEYS[l % BOOST_KEYS.length], n: 1 };
   return { t: 'coins', n: 60 + l * 10 };
 }
 // Сезонные скины идут по кругу: каждый месяц — новый скин. Ноябрь 2026 — первый, дальше всё включается само.
@@ -3362,7 +3622,11 @@ function passFree(l) {
 // Порядок = месяцы подряд, каждый скин подходит под свою пору года (id у некоторых старые, внешний вид новый):
 // ноя — осень (ёжик), дек — зима (кристалл), янв — зима (снеговик), фев — любовь (сердце), мар–май — весна,
 // июн–авг — лето (серфер, попугай, арбуз), сен–окт — осень (книга, граф).
-const SEASON_SKINS = ['ranger', 'icequeen', 'samurai', 'cupid', 'sprout', 'umbrella', 'bee', 'surfer', 'parrot', 'comet', 'scholar', 'vampire'];
+// Цикл на 24 месяца (2 года), потом всё повторяется. Первый год: ноя ёжик, дек — Дед Мороз, янв — снеговик, фев — купидон, мар — тюльпан…
+const SEASON_SKINS = [
+  'ranger', 'santa', 'samurai', 'cupid', 'tulip', 'umbrella', 'bee', 'surfer', 'parrot', 'comet', 'scholar', 'vampire',
+  'owl', 'icequeen', 'firecracker', 'cupid', 'sprout', 'bunny', 'bee', 'surfer', 'parrot', 'comet', 'scholar', 'pumpkin'
+];
 const SEASON_ORIGIN = [2026, 11];
 function seasonSkinId(key) {
   const p = String(key || seasonKeyNow()).split('-');
@@ -3373,15 +3637,16 @@ function seasonKeyAt(offset) { const d = new Date(); d.setDate(1); d.setMonth(d.
 function seasonLabel(key) { const p = key.split('-'); return (MONTHS_RU[Number(p[1]) - 1] || '') + ' ' + p[0]; }
 function nextSeasonWith(id) { for (let i = 0; i < 24; i++) { const k = seasonKeyAt(i); if (seasonSkinId(k) === id) return k; } return null; }
 function passPrem(l, season) {
+  if (l === 50) return { t: 'skin', id: PASS_SKIN_ID };
   if (l === 30) return { t: 'skin', id: seasonSkinId(season) };
-  if (l === 15 || l === 25) return { t: 'chest', k: 'epic' };
+  if (l === 15 || l === 25 || l === 35 || l === 45) return { t: 'chest', k: 'epic' };
   if (l % 5 === 0) return { t: 'chest', k: 'rare' };
-  if (l % 2 === 0) return { t: 'boost', k: BOOST_KEYS[(l / 2) % 4], n: 2 };
+  if (l % 2 === 0) return { t: 'boost', k: BOOST_KEYS[(l / 2) % BOOST_KEYS.length], n: 2 };
   return { t: 'coins', n: 150 + l * 20 };
 }
 
 // ---------- Достижения ----------
-function regularSkins() { return SKINS.filter((s) => !s.event && !s.season); }
+function regularSkins() { return SKINS.filter((s) => !s.event && !s.season && !s.pass); }
 const ACHIEVEMENTS = [
   { id: 's1k', icon: '🥉', name: 'Первая 1000', desc: 'Набери 1 000 очков за матч', goal: 1000, coins: 100, v: () => saveData.bestScore },
   { id: 's5k', icon: '🥈', name: 'Высотник', desc: 'Набери 5 000 очков за матч', goal: 5000, coins: 200, v: () => saveData.bestScore },
@@ -3414,7 +3679,8 @@ const ACHIEVEMENTS = [
   { id: 'st7', icon: '📅', name: 'Неделя подряд', desc: 'Забирай награду 7 дней подряд', goal: 7, coins: 500, v: () => saveData.stats.maxStreak },
   { id: 'q50', icon: '📋', name: 'Исполнительный', desc: 'Выполни 50 заданий', goal: 50, coins: 800, v: () => saveData.stats.questsDone },
   { id: 'up5', icon: '🛠', name: 'Инженер', desc: 'Прокачай любой бонус до максимума', goal: UPG_MAX, coins: 600, v: () => Math.max(0, ...UPGRADES.map((u) => (saveData.upg && saveData.upg[u.id]) || 0)) },
-  { id: 'bp30', icon: '🎖', name: 'Сезонный чемпион', desc: 'Дойди до 30 уровня пропуска', goal: 30, coins: 1000, v: () => (saveData.pass ? Math.min(PASS_LEVELS, Math.floor(saveData.pass.sp / PASS_SP)) : 0) }
+  { id: 'bp30', icon: '🎖', name: 'Сезонный чемпион', desc: 'Дойди до 30 уровня пропуска', goal: 30, coins: 1000, v: () => (saveData.pass ? Math.min(PASS_LEVELS, Math.floor(saveData.pass.sp / PASS_SP)) : 0) },
+  { id: 'bp50', icon: '⏳', name: 'Мастер сезона', desc: 'Дойди до 50 уровня пропуска', goal: 50, coins: 2500, v: () => (saveData.pass ? Math.min(PASS_LEVELS, Math.floor(saveData.pass.sp / PASS_SP)) : 0) }
 ];
 
 // Приводит данные мета-игры к безопасному виду (вызывается из normalizeSave)
@@ -3666,7 +3932,7 @@ let monsterCooldown = 0;
 // Комбо и прочее состояние матча
 let climb = 0;               // «чистая» высота (без множителя комбо): по ней растёт сложность
 let combo = 0, comboTimer = 0, comboPulse = 0, matchMaxCombo = 0, lastLandH = -1e9, comboY = 70;
-let matchKills = 0, matchCoinMult = 1, matchMagnet = 0, matchCur = 0;
+let matchKills = 0, matchCoinMult = 1, matchMagnet = 0, matchCur = 0, matchXpMult = 1;
 const matchMods = { spring: 1, prop: 1, jet: 1, magnet: 0, luck: 0 };
 const COMBO_TIME = 210;      // ~3.5 сек на следующее действие
 function comboMult() { return 1 + Math.min(4, Math.floor(combo / 10)); }
@@ -3797,7 +4063,7 @@ function initGameWorld() {
   hudLast.score = -1; hudLast.scoreT = 0;
   score = 0; matchBonusXP = 0; cameraY = 0; frameCount = 0;
   climb = 0; combo = 0; comboTimer = 0; comboPulse = 0; matchMaxCombo = 0; lastLandH = -1e9;
-  matchKills = 0; matchCoinMult = 1; matchMagnet = 0; matchCur = 0;
+  matchKills = 0; matchCoinMult = 1; matchMagnet = 0; matchCur = 0; matchXpMult = 1;
   refreshEvent();
   matchMods.spring = 1 + 0.04 * upgLevel('spring');
   matchMods.prop = 1 + 0.15 * upgLevel('propeller');
@@ -3927,7 +4193,7 @@ function updateTouchUI() {
 function xpMult(a) { return 1 + 0.3 * (a.id - 1); }
 function fmtXP(n) { return n >= 1e6 ? (n / 1e6).toFixed(n % 1e6 ? 1 : 0).replace('.', ',') + ' млн' : formatNum(n); }
 function addXP(n) {
-  n *= xpMult(getCurrentArena()) * (getPerk().xp || 1);
+  n *= xpMult(getCurrentArena()) * (getPerk().xp || 1) * matchXpMult;
   saveData.totalXP += n;
   matchBonusXP += n;
   syncUnlockedArenas(true);
@@ -4818,6 +5084,7 @@ function renderShop() {
     if (isEquipped) { btnClass = 'equipped'; btnText = 'Выбран ✓'; }
     else if (isOwned) { btnClass = 'select'; btnText = 'Выбрать'; }
     else if (skin.event) { btnClass = evLive ? 'buy' : 'locked-btn'; btnText = evLive ? `${skin.priceCur} ${ev.cur}` : '🔒 Событие'; }
+    else if (skin.pass) { btnClass = 'locked-btn'; btnText = '🎖 Пропуск 50'; }
     else if (skin.season) {
       btnClass = 'locked-btn';
       const nk = nextSeasonWith(skin.id);
@@ -4849,6 +5116,7 @@ function renderShop() {
       setTryOn(skin.id);
       if (isEquipped) return;
       if (!isOwned && skin.event) { if (evLive) buyEventSkin(skin); else { playSound('break'); metaToast('🔒', 'Скин события', 'Появится в магазине во время события'); } return; }
+      if (!isOwned && skin.pass) { playSound('break'); metaToast('🎖', 'Награда пропуска', '50 уровень премиум-линии'); return; }
       if (!isOwned && skin.season) {
         playSound('break');
         const nk = nextSeasonWith(skin.id);
@@ -5452,7 +5720,7 @@ function metaToast(icon, title, sub) {
 
 // ---------- Награды ----------
 function randomSkin(rarities) {
-  const pool = SKINS.filter((s) => !s.event && !s.season && rarities.includes(s.rarity) && !saveData.ownedSkins.includes(s.id));
+  const pool = SKINS.filter((s) => !s.event && !s.season && !s.pass && rarities.includes(s.rarity) && !saveData.ownedSkins.includes(s.id));
   return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
 }
 function rewardView(r) {
@@ -5846,6 +6114,7 @@ function applyStartBoosts() {
     else if (k === 'shield') player.revivesLeft += 1;
     else if (k === 'coin2') matchCoinMult = 2;
     else if (k === 'magnet') matchMagnet = 140;
+    else if (k === 'xp2') matchXpMult = 2;
   }
   if (used.length) {
     showToastText('Бонусы: ' + used.map((k) => BOOSTS[k].icon + ' ' + BOOSTS[k].name).join(', '));
@@ -5956,6 +6225,7 @@ function seasonName() { const [y, m] = saveData.pass.season.split('-'); return `
 function passLabel(r) {
   switch (r.t) {
     case 'coins': return '+' + formatNum(r.n);
+    case 'xp': return '+' + formatNum(r.n) + ' XP';
     case 'boost': return BOOSTS[r.k].name + (r.n > 1 ? ' · ' + r.n + ' шт.' : '');
     case 'chest': return CHESTS[r.k].short + ' сундук';
     case 'skin': return SKIN_MAP[r.id] ? SKIN_MAP[r.id].name : 'Скин';
@@ -5993,7 +6263,7 @@ function renderPass() {
       <canvas class="ps-prem-skin" width="132" height="132"></canvas>
       <div class="ps-prem-txt">
         <b>${P.premium ? 'Премиум активен' : 'Премиум-пропуск'}</b>
-        <small>${P.premium ? 'Забирай награды обеих линий.' : 'Вторая линия наград: больше монет, золотые сундуки и'} скин «${sSkin ? sSkin.name : ''}» на 30 уровне${owned ? ' (уже твой)' : ''}.</small>
+        <small>${P.premium ? 'Забирай награды обеих линий.' : 'Вторая линия наград: больше монет, золотые сундуки и'} скин «${sSkin ? sSkin.name : ''}» на 30 уровне и легенду «Хранитель Времени» на 50-м${owned ? ' (сезонный скин уже твой)' : ''}.</small>
         ${P.premium ? '' : `<button id="passBuyBtn" class="btn btn-gold btn-sm">Открыть за ${formatNum(PASS_PREMIUM_PRICE)} 🪙</button>`}
       </div>
     </div>
