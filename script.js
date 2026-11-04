@@ -2936,14 +2936,19 @@ function drawArenaDeco(c, a, w, h, scroll, t) {
       break;
     }
     case 'city': {
-      const sy = h * 0.42 + sink * 0.3;
-      const sgr = c.createLinearGradient(0, sy - 60, 0, sy + 60);
-      sgr.addColorStop(0, '#ffea00'); sgr.addColorStop(1, '#ff007f');
-      c.fillStyle = sgr; c.beginPath(); c.arc(w / 2, sy, 58, 0, 6.283); c.fill();
+      // Спокойный фон: без солнца по центру. Лёгкое тёмное свечение у горизонта + маленькая тусклая луна сбоку.
+      const hy = base - 6;
+      c.fillStyle = 'rgba(255,0,127,0.07)';
+      c.fillRect(0, hy - 90, w, 90);
+      c.fillStyle = 'rgba(0,229,255,0.05)';
+      c.fillRect(0, hy - 40, w, 40);
+      const mx = w * 0.84, my = h * 0.16 + sink * 0.15;
+      c.fillStyle = 'rgba(180,170,255,0.16)';
+      c.beginPath(); c.arc(mx, my, 16, 0, 6.283); c.fill();
       c.fillStyle = a.bgTop;
-      for (let k = 0; k < 6; k++) c.fillRect(w / 2 - 60, sy + 8 + k * 9, 120, 2 + k * 0.9);
-      layerBuildings(c, w, base - 6, 70, 110, '#191346', 7, true, t);
-      layerBuildings(c, w, base + 14, 60, 120, '#0e0a26', 19, true, t);
+      c.beginPath(); c.arc(mx + 6, my - 3, 14, 0, 6.283); c.fill();
+      layerBuildings(c, w, base - 6, 70, 110, '#15103a', 7, true, t);
+      layerBuildings(c, w, base + 14, 60, 120, '#0b0820', 19, true, t);
       break;
     }
     case 'ocean': {
