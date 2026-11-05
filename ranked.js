@@ -442,7 +442,7 @@
   // геймплей одинаковый во всех лигах; сложность растёт только с высотой (как в основной игре)
   function configArena() {
     const A = RANKED_ARENA;
-    A.diff = 0.6; A.monsterRate = 1; A.platSpeed = 1.6; A.wind = 0; A.slip = 0; A.hazard = null;
+    A.diff = 0.6; A.monsterRate = 1; A.platSpeed = 1.6; A.wind = 0; A.noWind = true; A.slip = 0; A.hazard = null;
     A.monsters = ['blot', 'eraser', 'bat'];
   }
 

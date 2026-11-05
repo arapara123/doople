@@ -4292,7 +4292,7 @@ function update(dt) {
     if (Math.abs(player.vx) < 0.08) player.vx = 0;
   }
   windPhase += 0.012 * dt;
-  windNow = (arena.wind + Math.min(hardLevel(), 2) * 0.5) * Math.sin(windPhase);
+  windNow = arena.noWind ? 0 : (arena.wind + Math.min(hardLevel(), 2) * 0.5) * Math.sin(windPhase);
   player.x += (player.vx + windNow) * dt;
   if (player.x + player.w < 0) player.x = W;
   if (player.x > W) player.x = -player.w;
