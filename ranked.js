@@ -12,9 +12,9 @@
     { name: 'Мишень', thr: 1200, bar: 22000 },
     { name: 'Молот', thr: 1800, bar: 37000 },
     { name: 'Зелье', thr: 2500, bar: 60000 },
-    { name: 'Фиолетовый кристалл', thr: 3300, bar: 95000 },
+    { name: 'Синяя корона', thr: 3300, bar: 95000 },
     { name: 'Красная корона', thr: 4200, bar: 150000 },
-    { name: 'Синяя корона', thr: 5200, bar: 230000 }
+    { name: 'Фиолетовый кристалл', thr: 5200, bar: 230000 }
   ];
   const MAX_CUPS = 7000, K = 25;
   // Чем выше лига: тем МЕНЬШЕ кубков за победу и тем БОЛЬШЕ за поражение
@@ -223,6 +223,16 @@
       c.beginPath(); c.roundRect(-6.5, -37, 13, 11, 2); c.fillStyle = '#c58b4e'; c.fill(); c.stroke();
       c.restore();
     },
+    // 8 — синяя корона
+    (c) => {
+      shield(c, PG, 12, [[0, '#fff0a0'], [0.45, '#f0b72a'], [1, '#a86c08']], [[0, '#3d8bff'], [1, '#0d3f9e']], { line: '#5a3500' });
+      crownS(c, '#3da0ff', '#ff9a2a');
+    },
+    // 7 — красная корона
+    (c) => {
+      shield(c, PG, 12, [[0, '#fff0a0'], [0.45, '#f0b72a'], [1, '#a86c08']], [[0, '#ef4469'], [1, '#8e0f2e']], { line: '#5a3500' });
+      crownS(c, '#f0b030', '#e53935');
+    },
     // 6 — фиолетовый кристалл в шипастой рамке
     (c) => {
       const sp = [[[10, 18], [9, 1], [26, 12]], [[90, 18], [91, 1], [74, 12]], [[9, 50], [0, 66], [17, 62]], [[91, 50], [100, 66], [83, 62]], [[41, 89], [50, 100], [59, 89]]];
@@ -235,16 +245,6 @@
       for (let i = 0; i < 6; i++) poly(c, [[50, 50], H[i], H[(i + 1) % 6]], cols[i]);
       poly(c, [[50, 18], [62, 25], [50, 50], [38, 25]], 'rgba(255,255,255,0.25)', false);
       c.lineWidth = 2; c.strokeStyle = '#2a0a55'; poly(c, H, null);
-    },
-    // 7 — красная корона
-    (c) => {
-      shield(c, PG, 12, [[0, '#fff0a0'], [0.45, '#f0b72a'], [1, '#a86c08']], [[0, '#ef4469'], [1, '#8e0f2e']], { line: '#5a3500' });
-      crownS(c, '#f0b030', '#e53935');
-    },
-    // 8 — синяя корона
-    (c) => {
-      shield(c, PG, 12, [[0, '#fff0a0'], [0.45, '#f0b72a'], [1, '#a86c08']], [[0, '#3d8bff'], [1, '#0d3f9e']], { line: '#5a3500' });
-      crownS(c, '#3da0ff', '#ff9a2a');
     }
   ];
   function drawBadge(cv, idx) {
@@ -507,6 +507,7 @@
     hudLast.arena = -1; setPauseUI(false); refreshEvent();
   }
   function rankedStart() {
+    if (mode() !== 'league') return;
     const r = R(); ensureSeason(true);
     const li = leagueOf(r.cups);
     rankedPromo = !!(r.promo && !r.lock && LEAGUES[li + 1]);
@@ -552,6 +553,7 @@
   // ---------- переключатель «Арены / Лига» и витрина лиги ----------
   const css = document.createElement('style');
   css.textContent = `
+  .main-menu:not(.league-mode) #openRankBtn{display:none!important}
   .mm-mode{display:flex;gap:4px;padding:4px;border-radius:16px;background:var(--mm-card);box-shadow:inset 0 0 0 1px var(--mm-line)}
   .mm-mode button{flex:1;height:34px;border:0;border-radius:12px;font-weight:900;font-size:13px;color:var(--mm-dim);background:transparent;cursor:pointer;transition:background .15s,color .15s}
   .mm-mode button.on{color:#14172a;background:var(--ac)}
@@ -838,6 +840,7 @@
     } catch (e) { const box = $('rkTop'); if (box) box.textContent = 'Нет сети — рейтинг игроков загрузится позже.'; }
   }
   function openRankMenu() {
+    if (mode() !== 'league') return;
     playSound('click');
     ensureSeason(false);
     openModal(menuEl, renderMenu);
@@ -851,6 +854,7 @@
   const btn = document.createElement('button');
   btn.id = 'openRankBtn'; btn.className = 'mm-rank';
   btn.innerHTML = '<canvas class="mm-rank-badge" width="88" height="88"></canvas><span class="mm-rank-txt"><b id="rkMenuName"></b><small id="rkMenuSub"></small></span><span class="mm-rank-cups">🏆 <b id="rkMenuCups">0</b></span>';
+  window.musicArenaHook = () => (rankedActive || (R().mode === 'league' && gameState === 'MENU')) ? 100 : 0;
   const playBtn = $('startBtn');
   playBtn.parentNode.insertBefore(btn, playBtn.nextSibling);
   btn.addEventListener('click', openRankMenu);

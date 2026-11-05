@@ -139,7 +139,36 @@ function iconize(root) {
   while (walker.nextNode()) list.push(walker.currentNode);
   list.forEach(iconizeText);
 }
-// (замена эмодзи на иконки отключена: интерфейс снова с эмодзи)
+// Убираем эмодзи с кнопок (текст остаётся)
+const GLYPH_RE = /[\u{1F000}-\u{1FFFF}\u{2190}-\u{21FF}\u{2300}-\u{23FF}\u{25A0}-\u{27BF}\u{2B00}-\u{2BFF}\uFE0F\u200D]+\s*/gu;
+const BTN_SEL = 'button, .mm-tile, [role="button"]';
+function scrubText(n) {
+  const p = n.parentNode;
+  if (!p || !p.closest || !p.closest(BTN_SEL) || p.closest('svg,canvas,script,style')) return;
+  const v = n.nodeValue;
+  if (!v) return;
+  GLYPH_RE.lastIndex = 0;
+  if (!GLYPH_RE.test(v)) return;
+  GLYPH_RE.lastIndex = 0;
+  n.nodeValue = v.replace(GLYPH_RE, '');
+}
+function scrubTree(root) {
+  if (!root) return;
+  if (root.nodeType === 3) { scrubText(root); return; }
+  if (root.nodeType !== 1) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const list = [];
+  while (w.nextNode()) list.push(w.currentNode);
+  list.forEach(scrubText);
+  root.querySelectorAll && root.querySelectorAll('.mm-tile-ico, .mm-play-ico').forEach((e) => { if (!e.textContent.trim()) e.style.display = 'none'; });
+}
+scrubTree(document.body);
+new MutationObserver((ms) => {
+  for (const m of ms) {
+    if (m.type === 'characterData') scrubText(m.target);
+    else m.addedNodes.forEach(scrubTree);
+  }
+}).observe(document.body, { childList: true, subtree: true, characterData: true });
 // Те же иконки для холста (колесо фортуны, замки на миниатюрах)
 const iconPathCache = {};
 function drawIcon(c, name, x, y, size, color, fill, lw) {
@@ -413,7 +442,9 @@ const MUSIC_THEMES = [
   { bpm: 90, root: 57, scale: 'harm', prog: [0, 3, 4, 0], lead: 'triangle', bass: 'sine', pad: 'triangle', energy: 0, hat: false },
   { bpm: 116, root: 55, scale: 'minor', prog: [0, 3, 6, 4], lead: 'square', bass: 'square', pad: 'triangle', energy: 2, hat: true, cut: 1600, kick: true },
   { bpm: 80, root: 62, scale: 'hira', prog: [0, 3, 1, 2], lead: 'sine', bass: 'sine', pad: 'triangle', energy: 0, hat: false, arpOct: 1 },
-  { bpm: 72, root: 50, scale: 'minor', prog: [0, 5, 6, 4], lead: 'triangle', bass: 'sawtooth', pad: 'sawtooth', energy: 1, hat: true, cut: 1100, arpOct: 1 }
+  { bpm: 72, root: 50, scale: 'minor', prog: [0, 5, 6, 4], lead: 'triangle', bass: 'sawtooth', pad: 'sawtooth', energy: 1, hat: true, cut: 1100, arpOct: 1 },
+  // 16: Королевская арена (лига)
+  { bpm: 138, root: 52, scale: 'minor', prog: [0, 6, 3, 4], lead: 'sawtooth', bass: 'square', pad: 'sawtooth', energy: 2, hat: true, cut: 2200, kick: true, arpOct: 1 }
 ];
 const BASS_PATS = [[0, 8], [0, 6, 8, 14], [0, 3, 6, 8, 11, 14]];
 MUSIC_THEMES.forEach((th, i) => {
@@ -496,7 +527,7 @@ function musicTick() {
 }
 // Выбор темы и громкости (вызывается при смене экрана/арены/настроек)
 function musicSet(arenaId, level) {
-  const th = MUSIC_THEMES[(arenaId - 1) % MUSIC_THEMES.length];
+  const th = arenaId === 100 ? MUSIC_THEMES[MUSIC_THEMES.length - 1] : MUSIC_THEMES[(arenaId - 1) % MUSIC_THEMES.length];
   if (!music.theme) music.theme = th;
   else if (music.theme !== th) music.pending = th;
   else music.pending = null;
@@ -6521,7 +6552,8 @@ function metaFrame(t) {
   }
   const st = saveData.settings;
   const inMenu = gameState === 'MENU' || gameState === 'GAMEOVER';
-  const arenaId = gameState === 'MENU' && !mainMenuEl.classList.contains('hidden') ? previewIdx : saveData.selectedArena;
+  let arenaId = gameState === 'MENU' && !mainMenuEl.classList.contains('hidden') ? previewIdx : saveData.selectedArena;
+  if (window.musicArenaHook) { const o = window.musicArenaHook(); if (o) arenaId = o; }
   const key = gameState + ':' + arenaId + ':' + soundEnabled + ':' + st.music + ':' + st.musicVol;
   if (key !== musicKey) {
     musicKey = key;
