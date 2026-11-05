@@ -139,36 +139,7 @@ function iconize(root) {
   while (walker.nextNode()) list.push(walker.currentNode);
   list.forEach(iconizeText);
 }
-// Убираем эмодзи с кнопок (текст остаётся)
-const GLYPH_RE = /[\u{1F000}-\u{1FFFF}\u{2190}-\u{21FF}\u{2300}-\u{23FF}\u{25A0}-\u{27BF}\u{2B00}-\u{2BFF}\uFE0F\u200D]+\s*/gu;
-const BTN_SEL = 'button, .mm-tile, [role="button"]';
-function scrubText(n) {
-  const p = n.parentNode;
-  if (!p || !p.closest || !p.closest(BTN_SEL) || p.closest('svg,canvas,script,style')) return;
-  const v = n.nodeValue;
-  if (!v) return;
-  GLYPH_RE.lastIndex = 0;
-  if (!GLYPH_RE.test(v)) return;
-  GLYPH_RE.lastIndex = 0;
-  n.nodeValue = v.replace(GLYPH_RE, '');
-}
-function scrubTree(root) {
-  if (!root) return;
-  if (root.nodeType === 3) { scrubText(root); return; }
-  if (root.nodeType !== 1) return;
-  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  const list = [];
-  while (w.nextNode()) list.push(w.currentNode);
-  list.forEach(scrubText);
-  root.querySelectorAll && root.querySelectorAll('.mm-tile-ico, .mm-play-ico').forEach((e) => { if (!e.textContent.trim()) e.style.display = 'none'; });
-}
-scrubTree(document.body);
-new MutationObserver((ms) => {
-  for (const m of ms) {
-    if (m.type === 'characterData') scrubText(m.target);
-    else m.addedNodes.forEach(scrubTree);
-  }
-}).observe(document.body, { childList: true, subtree: true, characterData: true });
+// (замена эмодзи на иконки отключена: интерфейс снова с эмодзи)
 // Те же иконки для холста (колесо фортуны, замки на миниатюрах)
 const iconPathCache = {};
 function drawIcon(c, name, x, y, size, color, fill, lw) {
