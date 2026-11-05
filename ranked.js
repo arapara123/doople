@@ -2,20 +2,24 @@
 // ==========================================================
 // РЕЖИМ «ЛИГА» (рейтинг): отдельно от арен, прокачки, бонусов, XP и монет.
 // Подключается после script.js и использует его глобальные функции.
+// Одна общая «Королевская арена» для всех лиг, значки лиг нарисованы в коде.
 // ==========================================================
 (function () {
   const LEAGUES = [
-    { name: 'Деревянный меч', thr: 0, bar: 2500, c1: '#c98b4e', c2: '#5a361c', bg: '#7b4a28' },
-    { name: 'Стальные мечи', thr: 300, bar: 7000, c1: '#cfd8dc', c2: '#607d8b', bg: '#3f5059' },
-    { name: 'Золотые мечи', thr: 700, bar: 13000, c1: '#ffe27a', c2: '#b8860b', bg: '#6a5216' },
-    { name: 'Мишень', thr: 1200, bar: 22000, c1: '#d3deea', c2: '#6f86a3', bg: '#3d5a80' },
-    { name: 'Молот', thr: 1800, bar: 37000, c1: '#c4b5ee', c2: '#5a4a98', bg: '#4a3b7a' },
-    { name: 'Зелье', thr: 2500, bar: 60000, c1: '#b2d0f2', c2: '#4a6fa5', bg: '#1f5f8f' },
-    { name: 'Фиолетовый кристалл', thr: 3300, bar: 95000, c1: '#c9dfeb', c2: '#6b8aa3', bg: '#6a2fb0' },
-    { name: 'Красная корона', thr: 4200, bar: 150000, c1: '#ffe27a', c2: '#c8890b', bg: '#b3173f' },
-    { name: 'Синяя корона', thr: 5200, bar: 230000, c1: '#ffe27a', c2: '#c8890b', bg: '#1f5fcf' }
+    { name: 'Деревянный меч', thr: 0, bar: 2500 },
+    { name: 'Стальные мечи', thr: 300, bar: 7000 },
+    { name: 'Золотые мечи', thr: 700, bar: 13000 },
+    { name: 'Мишень', thr: 1200, bar: 22000 },
+    { name: 'Молот', thr: 1800, bar: 37000 },
+    { name: 'Зелье', thr: 2500, bar: 60000 },
+    { name: 'Фиолетовый кристалл', thr: 3300, bar: 95000 },
+    { name: 'Красная корона', thr: 4200, bar: 150000 },
+    { name: 'Синяя корона', thr: 5200, bar: 230000 }
   ];
-  const MAX_CUPS = 7000, WIN_CAP = 35, LOSS_CAP = 15, K = 25;
+  const MAX_CUPS = 7000, K = 25;
+  // Чем выше лига: тем МЕНЬШЕ кубков за победу и тем БОЛЬШЕ за поражение
+  const WIN_CAPS = [40, 35, 31, 27, 23, 19, 16, 13, 10];
+  const LOSS_CAPS = [8, 11, 14, 17, 21, 25, 30, 35, 40];
   const LEAGUE_REWARD = [null,
     [150, 'common'], [300, 'common'], [500, 'rare'], [800, 'rare'], [1200, 'epic'], [1800, 'epic'], [2500, 'epic'], [4000, 'epic']];
 
@@ -36,9 +40,11 @@
     r.maxL = num(r.maxL, 0, 0, LEAGUES.length - 1);
     r.unsent = num(r.unsent, 0, 0, 1e6); r.unsentSecs = num(r.unsentSecs, 0, 0, 1e9);
     r.season = typeof r.season === 'string' ? r.season : '';
+    r.mode = r.mode === 'league' ? 'league' : 'arena';
     if (!Array.isArray(r.claimed)) r.claimed = [0];
     return r;
   }
+  function mode() { return R().mode; }
   function leagueOf(cups) { let i = 0; for (let k = 0; k < LEAGUES.length; k++) if (cups >= LEAGUES[k].thr) i = k; return i; }
   function frac(cups, li) {
     const L = LEAGUES[li], N = LEAGUES[li + 1];
@@ -47,76 +53,354 @@
     return Math.max(0, Math.min(1, (cups - L.thr) / (N.thr - L.thr)));
   }
 
-  // ---------- значки лиг (рисуются в коде) ----------
-  function sword(c, x, y, rot, k, blade, edge, metal) {
-    c.save(); c.translate(x, y); c.rotate(rot); c.scale(k, k); c.lineWidth = 2 / k;
-    c.beginPath(); c.moveTo(0, -36); c.lineTo(5, -28); c.lineTo(5, 0); c.lineTo(-5, 0); c.lineTo(-5, -28); c.closePath();
-    c.fillStyle = blade; c.fill(); c.stroke();
-    c.beginPath(); c.moveTo(0, -33); c.lineTo(5, -28); c.lineTo(5, 0); c.lineTo(0, 0); c.closePath(); c.fillStyle = edge; c.fill();
-    c.beginPath(); c.roundRect(-11, 0, 22, 5, 2); c.fillStyle = metal; c.fill(); c.stroke();
-    c.beginPath(); c.roundRect(-2.6, 5, 5.2, 11, 1.5); c.fillStyle = '#6d4c41'; c.fill(); c.stroke();
-    c.beginPath(); c.arc(0, 18, 3.4, 0, 6.283); c.fillStyle = metal; c.fill(); c.stroke();
+  // ==========================================================
+  // ЗНАЧКИ ЛИГ (как на картинке): щит с рамкой + эмблема
+  // ==========================================================
+  function lg(c, x0, y0, x1, y1, st) {
+    const g = c.createLinearGradient(x0, y0, x1, y1);
+    for (let i = 0; i < st.length; i++) g.addColorStop(st[i][0], st[i][1]);
+    return g;
+  }
+  // многоугольник со скруглёнными углами
+  function rpoly(c, pts, r) {
+    const n = pts.length;
+    c.beginPath();
+    for (let i = 0; i < n; i++) {
+      const p0 = pts[(i + n - 1) % n], p1 = pts[i], p2 = pts[(i + 1) % n];
+      const m0 = [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2], m1 = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2];
+      if (i === 0) c.moveTo(m0[0], m0[1]);
+      c.arcTo(p1[0], p1[1], m1[0], m1[1], r);
+    }
+    c.closePath();
+  }
+  function scl(pts, k, cx, cy) { return pts.map((p) => [cx + (p[0] - cx) * k, cy + (p[1] - cy) * k]); }
+  function poly(c, pts, fill, stroke) {
+    c.beginPath();
+    pts.forEach((p, i) => { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); });
+    c.closePath();
+    if (fill) { c.fillStyle = fill; c.fill(); }
+    if (stroke !== false) c.stroke();
+  }
+
+  const P5 = [[12, 8], [88, 8], [88, 60], [50, 94], [12, 60]];
+  const PH = [[16, 6], [84, 6], [92, 15], [92, 58], [50, 97], [8, 58], [8, 15]];
+  const PG = [[14, 6], [86, 6], [93, 16], [93, 56], [50, 96], [7, 56], [7, 16]];
+  const PX = [[12, 10], [88, 10], [90, 56], [50, 92], [10, 56]];
+
+  function shield(c, pts, rad, frameStops, innerStops, o) {
+    o = o || {};
+    const cx = 50, cy = 52;
+    c.save();
+    c.shadowColor = 'rgba(0,0,0,0.45)'; c.shadowBlur = 6; c.shadowOffsetY = 3;
+    rpoly(c, pts, rad); c.fillStyle = lg(c, 0, 0, 0, 100, frameStops); c.fill();
+    c.restore();
+    c.save();
+    c.strokeStyle = o.line || '#1a1a1a'; c.lineWidth = 3; rpoly(c, pts, rad); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,0.4)'; c.lineWidth = 1.6; rpoly(c, scl(pts, 0.95, cx, cy), rad * 0.9); c.stroke();
+    const ip = scl(pts, o.k || 0.8, cx, cy), ir = rad * 0.8;
+    rpoly(c, ip, ir); c.fillStyle = lg(c, 0, 10, 0, 92, innerStops); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,0.55)'; c.lineWidth = 2; c.stroke();
+    c.save(); rpoly(c, ip, ir); c.clip();
+    c.fillStyle = 'rgba(255,255,255,0.12)'; c.fillRect(0, 0, 100, 34);
+    c.fillStyle = 'rgba(0,0,0,0.18)'; c.fillRect(0, 76, 100, 30);
+    c.restore();
     c.restore();
   }
-  function crown(c, fill, band, gem, tips) {
-    c.beginPath(); c.moveTo(22, 70); c.lineTo(18, 32); c.lineTo(35, 50); c.lineTo(50, 24); c.lineTo(65, 50); c.lineTo(82, 32); c.lineTo(78, 70); c.closePath();
-    c.fillStyle = fill; c.fill(); c.stroke();
-    c.beginPath(); c.roundRect(22, 62, 56, 11, 3); c.fillStyle = band; c.fill(); c.stroke();
-    c.beginPath(); c.arc(50, 67.5, 3.6, 0, 6.283); c.fillStyle = gem; c.fill(); c.stroke();
-    if (tips) for (const p of [[18, 31], [50, 23], [82, 31]]) { c.beginPath(); c.arc(p[0], p[1], 3.6, 0, 6.283); c.fillStyle = gem; c.fill(); c.stroke(); }
+  function clipShield(c, pts, rad) { rpoly(c, scl(pts, 0.93, 50, 52), rad); c.clip(); }
+
+  function swordS(c, x, y, rot, k, o) {
+    const len = o.len || 40, w = o.w || 6, line = o.line || '#1a1a1a';
+    c.save(); c.translate(x, y); c.rotate(rot); c.scale(k, k);
+    c.lineWidth = 2.2 / k; c.strokeStyle = line;
+    c.beginPath(); c.moveTo(0, -len - 8); c.lineTo(w, -len); c.lineTo(w, 0); c.lineTo(-w, 0); c.lineTo(-w, -len); c.closePath();
+    c.fillStyle = lg(c, -w, 0, w, 0, [[0, o.b1], [0.5, o.b2], [1, o.b3]]); c.fill(); c.stroke();
+    c.beginPath(); c.moveTo(-w * 0.35, -len + 2); c.lineTo(-w * 0.35, -3);
+    c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = 1.6 / k; c.stroke();
+    c.strokeStyle = line; c.lineWidth = 2.2 / k;
+    c.beginPath(); c.roundRect(-w - 6, 0, (w + 6) * 2, 6, 2.5); c.fillStyle = o.guard; c.fill(); c.stroke();
+    c.beginPath(); c.roundRect(-3, 6, 6, 10, 2); c.fillStyle = o.grip; c.fill(); c.stroke();
+    c.beginPath(); c.arc(0, 18, 3.6, 0, 6.283); c.fillStyle = o.guard; c.fill(); c.stroke();
+    c.restore();
   }
-  const EMBLEM = [
-    (c) => sword(c, 50, 58, 0, 1.3, '#e9a35c', '#f7cb92', '#8a5a2b'),
-    (c) => { sword(c, 30, 78, 0.78, 1.05, '#cfd8dc', '#eceff1', '#78909c'); sword(c, 70, 78, -0.78, 1.05, '#cfd8dc', '#eceff1', '#78909c'); },
-    (c) => { sword(c, 50, 74, 0, 1.2, '#ffd54f', '#fff0a8', '#c8890b'); sword(c, 30, 78, 0.78, 1.05, '#ffd54f', '#fff0a8', '#c8890b'); sword(c, 70, 78, -0.78, 1.05, '#ffd54f', '#fff0a8', '#c8890b'); },
+  const STEEL = { len: 34, w: 5.5, b1: '#f4f7f9', b2: '#c3ccd3', b3: '#7d8a94', guard: '#9aa6af', grip: '#5b6770', line: '#1f262b' };
+  const GOLDSW = { len: 32, w: 5.5, b1: '#fff2a8', b2: '#f5bf33', b3: '#b97a0c', guard: '#ffd54f', grip: '#8a5a14', line: '#4a2f00' };
+
+  function arrow(c, x0, y0, x1, y1) {
+    const a = Math.atan2(y1 - y0, x1 - x0);
+    c.save(); c.lineCap = 'round';
+    c.strokeStyle = '#1a1a1a'; c.lineWidth = 4.2; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
+    c.strokeStyle = '#ffc83d'; c.lineWidth = 2.2; c.stroke();
+    c.translate(x0, y0); c.rotate(a);
+    c.lineWidth = 1.4; c.strokeStyle = '#1a1a1a';
+    for (const o of [0, 5]) {
+      c.beginPath(); c.moveTo(o, 0); c.lineTo(o + 7, -7.5); c.lineTo(o + 10, -7.5); c.lineTo(o + 4, 0); c.lineTo(o + 10, 7.5); c.lineTo(o + 7, 7.5); c.closePath();
+      c.fillStyle = '#ff3d9a'; c.fill(); c.stroke();
+    }
+    c.restore();
+  }
+
+  function crownS(c, band, gem) {
+    c.save(); c.translate(50, 52); c.lineWidth = 2.4; c.strokeStyle = '#5a3300';
+    c.beginPath(); c.moveTo(-28, 16); c.lineTo(-33, -20); c.lineTo(-16, -5); c.lineTo(0, -30); c.lineTo(16, -5); c.lineTo(33, -20); c.lineTo(28, 16); c.closePath();
+    c.fillStyle = lg(c, 0, -30, 0, 18, [[0, '#ffe27a'], [1, '#e08a14']]); c.fill(); c.stroke();
+    poly(c, [[0, -30], [16, -5], [0, 8], [-16, -5]], 'rgba(255,255,255,0.32)', false);
+    poly(c, [[33, -20], [28, 16], [16, 2], [16, -5]], 'rgba(140,60,0,0.25)', false);
+    poly(c, [[-33, -20], [-28, 16], [-16, 2], [-16, -5]], 'rgba(255,255,255,0.18)', false);
+    c.beginPath(); c.roundRect(-30, 8, 60, 14, 3); c.fillStyle = band; c.fill(); c.stroke();
+    poly(c, [[0, 9.5], [7, 15], [0, 20.5], [-7, 15]], gem);
+    for (const p of [[-33, -22], [0, -32], [33, -22]]) ci(c, p[0], p[1], 3.2, '#fff0a0');
+    c.restore();
+  }
+
+  const BADGES = [
+    // 0 — деревянный меч
     (c) => {
-      for (const q of [[30, '#f3e9d8'], [23, '#d32f2f'], [15.5, '#f3e9d8'], [8, '#d32f2f']]) { c.beginPath(); c.arc(50, 54, q[0], 0, 6.283); c.fillStyle = q[1]; c.fill(); c.stroke(); }
-      c.lineWidth = 3; c.strokeStyle = '#8d6e63'; c.beginPath(); c.moveTo(82, 22); c.lineTo(54, 52); c.stroke();
-      c.strokeStyle = '#1a1a1a'; c.lineWidth = 1.8; c.fillStyle = '#ff4fa3';
-      c.beginPath(); c.moveTo(82, 22); c.lineTo(90, 16); c.lineTo(88, 28); c.closePath(); c.fill(); c.stroke();
+      shield(c, P5, 5, [[0, '#6f4a32'], [1, '#26140a']], [[0, '#b97844'], [1, '#7a4423']], { line: '#1a0d06' });
+      swordS(c, 50, 62, 0, 1, { len: 38, w: 8, b1: '#fbc07a', b2: '#e9913f', b3: '#b9631e', guard: '#c8742c', grip: '#8a4a1c', line: '#4a2410' });
     },
+    // 1 — два стальных меча
     (c) => {
-      c.save(); c.translate(50, 56); c.rotate(0.45); c.translate(-50, -56);
-      c.beginPath(); c.roundRect(46, 46, 8, 38, 3); c.fillStyle = '#a0643a'; c.fill(); c.stroke();
-      c.beginPath(); c.roundRect(24, 20, 52, 30, 5); c.fillStyle = '#b8c0c8'; c.fill(); c.stroke();
-      c.fillStyle = '#8d98a3'; c.fillRect(30, 20, 5, 30); c.fillRect(65, 20, 5, 30);
-      c.fillStyle = 'rgba(255,255,255,0.4)'; c.fillRect(38, 24, 24, 4);
+      shield(c, P5, 5, [[0, '#56626a'], [1, '#1a2125']], [[0, '#7f9c9a'], [1, '#44605f']], { line: '#10161a' });
+      c.save(); clipShield(c, P5, 5);
+      swordS(c, 38, 54, 0.62, 1, STEEL); swordS(c, 62, 54, -0.62, 1, STEEL);
       c.restore();
     },
+    // 2 — золотые мечи (три)
     (c) => {
-      c.beginPath(); c.roundRect(42, 24, 16, 18, 3); c.fillStyle = '#d8ecff'; c.fill(); c.stroke();
-      c.beginPath(); c.arc(50, 64, 24, 0, 6.283); c.fillStyle = '#d8ecff'; c.fill(); c.stroke();
-      c.save(); c.beginPath(); c.arc(50, 64, 22, 0, 6.283); c.clip(); c.fillStyle = '#2a7bff'; c.fillRect(20, 58, 60, 40); c.restore();
-      c.beginPath(); c.roundRect(41, 14, 18, 11, 3); c.fillStyle = '#c58b4e'; c.fill(); c.stroke();
-      c.fillStyle = 'rgba(255,255,255,0.55)'; c.beginPath(); c.ellipse(40, 58, 3.5, 8, 0.3, 0, 6.283); c.fill();
+      shield(c, P5, 5, [[0, '#5a4128'], [1, '#1b0f07']], [[0, '#8a6a40'], [1, '#3f2b15']], { line: '#120a04' });
+      c.save(); clipShield(c, P5, 5);
+      swordS(c, 50, 62, 0, 1, Object.assign({}, GOLDSW, { len: 40 }));
+      swordS(c, 38, 54, 0.62, 1, GOLDSW); swordS(c, 62, 54, -0.62, 1, GOLDSW);
+      c.restore();
     },
+    // 3 — мишень со стрелами
     (c) => {
-      const P = [[50, 14], [78, 36], [70, 76], [50, 90], [30, 76], [22, 36]];
-      c.beginPath(); c.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 6; i++) c.lineTo(P[i][0], P[i][1]); c.closePath(); c.fillStyle = '#a45cf2'; c.fill(); c.stroke();
-      const tri = (a, b, d, col) => { c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.lineTo(d[0], d[1]); c.closePath(); c.fillStyle = col; c.fill(); };
-      tri(P[0], P[1], [50, 52], '#d0a2ff'); tri(P[0], P[5], [50, 52], '#8a3fe0'); tri(P[1], P[2], [50, 52], '#7a2fd0'); tri(P[2], P[3], [50, 52], '#5e1fb0'); tri(P[3], P[4], [50, 52], '#8a3fe0'); tri(P[4], P[5], [50, 52], '#6a2fc0');
+      shield(c, PH, 7, [[0, '#bccbe2'], [1, '#52698d']], [[0, '#f6f0e3'], [1, '#d8ceb6']], { line: '#1b2433' });
+      c.save(); rpoly(c, scl(PH, 0.8, 50, 52), 5.6); c.clip();
+      c.fillStyle = '#d8352c'; c.fillRect(10, 0, 22, 100); c.fillRect(68, 0, 22, 100);
+      c.strokeStyle = 'rgba(90,70,40,0.35)'; c.lineWidth = 1; c.beginPath();
+      for (const x of [32, 41, 50, 59, 68]) { c.moveTo(x, 0); c.lineTo(x, 100); }
+      c.stroke();
+      c.restore();
+      c.lineWidth = 1.6; c.strokeStyle = 'rgba(60,20,10,0.85)';
+      for (const q of [[20, '#d8352c'], [15, '#f6f0e3'], [10, '#d8352c'], [5.5, '#f6f0e3']]) ci(c, 50, 54, q[0], q[1]);
+      ci(c, 50, 54, 2.2, '#d8352c', false);
+      arrow(c, 17, 15, 45, 47); arrow(c, 12, 31, 42, 53);
     },
-    (c) => crown(c, '#ffcf4a', '#ffb300', '#e53935', false),
-    (c) => crown(c, '#ffd966', '#ffc107', '#29b6f6', true)
+    // 4 — молот
+    (c) => {
+      shield(c, PH, 7, [[0, '#aaa2cf'], [1, '#3c3468']], [[0, '#6b58b0'], [1, '#2b2260']], { line: '#17112e' });
+      c.save(); c.translate(56, 46); c.rotate(0.62); c.scale(0.88, 0.88);
+      c.lineWidth = 2; c.strokeStyle = '#2a1608';
+      c.beginPath(); c.roundRect(-4.5, -4, 9, 38, 3); c.fillStyle = lg(c, -4.5, 0, 4.5, 0, [[0, '#d68a3c'], [1, '#8a4a1c']]); c.fill(); c.stroke();
+      c.fillStyle = '#f0a24a';
+      for (let i = 0; i < 3; i++) c.fillRect(-4.5, 14 + i * 5.5, 9, 2.6);
+      c.beginPath(); c.arc(0, 35, 3.6, 0, 6.283); c.fillStyle = '#8a4a1c'; c.fill(); c.stroke();
+      c.strokeStyle = '#1d2228';
+      c.beginPath(); c.roundRect(-27, -30, 54, 28, 4); c.fillStyle = lg(c, 0, -30, 0, -2, [[0, '#eef1f4'], [0.5, '#b6bec7'], [1, '#7e8993']]); c.fill(); c.stroke();
+      c.beginPath(); c.roundRect(-27, -30, 9, 28, [4, 0, 0, 4]); c.fillStyle = '#8a95a0'; c.fill(); c.stroke();
+      c.beginPath(); c.roundRect(18, -30, 9, 28, [0, 4, 4, 0]); c.fillStyle = '#8a95a0'; c.fill(); c.stroke();
+      c.fillStyle = 'rgba(255,255,255,0.55)'; c.fillRect(-13, -27, 26, 3);
+      c.restore();
+    },
+    // 5 — зелье
+    (c) => {
+      shield(c, PH, 7, [[0, '#a9c3e4'], [1, '#35567f']], [[0, '#3f8fcf'], [1, '#134a7c']], { line: '#0e1d33' });
+      c.save(); c.translate(52, 57); c.rotate(-0.38); c.scale(0.95, 0.95);
+      const body = () => {
+        c.beginPath(); c.moveTo(-7, -24); c.lineTo(7, -24); c.lineTo(7, -14);
+        c.bezierCurveTo(26, -8, 28, 14, 20, 24); c.quadraticCurveTo(0, 32, -20, 24); c.bezierCurveTo(-28, 14, -26, -8, -7, -14); c.closePath();
+      };
+      c.lineWidth = 2; c.strokeStyle = '#14283d';
+      body(); c.fillStyle = 'rgba(220,238,255,0.92)'; c.fill();
+      c.save(); body(); c.clip();
+      c.fillStyle = lg(c, 0, -4, 0, 30, [[0, '#62c4ff'], [1, '#1a64d8']]); c.fillRect(-30, -4, 60, 40);
+      c.fillStyle = 'rgba(255,255,255,0.75)'; c.fillRect(7, -10, 8, 44);
+      c.fillStyle = 'rgba(255,255,255,0.35)'; c.beginPath(); c.ellipse(-14, 4, 3, 9, 0.2, 0, 6.283); c.fill();
+      c.restore();
+      body(); c.stroke();
+      c.beginPath(); c.roundRect(-9, -27, 18, 5, 2); c.fillStyle = '#d8ecff'; c.fill(); c.stroke();
+      c.beginPath(); c.roundRect(-6.5, -37, 13, 11, 2); c.fillStyle = '#c58b4e'; c.fill(); c.stroke();
+      c.restore();
+    },
+    // 6 — фиолетовый кристалл в шипастой рамке
+    (c) => {
+      const sp = [[[10, 18], [9, 1], [26, 12]], [[90, 18], [91, 1], [74, 12]], [[9, 50], [0, 66], [17, 62]], [[91, 50], [100, 66], [83, 62]], [[41, 89], [50, 100], [59, 89]]];
+      c.lineWidth = 2.4; c.strokeStyle = '#1c2430';
+      for (const s of sp) poly(c, s, lg(c, 0, 0, 0, 100, [[0, '#e8f1f8'], [1, '#7896ad']]));
+      shield(c, PX, 8, [[0, '#dfebf4'], [1, '#6c8aa3']], [[0, '#b86cff'], [1, '#5a1fa8']], { line: '#1c2430' });
+      const H = [[50, 18], [76, 32], [74, 66], [50, 80], [26, 66], [24, 32]];
+      const cols = ['#d9a8ff', '#9a4de6', '#7b2fd0', '#5c1fb0', '#8a3fe0', '#b774ff'];
+      c.lineWidth = 1; c.strokeStyle = 'rgba(50,10,100,0.55)';
+      for (let i = 0; i < 6; i++) poly(c, [[50, 50], H[i], H[(i + 1) % 6]], cols[i]);
+      poly(c, [[50, 18], [62, 25], [50, 50], [38, 25]], 'rgba(255,255,255,0.25)', false);
+      c.lineWidth = 2; c.strokeStyle = '#2a0a55'; poly(c, H, null);
+    },
+    // 7 — красная корона
+    (c) => {
+      shield(c, PG, 12, [[0, '#fff0a0'], [0.45, '#f0b72a'], [1, '#a86c08']], [[0, '#ef4469'], [1, '#8e0f2e']], { line: '#5a3500' });
+      crownS(c, '#f0b030', '#e53935');
+    },
+    // 8 — синяя корона
+    (c) => {
+      shield(c, PG, 12, [[0, '#fff0a0'], [0.45, '#f0b72a'], [1, '#a86c08']], [[0, '#3d8bff'], [1, '#0d3f9e']], { line: '#5a3500' });
+      crownS(c, '#3da0ff', '#ff9a2a');
+    }
   ];
   function drawBadge(cv, idx) {
-    const c = cv.getContext('2d'), L = LEAGUES[idx];
+    const c = cv.getContext('2d');
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height);
     c.scale(cv.width / 100, cv.height / 100);
     c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = '#1a1a1a'; c.lineWidth = 2;
-    const shield = () => {
-      c.beginPath(); c.moveTo(14, 6); c.lineTo(86, 6); c.quadraticCurveTo(94, 6, 94, 14); c.lineTo(94, 60);
-      c.quadraticCurveTo(94, 76, 50, 97); c.quadraticCurveTo(6, 76, 6, 60); c.lineTo(6, 14); c.quadraticCurveTo(6, 6, 14, 6); c.closePath();
+    BADGES[idx](c);
+  }
+
+  // ==========================================================
+  // КОРОЛЕВСКАЯ АРЕНА: одна для всех лиг, золото, пурпур и багрянец
+  // ==========================================================
+  function drawRoyalDeco(c, w, h, scroll, t) {
+    const sink = Math.min(scroll * 0.12, h * 0.5), base = h + sink;
+    c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
+
+    // золотые лучи сверху
+    for (let i = 0; i < 9; i++) {
+      const a = -Math.PI / 2 + (i - 4) * 0.17 + Math.sin(t * 0.0004 + i) * 0.02, L = h * 1.5;
+      poly(c, [[w / 2, -20], [w / 2 + Math.cos(a - 0.045) * L, -20 - Math.sin(a - 0.045) * L], [w / 2 + Math.cos(a + 0.045) * L, -20 - Math.sin(a + 0.045) * L]], 'rgba(255,222,120,0.07)', false);
+    }
+
+    // герб с короной
+    const ex = w / 2, ey = 118 + sink * 0.3;
+    const hg = c.createRadialGradient(ex, ey, 6, ex, ey, 90);
+    hg.addColorStop(0, 'rgba(255,230,150,0.55)'); hg.addColorStop(1, 'rgba(255,200,60,0)');
+    c.fillStyle = hg; c.fillRect(ex - 95, ey - 95, 190, 190);
+    c.strokeStyle = 'rgba(255,215,90,0.6)'; c.lineWidth = 3; c.beginPath(); c.arc(ex, ey, 50, 0, 6.283); c.stroke();
+    c.lineWidth = 1.5; c.beginPath(); c.arc(ex, ey, 58, 0, 6.283); c.stroke();
+    for (let i = 0; i < 12; i++) {
+      const an = i * Math.PI / 6 + t * 0.0003;
+      c.fillStyle = 'rgba(255,224,130,0.85)';
+      c.beginPath(); c.arc(ex + Math.cos(an) * 54, ey + Math.sin(an) * 54, 2.2, 0, 6.283); c.fill();
+    }
+    c.save(); c.translate(ex, ey + 4);
+    c.beginPath(); c.moveTo(-30, 22); c.lineTo(-35, -14); c.lineTo(-17, 2); c.lineTo(0, -29); c.lineTo(17, 2); c.lineTo(35, -14); c.lineTo(30, 22); c.closePath();
+    c.fillStyle = lg(c, 0, -29, 0, 22, [[0, '#fff0a0'], [0.5, '#ffc93a'], [1, '#c8860a']]); c.fill();
+    c.lineWidth = 2.4; c.strokeStyle = '#7a4e00'; c.stroke();
+    c.beginPath(); c.roundRect(-31, 12, 62, 12, 3); c.fillStyle = '#d32f4a'; c.fill(); c.stroke();
+    for (const p of [[-35, -16], [0, -31], [35, -16]]) { c.beginPath(); c.arc(p[0], p[1], 3.4, 0, 6.283); c.fillStyle = '#fff6c0'; c.fill(); c.stroke(); }
+    for (const x of [-18, 0, 18]) { c.beginPath(); c.arc(x, 18, 2.6, 0, 6.283); c.fillStyle = x ? '#4fc3f7' : '#fff176'; c.fill(); }
+    c.restore();
+
+    // колонны
+    const colW = 30;
+    for (const cx of [0, w - colW]) {
+      c.fillStyle = lg(c, cx, 0, cx + colW, 0, [[0, '#bfae86'], [0.35, '#f7ecc9'], [0.7, '#e6d7a8'], [1, '#a8946a']]);
+      c.fillRect(cx, -10, colW, h + 40);
+      c.strokeStyle = 'rgba(120,90,30,0.35)'; c.lineWidth = 1.2; c.beginPath();
+      for (let k = 1; k < 5; k++) { c.moveTo(cx + k * 6, -10); c.lineTo(cx + k * 6, h + 30); }
+      c.stroke();
+      for (let k = 0; k < 6; k++) {
+        const ry = ((k * 130 + scroll * 0.2) % (h + 130)) - 20;
+        c.fillStyle = lg(c, 0, ry, 0, ry + 7, [[0, '#ffe27a'], [1, '#b87a0a']]); c.fillRect(cx - 2, ry, colW + 4, 7);
+      }
+      const cy = 14 + sink * 0.3;
+      c.fillStyle = lg(c, 0, cy, 0, cy + 14, [[0, '#ffe27a'], [1, '#b87a0a']]);
+      c.fillRect(cx - 5, cy, colW + 10, 9); c.fillRect(cx - 2, cy + 9, colW + 4, 6);
+      c.strokeStyle = '#7a4e00'; c.lineWidth = 1.4; c.strokeRect(cx - 5, cy, colW + 10, 9);
+    }
+
+    // шторы по бокам
+    const drape = (x0, dir) => {
+      const len = 150 + sink * 0.3;
+      c.beginPath(); c.moveTo(x0, -4); c.lineTo(x0 + dir * 84, -4);
+      c.quadraticCurveTo(x0 + dir * 70, len * 0.55, x0 + dir * 22, len); c.lineTo(x0, len + 12); c.closePath();
+      c.fillStyle = lg(c, x0, 0, x0 + dir * 84, 0, [[0, '#7d0f2c'], [0.5, '#c2284a'], [1, '#7d0f2c']]); c.fill();
+      c.strokeStyle = 'rgba(40,0,10,0.35)'; c.lineWidth = 1.5; c.beginPath();
+      for (let k = 1; k < 4; k++) { c.moveTo(x0 + dir * k * 18, 0); c.quadraticCurveTo(x0 + dir * (k * 18 + 6), len * 0.5, x0 + dir * k * 8, len * 0.9); }
+      c.stroke();
+      c.strokeStyle = '#ffd54f'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(x0 + dir * 84, -4); c.quadraticCurveTo(x0 + dir * 70, len * 0.55, x0 + dir * 22, len); c.stroke();
+      c.beginPath(); c.arc(x0 + dir * 34, len * 0.52, 4, 0, 6.283); c.fillStyle = '#ffd54f'; c.fill(); c.strokeStyle = '#7a4e00'; c.lineWidth = 1.2; c.stroke();
     };
-    const g = c.createLinearGradient(0, 0, 0, 100); g.addColorStop(0, L.c1); g.addColorStop(1, L.c2);
-    shield(); c.fillStyle = g; c.fill(); c.lineWidth = 3; c.stroke(); c.lineWidth = 2;
-    c.save(); c.translate(50, 50); c.scale(0.84, 0.84); c.translate(-50, -50);
-    shield(); c.fillStyle = L.bg; c.fill(); c.clip();
-    c.fillStyle = 'rgba(255,255,255,0.13)'; c.fillRect(0, 0, 100, 38);
+    drape(colW, 1); drape(w - colW, -1);
+
+    // шторка-ламбрекен сверху
+    const n = Math.max(2, Math.round(w / 60)), sw = w / n;
+    c.beginPath(); c.moveTo(0, -4); c.lineTo(w, -4); c.lineTo(w, 16);
+    for (let i = n; i > 0; i--) { const x = i * sw; c.quadraticCurveTo(x - sw / 2, 46, x - sw, 16); }
+    c.closePath();
+    c.fillStyle = lg(c, 0, 0, 0, 44, [[0, '#8c1233'], [1, '#c2284a']]); c.fill();
+    c.strokeStyle = '#ffd54f'; c.lineWidth = 2.2; c.stroke();
+
+    // знамёна
+    for (const bx of [w * 0.2, w * 0.8]) {
+      const sg = Math.sin(t * 0.002 + bx) * 3;
+      poly(c, [[bx - 14, 24], [bx + 14, 24], [bx + 14, 84 + sg], [bx, 100 + sg], [bx - 14, 84 + sg]], lg(c, 0, 24, 0, 100, [[0, '#2347b8'], [1, '#13276e']]), true);
+      c.strokeStyle = '#ffd54f'; c.lineWidth = 1.8; poly(c, [[bx - 14, 24], [bx + 14, 24], [bx + 14, 84 + sg], [bx, 100 + sg], [bx - 14, 84 + sg]], null);
+      c.fillStyle = '#ffd54f'; poly(c, [[bx - 8, 62 + sg], [bx - 9, 46 + sg], [bx - 3, 54 + sg], [bx, 42 + sg], [bx + 3, 54 + sg], [bx + 9, 46 + sg], [bx + 8, 62 + sg]], '#ffd54f', false);
+    }
+
+    // люстры
+    const chand = (cx, cy) => {
+      c.strokeStyle = 'rgba(255,215,90,0.75)'; c.lineWidth = 2; c.beginPath(); c.moveTo(cx, -10); c.lineTo(cx, cy - 8); c.stroke();
+      c.beginPath(); c.ellipse(cx, cy, 26, 7, 0, 0, 6.283); c.fillStyle = lg(c, 0, cy - 7, 0, cy + 7, [[0, '#ffe27a'], [1, '#b87a0a']]); c.fill();
+      c.strokeStyle = '#7a4e00'; c.lineWidth = 1.6; c.stroke();
+      for (let i = -2; i <= 2; i++) {
+        const x = cx + i * 10, fl = Math.sin(t * 0.01 + i * 1.7 + cx) * 1.2;
+        c.fillStyle = '#fff8e1'; c.fillRect(x - 2, cy - 15, 4, 11);
+        c.fillStyle = 'rgba(255,214,90,0.25)'; c.beginPath(); c.arc(x, cy - 19, 9, 0, 6.283); c.fill();
+        c.fillStyle = '#ffd54f'; c.beginPath(); c.ellipse(x, cy - 19 + fl * 0.4, 2.2, 3.8 + fl, 0, 0, 6.283); c.fill();
+      }
+      poly(c, [[cx, cy + 22], [cx + 5, cy + 14], [cx, cy + 8], [cx - 5, cy + 14]], '#4fc3f7', true);
+    };
+    chand(w * 0.3, 270 + sink * 0.35);
+    chand(w * 0.72, 430 + sink * 0.35);
+
+    // пол: золотой шахматный + красная ковровая дорожка
+    const fy = base - 46, sq = 23;
+    for (let row = 0; row < 2; row++) for (let x = -sq; x < w + sq; x += sq) {
+      c.fillStyle = (Math.round(x / sq) + row) % 2 ? '#f3e3b0' : '#c8962a';
+      c.fillRect(x, fy + row * sq, sq, sq);
+    }
+    c.fillStyle = '#ffcf4a'; c.fillRect(0, fy - 4, w, 5);
+    c.fillStyle = 'rgba(80,40,0,0.5)'; c.fillRect(0, fy + 1, w, 2);
+    poly(c, [[w / 2 - 48, fy], [w / 2 + 48, fy], [w / 2 + 72, base + 8], [w / 2 - 72, base + 8]], lg(c, 0, fy, 0, base, [[0, '#c2284a'], [1, '#7d0f2c']]), false);
+    c.strokeStyle = '#ffd54f'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(w / 2 - 48, fy); c.lineTo(w / 2 - 72, base + 8); c.moveTo(w / 2 + 48, fy); c.lineTo(w / 2 + 72, base + 8); c.stroke();
+
     c.restore();
-    c.save(); c.translate(50, 50); c.scale(0.86, 0.86); c.translate(-50, -50);
-    EMBLEM[idx](c);
-    c.restore();
+  }
+  const origDeco = drawArenaDeco;
+  window.drawArenaDeco = function (c, a, w, h, scroll, t) {
+    if (a && a.scene === 'royal') { drawRoyalDeco(c, w, h, scroll, t); return; }
+    return origDeco.apply(this, arguments);
+  };
+  // золотые украшения на платформах королевской арены
+  const origPlat = drawPlatformShape;
+  window.drawPlatformShape = function (c, a, p, t) {
+    origPlat(c, a, p, t);
+    if (a && a.scene === 'royal' && !p.broken && (p.type === 'normal' || p.type === 'moving')) {
+      c.save();
+      const cy = p.y + p.h / 2 + 0.5;
+      ci(c, p.x + p.w / 2, cy, 2.6, '#e53935', false);
+      ci(c, p.x + p.w / 2 - 0.8, cy - 0.8, 0.9, '#ffffff', false);
+      c.fillStyle = 'rgba(255,248,200,0.85)';
+      for (const dx of [-17, 17]) { c.beginPath(); c.arc(p.x + p.w / 2 + dx, cy, 1.5, 0, 6.283); c.fill(); }
+      c.restore();
+    }
+  };
+
+  const RANKED_ARENA = {
+    id: 100, name: 'Королевская арена', minXP: 0, icon: '👑', scene: 'royal',
+    desc: 'Золотой тронный зал для лучших прыгунов', twist: 'Одна арена для всех лиг.',
+    bgTop: '#1d1040', bgBottom: '#5c0f2e', gridColor: 'rgba(255,213,79,0.13)', marginColor: 'rgba(255,215,0,0.5)', margin: false,
+    platNormal: '#ffcf4a', platMoving: '#4dd0e1', platBreak: '#a1623a', platVanish: '#fff3c4', platBorder: '#5a3a00', glow: true,
+    ambient: { type: 'motes', color: '#ffe082' }, monsters: ['blot', 'eraser', 'bat'], monsterRate: 1, diff: 0.6, platSpeed: 1.6, wind: 0, slip: 0, hazard: null, hazardLook: 'shard'
+  };
+  // внешний вид один у всех лиг, меняется только жёсткость испытаний
+  function configArena(i) {
+    const A = RANKED_ARENA;
+    A.diff = 0.6 + i * 0.15; A.monsterRate = 1 + i * 0.08; A.platSpeed = 1.6 + i * 0.25;
+    A.wind = i >= 2 ? 0.3 + (i - 2) * 0.12 : 0; A.slip = i >= 4 ? 0.03 : 0;
+    A.hazard = i >= 7 ? 'both' : i >= 5 ? 'lightning' : i >= 3 ? 'faller' : null;
+    A.monsters = i < 3 ? ['blot', 'eraser', 'bat'] : i < 6 ? ['drone', 'harpy', 'imp'] : ['voideye', 'riftling', 'oni'];
   }
 
   // ---------- сезон ----------
@@ -153,10 +437,15 @@
         else res.notes.push('Ещё одна попытка доступна сразу');
       }
     } else {
-      let d = sc <= 0 ? -LOSS_CAP : K * Math.log2(sc / L.bar);
-      d = Math.round(Math.max(-LOSS_CAP, Math.min(WIN_CAP, d)));
-      if (d > 0) { r.wins++; r.streak++; if (r.streak >= 3) { d += 5; r.streak = 0; res.bonus = 5; res.notes.push('🔥 Серия из 3 побед: +5 кубков'); } }
-      else if (d < 0) r.streak = 0;
+      let raw = sc <= 0 ? -15 : K * Math.log2(sc / L.bar);
+      raw = Math.max(-15, Math.min(35, raw));
+      let d = 0;
+      if (raw > 0.0001) d = Math.max(1, Math.round(raw * WIN_CAPS[li] / 35));
+      else if (raw < -0.0001) d = -Math.max(1, Math.round(-raw * LOSS_CAPS[li] / 15));
+      if (d > 0) {
+        r.wins++; r.streak++;
+        if (r.streak >= 3) { const bn = Math.max(2, Math.round(WIN_CAPS[li] / 7)); d += bn; r.streak = 0; res.bonus = bn; res.notes.push('🔥 Серия из 3 побед: +' + bn + ' кубков'); }
+      } else if (d < 0) r.streak = 0;
       let c = r.cups + d;
       if (r.protect > 0) { if (c < L.thr) res.notes.push('🛡 Защита спасла от вылета'); c = Math.max(c, L.thr); r.protect--; }
       c = Math.max(0, Math.min(MAX_CUPS, c));
@@ -198,18 +487,10 @@
   // ---------- режим матча ----------
   let rankedActive = false, rankedLive = false, pendingRanked = false, rankedPromo = false, curToken = 0;
   const NO = {};
-  const RANKED_ARENA = Object.assign({}, ARENAS[5], { id: 100, name: 'Арена лиги', icon: '🏆', ambient: ARENAS[5].ambient });
   const origArena = getCurrentArena, origPerk = getPerk, origUpg = upgLevel, origBoosts = applyStartBoosts;
   const origCoins = gainCoins, origXP = addXP, origTGO = triggerGameOver, origStart = startGame, origMenu = showMainMenu, origUAU = updateAllUI;
+  const origDMP = drawMenuPreview, origStep = stepPreview;
 
-  function configArena(i) {
-    const A = RANKED_ARENA;
-    A.diff = 0.6 + i * 0.15; A.monsterRate = 1 + i * 0.08; A.platSpeed = 1.6 + i * 0.25;
-    A.wind = i >= 2 ? 0.3 + (i - 2) * 0.12 : 0; A.slip = i >= 4 ? 0.03 : 0;
-    A.hazard = i >= 7 ? 'both' : i >= 5 ? 'lightning' : i >= 3 ? 'faller' : null;
-    A.hazardLook = 'crystal';
-    A.monsters = i < 3 ? ['blot', 'eraser', 'bat'] : i < 6 ? ['drone', 'harpy', 'imp'] : ['voideye', 'riftling', 'oni'];
-  }
   window.getCurrentArena = function () { return rankedActive ? RANKED_ARENA : origArena(); };
   window.getPerk = function () { return rankedActive ? NO : origPerk(); };
   window.upgLevel = function (id) { return rankedActive ? 0 : origUpg(id); };
@@ -262,12 +543,21 @@
     leaveRanked();
     return origMenu.apply(this, arguments);
   };
-  $('startBtn').addEventListener('click', () => { leaveRanked(); }, true);
-  window.updateAllUI = function () { origUAU(); try { updateMenuBtn(); } catch (e) {} };
+  // «Играть»: в режиме лиги запускаем матч лиги, в режиме арен — обычный матч
+  $('startBtn').addEventListener('click', (e) => {
+    if (mode() === 'league') { e.stopImmediatePropagation(); playSound('click'); rankedStart(); }
+    else leaveRanked();
+  }, true);
 
-  // ---------- экран результата ----------
+  // ---------- переключатель «Арены / Лига» и витрина лиги ----------
   const css = document.createElement('style');
   css.textContent = `
+  .mm-mode{display:flex;gap:4px;padding:4px;border-radius:16px;background:var(--mm-card);box-shadow:inset 0 0 0 1px var(--mm-line)}
+  .mm-mode button{flex:1;height:34px;border:0;border-radius:12px;font-weight:900;font-size:13px;color:var(--mm-dim);background:transparent;cursor:pointer;transition:background .15s,color .15s}
+  .mm-mode button.on{color:#14172a;background:var(--ac)}
+  .mm-mode button.on[data-m=league]{background:linear-gradient(180deg,#ffe27a,#e8a020);color:#2a1a00;box-shadow:0 4px 14px rgba(255,190,40,.45)}
+  .main-menu.league-mode .mm-arrow,.main-menu.league-mode .mm-strip,.main-menu.league-mode .mm-strip-hint,.main-menu.league-mode #arenaSelectBtn,.main-menu.league-mode .mm-boosts,.main-menu.league-mode #menuArenaLock{display:none!important}
+  .main-menu.league-mode .mm-hero{box-shadow:0 0 0 1.5px rgba(255,207,74,.7),0 14px 34px rgba(0,0,0,.45),0 0 44px rgba(255,190,40,.25)}
   .mm-rank{display:flex;align-items:center;gap:10px;width:100%;padding:7px 12px 7px 8px;border:0;border-radius:18px;cursor:pointer;color:var(--mm-text);text-align:left;background:linear-gradient(120deg,rgba(255,193,7,.22),rgba(124,77,255,.18)),var(--mm-card);box-shadow:inset 0 0 0 1.5px rgba(255,213,79,.55);transition:transform .12s}
   .mm-rank:active{transform:scale(.98)}
   .mm-rank-badge{width:44px;height:44px;flex-shrink:0}
@@ -287,6 +577,7 @@
   .rk-row{display:flex;align-items:center;gap:10px;padding:6px 10px 6px 6px;border-radius:14px;background:#1b2139;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);text-align:left;flex-shrink:0}
   .rk-row canvas{width:42px;height:42px;flex-shrink:0}
   .rk-row .t{flex:1;min-width:0}.rk-row .t b{display:block;font-size:13px;color:#fff}.rk-row .t small{font-size:11px;color:#9aa3c7;font-weight:700}
+  .rk-row .cp{font-size:11px;font-weight:900;color:#ffe08a;white-space:nowrap;text-align:right;line-height:1.3}
   .rk-row.cur{box-shadow:inset 0 0 0 2px #ffd54f;background:linear-gradient(120deg,rgba(255,193,7,.2),#1b2139)}
   .rk-row.far{opacity:.55}
   .rk-top{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:12px;background:#1b2139;font-size:13px;color:#eef1ff;font-weight:800;flex-shrink:0}
@@ -308,6 +599,74 @@
   `;
   document.head.appendChild(css);
 
+  const modeEl = document.createElement('div');
+  modeEl.className = 'mm-mode';
+  modeEl.innerHTML = '<button data-m="arena">🏟 Арены</button><button data-m="league">🏆 Лига</button>';
+  const mmTop = document.querySelector('#mainMenu .mm-top');
+  mmTop.parentNode.insertBefore(modeEl, mmTop.nextSibling);
+  modeEl.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    const r = R();
+    if (r.mode === b.dataset.m) return;
+    r.mode = b.dataset.m;
+    writeSaveData(); playSound('click');
+    updateAllUI();
+  });
+
+  // значок лиги поверх витрины: заранее нарисованный спрайт с сиянием
+  const badgeTmp = document.createElement('canvas'); badgeTmp.width = badgeTmp.height = 180;
+  const badgeGlow = document.createElement('canvas'); badgeGlow.width = badgeGlow.height = 260;
+  let badgeKey = -1;
+  function prepBadge(li) {
+    drawBadge(badgeTmp, li);
+    const g = badgeGlow.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, 260, 260);
+    const rg = g.createRadialGradient(130, 130, 10, 130, 130, 128);
+    rg.addColorStop(0, 'rgba(255,224,130,0.6)'); rg.addColorStop(1, 'rgba(255,224,130,0)');
+    g.fillStyle = rg; g.fillRect(0, 0, 260, 260);
+    g.drawImage(badgeTmp, 40, 40);
+    badgeKey = li;
+  }
+  window.drawMenuPreview = function (t) {
+    if (mode() !== 'league') return origDMP(t);
+    const li = leagueOf(R().cups);
+    configArena(li);
+    const i = previewIdx - 1, keep = ARENAS[i];
+    ARENAS[i] = RANKED_ARENA;
+    try { origDMP(t); } finally { ARENAS[i] = keep; }
+    if (badgeKey !== li) prepBadge(li);
+    const cw = menuCanvas.width, sx = cw / 362, sz = 104 * sx;
+    const y = (-8 + Math.sin(t * 0.002) * 2.5) * sx;
+    mctx.setTransform(1, 0, 0, 1, 0, 0);
+    mctx.drawImage(badgeGlow, cw / 2 - sz / 2, y, sz, sz);
+  };
+  window.stepPreview = function (dir) { if (mode() === 'league') return; return origStep(dir); };
+
+  function applyModeUI() {
+    const lgm = mode() === 'league';
+    mainMenuEl.classList.toggle('league-mode', lgm);
+    modeEl.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.m === (lgm ? 'league' : 'arena')));
+    const lab = $('menuBestScore').nextElementSibling;
+    if (!lgm) { if (lab) lab.textContent = 'Рекорд арены'; return; }
+    const r = R(), li = leagueOf(r.cups), L = LEAGUES[li], N = LEAGUES[li + 1], hot = r.promo && !r.lock && N;
+    const gold = [['--ac', '#ffcf4a'], ['--ac-rgb', '255,207,74'], ['--ac-ink', '#2a1a00'], ['--play', '#ffcf4a'], ['--play-rgb', '255,207,74'], ['--play-ink', '#2a1a00']];
+    gold.forEach((p) => mainMenuEl.style.setProperty(p[0], p[1]));
+    $('menuArenaNum').textContent = 'ЛИГА ' + (li + 1) + ' / ' + LEAGUES.length;
+    $('menuArenaMult').textContent = '🏆 ' + fmt(r.cups);
+    $('menuArenaTitle').textContent = '👑 ' + L.name;
+    $('menuArenaDesc').textContent = hot ? 'Матч повышения: набери ' + fmt(N.bar) : 'Планка лиги: ' + fmt(L.bar) + ' очков';
+    $('menuArenaTwist').textContent = 'Королевская арена одна для всех лиг. Победа: до +' + WIN_CAPS[li] + ' 🏆, поражение: до −' + LOSS_CAPS[li] + ' 🏆. Без прокачки, бонусов и монет.';
+    $('menuBestScore').textContent = fmt(r.best);
+    if (lab) lab.textContent = 'Лучший счёт лиги';
+    $('menuPlayArena').textContent = '👑 Королевская арена';
+    $('menuArenaLock').classList.add('hidden');
+    $('menuXpLabel').textContent = N ? (hot ? 'Матч повышения готов' : 'До «' + N.name + '»') : 'Высшая лига!';
+    $('menuXpText').textContent = N ? fmt(r.cups) + ' / ' + fmt(N.thr) + ' 🏆' : fmt(r.cups) + ' 🏆';
+    $('menuXpFill').style.width = (frac(r.cups, li) * 100) + '%';
+  }
+  window.updateAllUI = function () { origUAU(); try { updateMenuBtn(); applyModeUI(); } catch (e) {} };
+
+  // ---------- экран результата ----------
   const resEl = document.createElement('div');
   resEl.id = 'rkResult'; resEl.className = 'overlay hidden';
   resEl.innerHTML = `<div class="notebook-card modal-card">
@@ -429,7 +788,7 @@
   $('rkResLeague').addEventListener('click', () => { curToken++; leaveRanked(); openRankMenu(); });
   $('rkResMenu').addEventListener('click', () => { curToken++; leaveRanked(); origMenu(); });
 
-  // ---------- окно лиги ----------
+  // ---------- окно лиги (правила, все лиги, топ игроков) ----------
   const menuEl = document.createElement('div');
   menuEl.id = 'rkMenu'; menuEl.className = 'overlay hidden';
   menuEl.innerHTML = `<div class="notebook-card modal-card">
@@ -447,7 +806,7 @@
     let status;
     if (hot) status = '🔥 <b>Матч повышения!</b> Набери не меньше <b>' + fmt(N.bar) + '</b> очков, чтобы войти в «' + N.name + '».' + (r.fails ? ' Неудачных попыток: ' + r.fails + ' из 2.' : '');
     else if (r.promo && r.lock) status = 'Нужен один обычный матч, и можно снова пробовать повышение.';
-    else status = 'Планка лиги: <b>' + fmt(L.bar) + '</b>. Больше — кубки растут, меньше — падают.';
+    else status = 'Планка лиги: <b>' + fmt(L.bar) + '</b>. Больше — кубки растут (до +' + WIN_CAPS[li] + '), меньше — падают (до −' + LOSS_CAPS[li] + ').';
     const protect = r.protect ? '<br>🛡 Защита от вылета: ещё ' + r.protect + ' матч.' : '';
     const bar = Math.round(frac(r.cups, li) * 100);
     let html = `<div class="rk-box" style="text-align:center"><canvas class="rk-big" data-i="${li}" width="300" height="300"></canvas>
@@ -458,10 +817,10 @@
         <div class="rk-box"><small>🏆 Кубков</small><br><b>${fmt(r.cups)}</b></div><div class="rk-box"><small>🏅 Рекорд кубков</small><br><b>${fmt(r.bestCups)}</b></div>
         <div class="rk-box"><small>🎮 Матчей / побед</small><br><b>${fmt(r.matches)} / ${fmt(r.wins)}</b></div><div class="rk-box"><small>⭐ Лучший счёт</small><br><b>${fmt(r.best)}</b></div>
       </div>
-      <div class="rk-box"><b>Правила.</b> Лига идёт отдельно от арен: без прокачки, бонусов, перков героя, XP и монет. Счёт сравнивается с планкой лиги: выше — до +${WIN_CAP} кубков, ниже — до −${LOSS_CAP}. Три победы подряд дают +5. Набрав кубки на следующую лигу, сыграй матч повышения: нужна планка следующей лиги. После повышения 2 матча защиты от вылета. Раз в месяц кубки выше 1 500 сжимаются вдвое, а за высшую лигу сезона дают награду.</div>
+      <div class="rk-box"><b>Правила.</b> Лига идёт на одной общей Королевской арене, отдельно от обычных арен: без прокачки, бонусов, перков героя, XP и монет. Счёт сравнивается с планкой лиги. <b>Чем выше лига, тем меньше кубков за победу и тем больше теряешь за поражение</b>: в первой лиге до +${WIN_CAPS[0]} / −${LOSS_CAPS[0]}, в высшей до +${WIN_CAPS[8]} / −${LOSS_CAPS[8]}. Три победы подряд дают бонус. Набрав кубки на следующую лигу, сыграй матч повышения: нужна планка следующей лиги. После повышения 2 матча защиты от вылета. Раз в месяц кубки выше 1 500 сжимаются вдвое, а за высшую лигу сезона дают награду.</div>
       <div class="sec-title">Все лиги</div>`;
     LEAGUES.forEach((x, i) => {
-      html += `<div class="rk-row ${i === li ? 'cur' : i > li ? 'far' : ''}"><canvas data-i="${i}" width="84" height="84"></canvas><div class="t"><b>${x.name}</b><small>от ${fmt(x.thr)} 🏆 · планка ${fmt(x.bar)}</small></div>${i < li ? '<span>✓</span>' : ''}</div>`;
+      html += `<div class="rk-row ${i === li ? 'cur' : i > li ? 'far' : ''}"><canvas data-i="${i}" width="84" height="84"></canvas><div class="t"><b>${x.name}</b><small>от ${fmt(x.thr)} 🏆 · планка ${fmt(x.bar)}</small></div><div class="cp">+${WIN_CAPS[i]}<br>−${LOSS_CAPS[i]}</div>${i < li ? '<span>✓</span>' : ''}</div>`;
     });
     html += '<div class="sec-title">Лучшие игроки</div><div id="rkTop" class="rk-sub">Загружаем…</div>';
     const body = $('rkMenuBody');
@@ -488,7 +847,7 @@
   $('rkPlay').addEventListener('click', () => { playSound('click'); rankedStart(); });
   $('rkBack').addEventListener('click', () => { playSound('click'); origMenu(); });
 
-  // ---------- кнопка в главном меню ----------
+  // ---------- кнопка «Правила и топ» в главном меню ----------
   const btn = document.createElement('button');
   btn.id = 'openRankBtn'; btn.className = 'mm-rank';
   btn.innerHTML = '<canvas class="mm-rank-badge" width="88" height="88"></canvas><span class="mm-rank-txt"><b id="rkMenuName"></b><small id="rkMenuSub"></small></span><span class="mm-rank-cups">🏆 <b id="rkMenuCups">0</b></span>';
@@ -504,5 +863,5 @@
     btn.classList.toggle('hot', !!hot);
     if (menuKey !== String(li)) { menuKey = String(li); drawBadge(btn.querySelector('canvas'), li); }
   }
-  R(); updateMenuBtn();
+  R(); configArena(leagueOf(R().cups)); updateMenuBtn(); applyModeUI();
 })();
