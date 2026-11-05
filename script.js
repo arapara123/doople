@@ -4899,10 +4899,12 @@ function updateAllUI() {
     const ha = ARENAS[saveData.highestUnlockedArena - 1];
     const span = next.minXP - ha.minXP;
     const pct = Math.min(100, (Math.max(0, saveData.totalXP - ha.minXP) / span) * 100);
+    $('menuXpFill').style.setProperty('--b1', next.platNormal); $('menuXpFill').style.setProperty('--b2', next.platMoving);
     $('menuXpFill').style.width = `${pct}%`;
     $('menuXpLabel').textContent = `До арены ${next.id}: ${next.icon} ${next.name}`;
     $('menuXpText').textContent = `${fmtXP(Math.floor(saveData.totalXP))} / ${fmtXP(next.minXP)}`;
   } else {
+    { const la = ARENAS[ARENAS.length - 1]; $('menuXpFill').style.setProperty('--b1', la.platNormal); $('menuXpFill').style.setProperty('--b2', la.platMoving); }
     $('menuXpFill').style.width = '100%';
     $('menuXpLabel').textContent = 'Все арены открыты!';
     $('menuXpText').textContent = `${fmtXP(Math.floor(saveData.totalXP))} XP`;

@@ -7,14 +7,14 @@
 (function () {
   const LEAGUES = [
     { name: 'Деревянный меч', thr: 0, bar: 2500 },
-    { name: 'Стальные мечи', thr: 300, bar: 7000 },
-    { name: 'Золотые мечи', thr: 700, bar: 13000 },
-    { name: 'Мишень', thr: 1200, bar: 22000 },
-    { name: 'Молот', thr: 1800, bar: 37000 },
-    { name: 'Зелье', thr: 2500, bar: 60000 },
-    { name: 'Синяя корона', thr: 3300, bar: 95000 },
-    { name: 'Красная корона', thr: 4200, bar: 150000 },
-    { name: 'Фиолетовый кристалл', thr: 5200, bar: 230000 }
+    { name: 'Стальные мечи', thr: 300, bar: 6500 },
+    { name: 'Золотые мечи', thr: 700, bar: 12000 },
+    { name: 'Мишень', thr: 1200, bar: 20000 },
+    { name: 'Молот', thr: 1800, bar: 32000 },
+    { name: 'Зелье', thr: 2500, bar: 50000 },
+    { name: 'Синяя корона', thr: 3300, bar: 70000 },
+    { name: 'Красная корона', thr: 4200, bar: 100000 },
+    { name: 'Фиолетовый кристалл', thr: 5200, bar: 140000 }
   ];
   const MAX_CUPS = 7000, K = 25;
   // Чем выше лига: тем МЕНЬШЕ кубков за победу и тем БОЛЬШЕ за поражение
@@ -46,6 +46,11 @@
   }
   function mode() { return R().mode; }
   function leagueOf(cups) { let i = 0; for (let k = 0; k < LEAGUES.length; k++) if (cups >= LEAGUES[k].thr) i = k; return i; }
+  const LEAGUE_BAR = [['#b97844', '#f0b46a'], ['#7f9c9a', '#cfe3e1'], ['#c99a3c', '#ffe082'], ['#8ea6c8', '#e6dcc0'], ['#6b58b0', '#a99be0'], ['#3f8fcf', '#8fd0ff'], ['#1f63d0', '#5aa2ff'], ['#c4163c', '#ff6b8e'], ['#7c2fd0', '#c58bff']];
+  function tintBar(el, li) {
+    const c = LEAGUE_BAR[Math.max(0, Math.min(LEAGUE_BAR.length - 1, li))];
+    el.style.setProperty('--b1', c[0]); el.style.setProperty('--b2', c[1]);
+  }
   function frac(cups, li) {
     const L = LEAGUES[li], N = LEAGUES[li + 1];
     if (!N) return 1;
@@ -571,7 +576,7 @@
   .rk-big{display:block;width:150px;height:150px;margin:0 auto}
   .rk-name{font-size:19px;font-weight:900;color:#fff;text-align:center;margin-top:4px}
   .rk-bar{height:12px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;margin:9px 0 5px}
-  .rk-bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#ffd54f,#ff9800);box-shadow:0 0 10px rgba(255,179,0,.6);transition:width .8s cubic-bezier(.2,.8,.2,1)}
+  .rk-bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--b1,#ffd54f),var(--b2,#ff9800));box-shadow:0 0 10px color-mix(in srgb,var(--b2,#ff9800) 60%,transparent);transition:width .8s cubic-bezier(.2,.8,.2,1)}
   .rk-sub{font-size:12.5px;color:#d2d8f2;text-align:center;font-weight:700;line-height:1.4}
   .rk-box{padding:9px 11px;border-radius:14px;background:#1b2139;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);font-size:12px;line-height:1.45;color:#b6bfe3;text-align:left;flex-shrink:0}
   .rk-box b{color:#fff}
@@ -664,6 +669,7 @@
     $('menuArenaLock').classList.add('hidden');
     $('menuXpLabel').textContent = N ? (hot ? 'Матч повышения готов' : 'До «' + N.name + '»') : 'Высшая лига!';
     $('menuXpText').textContent = N ? fmt(r.cups) + ' / ' + fmt(N.thr) + ' 🏆' : fmt(r.cups) + ' 🏆';
+    tintBar($('menuXpFill'), li);
     $('menuXpFill').style.width = (frac(r.cups, li) * 100) + '%';
   }
   window.updateAllUI = function () { origUAU(); try { updateMenuBtn(); applyModeUI(); } catch (e) {} };
@@ -732,7 +738,7 @@
     else title = res.delta > 0 ? 'Победа!' : res.delta < 0 ? 'Поражение' : 'Без изменений';
     $('rkResTitle').textContent = title;
     $('rkResScore').innerHTML = 'Счёт за матч<b>' + fmt(res.score) + '</b>' + (res.type === 'promo' ? 'планка повышения: ' : 'планка лиги: ') + fmt(res.bar) + ' · ' + (res.delta > 0 ? '+' : '') + res.delta + ' 🏆';
-    drawBadge(cv, li0); burst.classList.remove('on'); cv.className = 'rk-big';
+    tintBar(fill, li0); drawBadge(cv, li0); burst.classList.remove('on'); cv.className = 'rk-big';
     $('rkResName').textContent = LEAGUES[li0].name;
     fill.style.transition = 'none'; fill.style.width = (frac(b.cups, li0) * 100) + '%'; void fill.offsetWidth; fill.style.transition = '';
     counter.textContent = fmt(b.cups);
@@ -752,7 +758,7 @@
       if (token !== curToken) return;
       counter.textContent = fmt(res.afterCups);
       const swap = (cls) => {
-        drawBadge(cv, li1); $('rkResName').textContent = LEAGUES[li1].name;
+        tintBar(fill, li1); drawBadge(cv, li1); $('rkResName').textContent = LEAGUES[li1].name;
         cv.className = 'rk-big'; void cv.offsetWidth; cv.classList.add(cls);
         if (cls === 'rk-up') { burst.classList.add('on'); playSound('arena_up'); } else playSound('gameover');
         fill.style.transition = 'none'; fill.style.width = (li1 > li0 ? 0 : frac(res.afterCups, li1) * 100) + '%'; void fill.offsetWidth; fill.style.transition = '';
@@ -812,7 +818,7 @@
     const protect = r.protect ? '<br>🛡 Защита от вылета: ещё ' + r.protect + ' матч.' : '';
     const bar = Math.round(frac(r.cups, li) * 100);
     let html = `<div class="rk-box" style="text-align:center"><canvas class="rk-big" data-i="${li}" width="300" height="300"></canvas>
-      <div class="rk-name">${L.name}</div><div class="rk-bar"><i style="width:${bar}%"></i></div>
+      <div class="rk-name">${L.name}</div><div class="rk-bar"><i style="width:${bar}%;--b1:${LEAGUE_BAR[li][0]};--b2:${LEAGUE_BAR[li][1]}"></i></div>
       <div class="rk-sub">${N ? (hot ? 'Матч повышения готов' : 'До «' + N.name + '»: ещё ' + fmt(Math.max(0, N.thr - r.cups)) + ' 🏆') : 'Высшая лига!'}</div></div>
       <div class="rk-box">${status}${protect}</div>
       <div class="rk-grid">
