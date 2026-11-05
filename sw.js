@@ -2,13 +2,14 @@
 // Service worker: кэширует всю игру целиком, после первого открытия она работает без интернета.
 // ВАЖНО: при каждом обновлении игры (любого файла) увеличивай номер версии ниже.
 // Тогда новый набор файлов скачается целиком и подменит старый одним махом (без смеси старого и нового).
-const VERSION = 'v31';
+const VERSION = 'v32';
 const CACHE = 'doodle-jump-' + VERSION;
 const FILES = [
   './',
   './index.html',
   './style.css',
   './script.js',
+  './ranked.js',
   './manifest.webmanifest',
   './icon-180.png',
   './icon-192.png',
