@@ -439,13 +439,11 @@
     platNormal: '#ffcf4a', platMoving: '#4dd0e1', platBreak: '#a1623a', platVanish: '#fff3c4', platBorder: '#5a3a00', glow: true,
     ambient: { type: 'motes', color: '#ffe082' }, monsters: ['blot', 'eraser', 'bat'], monsterRate: 1, diff: 0.6, platSpeed: 1.6, wind: 0, slip: 0, hazard: null, hazardLook: 'shard'
   };
-  // внешний вид один у всех лиг, меняется только жёсткость испытаний
-  function configArena(i) {
+  // геймплей одинаковый во всех лигах; сложность растёт только с высотой (как в основной игре)
+  function configArena() {
     const A = RANKED_ARENA;
-    A.diff = 0.6 + i * 0.15; A.monsterRate = 1 + i * 0.08; A.platSpeed = 1.6 + i * 0.25;
-    A.wind = i >= 2 ? 0.3 + (i - 2) * 0.12 : 0; A.slip = i >= 4 ? 0.03 : 0;
-    A.hazard = i >= 7 ? 'both' : i >= 5 ? 'lightning' : i >= 3 ? 'faller' : null;
-    A.monsters = i < 3 ? ['blot', 'eraser', 'bat'] : i < 6 ? ['drone', 'harpy', 'imp'] : ['voideye', 'riftling', 'oni'];
+    A.diff = 0.6; A.monsterRate = 1; A.platSpeed = 1.6; A.wind = 0; A.slip = 0; A.hazard = null;
+    A.monsters = ['blot', 'eraser', 'bat'];
   }
 
   // ---------- сезон ----------
