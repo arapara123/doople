@@ -6805,7 +6805,7 @@ function renderFriendsList(body) {
       const rm = frRemoveArm === f.id;
       return `<div class="list-card fr-card" data-id="${f.id}">
         ${avatarCanvasHTML(f.skin, 44)}
-        <div class="fr-info"><b>${escHTML(f.name)}</b><small>рекорд ${formatNum(f.best || 0)} · арена ${a.id}</small><small>${f.last_seen ? 'был(а) ' + agoText(f.last_seen) : ''}</small></div>
+        <div class="fr-info"><div class="fr-nm"><b>${escHTML(f.name)}</b>${typeof f.cups === 'number' ? `<canvas class="fr-badge" data-cups="${f.cups}" width="48" height="48"></canvas>` : ''}</div><small>рекорд ${formatNum(f.best || 0)} · арена ${a.id}</small><small>${f.last_seen ? 'был(а) ' + agoText(f.last_seen) : ''}</small></div>
         <div class="fr-acts">
           <button class="fr-act js-gift" ${f.gifted ? 'disabled' : ''} title="Подарить 50 монет">🎁</button>
           <button class="fr-act js-ch" title="Вызов: побить рекорд">🎯</button>
@@ -6815,6 +6815,7 @@ function renderFriendsList(body) {
   }
   body.innerHTML = html;
   paintAvatars(body);
+  if (window.rankedPaintBadges) window.rankedPaintBadges(body);
   const cl = $id('frClaim'); if (cl) cl.addEventListener('click', claimFriendGifts);
   const inp = $id('frAddInput');
   $id('frAddBtn').addEventListener('click', () => addFriendByCode(inp.value));
@@ -6844,7 +6845,7 @@ function renderFriendProfile(f) {
   const a = ARENAS[(f.arena || 1) - 1] || ARENAS[0];
   const rows = Object.keys(sc).map(Number).filter((id) => ARENAS[id - 1] && sc[id] > 0).sort((x, y) => x - y);
   body.innerHTML = `
-    <div class="fp-head">${avatarCanvasHTML(f.skin, 84)}<div><b>${escHTML(f.name)}</b>
+    <div class="fp-head">${avatarCanvasHTML(f.skin, 84)}<div><div class="fr-nm"><b>${escHTML(f.name)}</b>${typeof f.cups === 'number' ? `<canvas class="fr-badge" data-cups="${f.cups}" width="52" height="52"></canvas>` : ''}</div>
       <small>Код: ${escHTML(f.code || '—')}</small><small>${f.last_seen ? 'был(а) ' + agoText(f.last_seen) : ''}</small></div></div>
     <div class="fp-grid">
       <div class="fp-box"><small>🏆 Лучший рекорд</small><b>${formatNum(f.best || 0)}</b></div>
@@ -6859,6 +6860,7 @@ function renderFriendProfile(f) {
       <button class="btn btn-purple btn-sm js-fp-ch">🎯 Вызов</button>
     </div>`;
   paintAvatars(body);
+  if (window.rankedPaintBadges) window.rankedPaintBadges(body);
   body.querySelector('.js-fp-gift').addEventListener('click', async () => { await sendGift(f); renderFriendProfile(f); });
   body.querySelector('.js-fp-ch').addEventListener('click', () => { playSound('click'); startChallenge(f); });
 }

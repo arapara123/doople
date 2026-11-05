@@ -39,6 +39,7 @@
     r.best = num(r.best, 0, 0, 1e9); r.bestCups = num(r.bestCups, 0, 0, MAX_CUPS);
     r.maxL = num(r.maxL, 0, 0, LEAGUES.length - 1);
     r.unsent = num(r.unsent, 0, 0, 1e6); r.unsentSecs = num(r.unsentSecs, 0, 0, 1e9);
+    r.sentCups = typeof r.sentCups === 'number' ? r.sentCups : -1;
     r.season = typeof r.season === 'string' ? r.season : '';
     r.mode = r.mode === 'league' ? 'league' : 'arena';
     if (!Array.isArray(r.claimed)) r.claimed = [0];
@@ -252,6 +253,17 @@
       c.lineWidth = 2; c.strokeStyle = '#2a0a55'; poly(c, H, null);
     }
   ];
+  // значок звания друга рядом с ником (по числу кубков)
+  window.rankedPaintBadges = function (root) {
+    root.querySelectorAll('canvas.fr-badge[data-cups]').forEach((cv) => {
+      const n = Number(cv.dataset.cups);
+      if (!isFinite(n)) return;
+      const li = leagueOf(n);
+      cv.title = LEAGUES[li].name;
+      drawBadge(cv, li);
+    });
+  };
+  window.rankedLeagueName = function (cups) { return LEAGUES[leagueOf(Number(cups) || 0)].name; };
   function drawBadge(cv, idx) {
     const c = cv.getContext('2d');
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height);
@@ -480,10 +492,10 @@
   // ---------- серверная часть (по возможности) ----------
   async function report() {
     const r = R(), N = saveData.net;
-    if (!N || !N.id || !N.secret || !r.unsent) return;
+    if (!N || !N.id || !N.secret || (!r.unsent && r.sentCups === r.cups)) return;
     try {
       await rpc('dj_ranked_report', { p_id: N.id, p_secret: N.secret, p_cups: r.cups, p_best: r.best, p_secs: Math.floor(r.unsentSecs), p_matches: r.unsent });
-      r.unsent = 0; r.unsentSecs = 0; writeSaveData();
+      r.unsent = 0; r.unsentSecs = 0; r.sentCups = r.cups; writeSaveData();
     } catch (e) {}
   }
   function pushToServer() { netSync(false).then(report).catch(() => {}); }
@@ -558,6 +570,7 @@
   // ---------- переключатель «Арены / Лига» и витрина лиги ----------
   const css = document.createElement('style');
   css.textContent = `
+  .fr-nm{display:flex;align-items:center;gap:6px;min-width:0}.fr-nm b{min-width:0}.fr-badge{width:24px;height:24px;flex:none}.fp-head .fr-badge{width:26px;height:26px}
   .main-menu:not(.league-mode) #openRankBtn{display:none!important}
   .mm-mode{display:flex;gap:4px;padding:4px;border-radius:16px;background:var(--mm-card);box-shadow:inset 0 0 0 1px var(--mm-line)}
   .mm-mode button{flex:1;height:34px;border:0;border-radius:12px;font-weight:900;font-size:13px;color:var(--mm-dim);background:transparent;cursor:pointer;transition:background .15s,color .15s}
