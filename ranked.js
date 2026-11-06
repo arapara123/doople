@@ -19,6 +19,7 @@
   const MAX_CUPS = 7000, K = 25;
   // Калибровка: 5 матчей без кубков, потом звание по среднему результату
   const CALIB_N = 5;               // сколько матчей калибровки
+  const RESET_V = 1; // увеличь число, чтобы снова сбросить звания у всех
   const CALIB_MAX = LEAGUES.length - 1; // калибровка может выдать любое звание, включая высшее
   const CALIB_DIFF = 2;            // жёсткость арены в калибровке (как в «Золотых мечах»)
   const CAL_BAR = ['#78828c', '#b8c0c8'];
@@ -50,6 +51,13 @@
     if (!Array.isArray(r.claimed)) r.claimed = [0];
     r.sMatches = num(r.sMatches, 0, 0, 1e9);
     r.trophies = Array.isArray(r.trophies) ? r.trophies.map((x) => ({ s: Math.floor(Number(x && x.s)), l: Math.floor(Number(x && x.l)) })).filter((x) => Number.isFinite(x.s) && x.l >= 0 && x.l < LEAGUES.length).slice(-120) : [];
+    // одноразовый сброс званий у всех (RESET_V): кубки обнуляются, нужно заново пройти калибровку; трофеи и рекорды сохраняются
+    if (num(r.resetV, 0, 0, 1e6) < RESET_V) {
+      r.resetV = RESET_V;
+      r.cups = 0; r.promo = false; r.lock = false; r.fails = 0; r.protect = 0; r.streak = 0;
+      r.maxL = 0; r.sMatches = 0; r.unsent = 0; r.unsentSecs = 0; r.sentCups = -1;
+      r.cal = { on: true, scores: [], n: 0 };
+    }
     // калибровка: у новых игроков включена, у тех, кто уже играл в лиге, выключена (звание сохраняется)
     let c = r.cal;
     if (!c || typeof c !== 'object') c = r.cal = { on: r.matches === 0, scores: [] };
@@ -532,7 +540,8 @@
       else if (raw < -0.0001) d = -Math.max(1, Math.round(-raw * LOSS_CAPS[li] / 15));
       if (d > 0) {
         r.wins++; r.streak++;
-        if (r.streak >= 3) { const bn = Math.max(2, Math.round(WIN_CAPS[li] / 7)); d += bn; r.streak = 0; res.bonus = bn; res.notes.push('🔥 Серия из 3 побед: +' + bn + ' кубков'); }
+        // стрик: с 3-й победы подряд бонус за КАЖДУЮ следующую победу и он растёт (до ×5), серия не сбрасывается
+        if (r.streak >= 3) { const bn = Math.max(2, Math.round(WIN_CAPS[li] / 7)) * Math.min(5, r.streak - 2); d += bn; res.bonus = bn; res.notes.push('🔥 Серия побед ×' + r.streak + ': +' + bn + ' кубков'); }
       } else if (d < 0) r.streak = 0;
       let c = r.cups + d;
       if (r.protect > 0) { if (c < L.thr) res.notes.push('🛡 Защита спасла от вылета'); c = Math.max(c, L.thr); r.protect--; }
