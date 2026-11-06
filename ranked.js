@@ -19,9 +19,8 @@
   const MAX_CUPS = 7000, K = 25;
   // Калибровка: 5 матчей без кубков, потом звание по среднему результату
   const CALIB_N = 5;               // сколько матчей калибровки
-  const CALIB_MAX = 5;             // выше этой лиги (индекс, 5 = «Зелье») калибровка не поднимает
+  const CALIB_MAX = LEAGUES.length - 1; // калибровка может выдать любое звание, включая высшее
   const CALIB_DIFF = 2;            // жёсткость арены в калибровке (как в «Золотых мечах»)
-  const RECAL_MS = 7 * 24 * 3600 * 1000; // перекалибровка раз в 7 дней
   const CAL_BAR = ['#78828c', '#b8c0c8'];
   // Чем выше лига: тем МЕНЬШЕ кубков за победу и тем БОЛЬШЕ за поражение
   const WIN_CAPS = [40, 35, 31, 27, 23, 19, 16, 13, 10];
@@ -49,7 +48,8 @@
     r.season = typeof r.season === 'string' ? r.season : '';
     r.mode = r.mode === 'league' ? 'league' : 'arena';
     if (!Array.isArray(r.claimed)) r.claimed = [0];
-    r.recalAt = num(r.recalAt, 0, 0, 1e15);
+    r.sMatches = num(r.sMatches, 0, 0, 1e9);
+    r.trophies = Array.isArray(r.trophies) ? r.trophies.map((x) => ({ s: Math.floor(Number(x && x.s)), l: Math.floor(Number(x && x.l)) })).filter((x) => Number.isFinite(x.s) && x.l >= 0 && x.l < LEAGUES.length).slice(-120) : [];
     // калибровка: у новых игроков включена, у тех, кто уже играл в лиге, выключена (звание сохраняется)
     let c = r.cal;
     if (!c || typeof c !== 'object') c = r.cal = { on: r.matches === 0, scores: [] };
@@ -446,21 +446,38 @@
     A.monsters = ['blot', 'eraser', 'bat'];
   }
 
-  // ---------- сезон ----------
+  // ---------- сезон лиги: отдельный от сезона пропуска, длится 2 недели ----------
+  const SEASON_DAYS = 14;
+  const SEASON_EPOCH = new Date(2026, 10, 2); // понедельник: начало первого сезона лиги
+  const TROPHY_NAME = ['Деревянный жетон', 'Стальной клинок', 'Золотой клинок', 'Меткий наконечник', 'Молот чемпиона', 'Эликсир славы', 'Синий венец', 'Алый венец', 'Фиолетовая реликвия'];
+  const TROPHY_ICO = ['🪵', '🗡', '⚔️', '🎯', '🔨', '🧪', '💙', '❤️', '💎'];
+  function lgSeasonIdx() {
+    const d = new Date();
+    return Math.floor(Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - SEASON_EPOCH) / 86400000) / SEASON_DAYS);
+  }
+  function lgSeasonKey() { return 'L' + lgSeasonIdx(); }
+  function lgMsLeft() { return new Date(2026, 10, 2 + (lgSeasonIdx() + 1) * SEASON_DAYS) - new Date(); }
+
   function ensureSeason(noLoot) {
-    const r = R(), key = seasonKeyNow();
+    const r = R(), key = lgSeasonKey();
     if (!r.season) { r.season = key; return; }
     if (r.season === key) return;
-    const views = [], mx = r.maxL;
-    views.push(grantReward({ t: 'coins', n: 200 * (mx + 1) }));
-    if (mx >= 3) views.push(grantReward({ t: 'chest', k: mx >= 6 ? 'epic' : 'rare' }));
-    if (mx >= 8) { const s = randomSkin(['mythic', 'arcana', 'epic']); if (s) views.push(grantReward({ t: 'skin', id: s.id })); }
-    if (r.cups > 1500) r.cups = Math.floor(1500 + (r.cups - 1500) / 2);
-    r.promo = false; r.lock = false; r.fails = 0; r.protect = 0; r.streak = 0;
+    if (r.season.charAt(0) !== 'L') { r.season = key; r.sMatches = 0; writeSaveData(); return; } // переход со старых месячных сезонов
+    const old = Number(r.season.slice(1)) || 0, views = [], mx = r.maxL;
+    if (!r.cal.on && r.sMatches > 0) {
+      r.trophies.push({ s: old, l: mx });
+      views.push({ ico: TROPHY_ICO[mx], text: 'Трофей сезона ' + (old + 1) + ': «' + TROPHY_NAME[mx] + '»' });
+      views.push(grantReward({ t: 'coins', n: 200 * (mx + 1) }));
+      if (mx >= 3) views.push(grantReward({ t: 'chest', k: mx >= 6 ? 'epic' : 'rare' }));
+      if (mx >= 8) { const s = randomSkin(['mythic', 'arcana', 'epic']); if (s) views.push(grantReward({ t: 'skin', id: s.id })); }
+    }
+    if (r.cups > 1500) r.cups = Math.floor(1500 + (r.cups - 1500) * 0.6);
+    r.promo = false; r.lock = false; r.fails = 0; r.protect = 0; r.streak = 0; r.sMatches = 0;
     r.maxL = leagueOf(r.cups); r.season = key;
     writeSaveData();
-    if (noLoot) metaToast('🏆', 'Сезон лиги закончился', 'Награда за максимальную лигу выдана');
-    else setTimeout(() => showLoot('🏆', 'Сезон лиги завершён', views), 350);
+    if (!views.length) return;
+    if (noLoot) metaToast('🏆', 'Сезон лиги закончился', 'Награда и трофей добавлены в коллекцию');
+    else setTimeout(() => showLoot('🏆', 'Сезон лиги ' + (old + 1) + ' завершён', views), 350);
   }
 
   // ---------- подсчёт матча ----------
@@ -488,11 +505,12 @@
     const r = R(); ensureSeason(true);
     if (r.cal.on) {
       r.matches++; if (sc > r.best) r.best = sc;
-      const cres = settleCalib(r, sc);
+      r.sMatches++; const cres = settleCalib(r, sc);
       r.unsent++; r.unsentSecs += Math.max(1, Math.floor(secs || 1));
       writeSaveData(); flushCloud();
       return cres;
     }
+    r.sMatches++;
     const bc = r.cups, li = leagueOf(bc), L = LEAGUES[li], N = LEAGUES[li + 1];
     const res = { score: sc, before: { cups: bc, li }, delta: 0, type: 'normal', bar: L.bar, notes: [], rewards: [] };
     r.matches++; if (sc > r.best) r.best = sc;
@@ -670,6 +688,7 @@
   @keyframes rkPulse{50%{transform:scale(1.28)}}
   .rk-cup{position:absolute;left:0;top:0;z-index:90;font-size:22px;line-height:22px;width:22px;height:22px;pointer-events:none;will-change:transform,opacity;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
   .rk-notes{font-size:12px;font-weight:800;color:#9ff0a6;text-align:center;line-height:1.4;min-height:16px}
+  .rk-trgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;flex-shrink:0}.rk-tr{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 3px;border-radius:14px;background:#1b2139;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);text-align:center}.rk-tr canvas{width:50px;height:50px}.rk-tr b{font-size:10.5px;color:#c4cbe8;line-height:1.15}.rk-tr small{font-size:10px;color:#8a93b8;font-weight:800}.rk-tr:not(.on) canvas{filter:grayscale(1);opacity:.3}.rk-tr.on{box-shadow:inset 0 0 0 1.5px rgba(255,213,79,.55)}.rk-tr.on b{color:#fff}.rk-tr.on small{color:#ffe08a}
   `;
   document.head.appendChild(css);
 
@@ -939,23 +958,29 @@
     $('rkMenuCupsPill').textContent = cal ? '?' : fmt(r.cups);
     $('rkPlay').textContent = cal ? '▶ Матч калибровки ' + (r.cal.n + 1) + ' / ' + CALIB_N : hot ? '🔥 Матч повышения' : '▶ Играть в лиге';
     let status;
-    if (cal) status = '❓ <b>Калибровка:</b> сыграно <b>' + r.cal.n + ' из ' + CALIB_N + '</b>. После последнего матча игра выдаст звание по среднему результату (максимум — «' + LEAGUES[CALIB_MAX].name + '»). Кубки пока не меняются.';
+    if (cal) status = '❓ <b>Калибровка:</b> сыграно <b>' + r.cal.n + ' из ' + CALIB_N + '</b>. После последнего матча игра выдаст звание по среднему результату (возможно любое звание, даже высшее). Кубки пока не меняются.';
     else if (hot) status = '🔥 <b>Матч повышения!</b> Набери не меньше <b>' + fmt(N.bar) + '</b> очков, чтобы войти в «' + N.name + '».' + (r.fails ? ' Неудачных попыток: ' + r.fails + ' из 2.' : '');
     else if (r.promo && r.lock) status = 'Нужен один обычный матч, и можно снова пробовать повышение.';
     else status = 'Планка лиги: <b>' + fmt(L.bar) + '</b>. Больше — кубки растут (до +' + WIN_CAPS[li] + '), меньше — падают (до −' + LOSS_CAPS[li] + ').';
     const protect = r.protect ? '<br>🛡 Защита от вылета: ещё ' + r.protect + ' матч.' : '';
     const bar = Math.round(frac(r.cups, li) * 100);
+    const mxl = r.maxL;
+    const seasonBox = '<div class="rk-box"><b>Сезон ' + (lgSeasonIdx() + 1) + '</b> · до конца ' + fmtLeft(lgMsLeft()) + '<br>'
+      + (cal ? 'Награда сезона откроется после калибровки.' : r.sMatches ? 'Награда сейчас: ' + TROPHY_ICO[mxl] + ' <b>' + TROPHY_NAME[mxl] + '</b>, ' + fmt(200 * (mxl + 1)) + ' 🪙' + (mxl >= 3 ? ' и сундук' : '') + (mxl >= 8 ? ' и скин' : '') : 'Сыграй хотя бы один матч, чтобы получить награду сезона.') + '</div>';
+    const cnt = LEAGUES.map(() => 0); r.trophies.forEach((t) => { cnt[t.l]++; });
+    const trophyHtml = '<div class="sec-title">Коллекция трофеев</div><div class="rk-trgrid">' + LEAGUES.map((x, i) => '<div class="rk-tr ' + (cnt[i] ? 'on' : '') + '"><canvas data-i="' + i + '" width="84" height="84"></canvas><b>' + TROPHY_NAME[i] + '</b><small>' + (cnt[i] ? '×' + cnt[i] : 'не получен') + '</small></div>').join('') + '</div>';
     const bw = cal ? r.cal.n / CALIB_N * 100 : bar, bc = cal ? CAL_BAR : LEAGUE_BAR[li];
     let html = `<div class="rk-box" style="text-align:center"><canvas class="rk-big" data-i="${cal ? -1 : li}" width="300" height="300"></canvas>
       <div class="rk-name">${cal ? 'Калибровка' : L.name}</div><div class="rk-bar"><i style="width:${bw}%;--b1:${bc[0]};--b2:${bc[1]}"></i></div>
       <div class="rk-sub">${cal ? 'Сыграно ' + r.cal.n + ' из ' + CALIB_N : N ? (hot ? 'Матч повышения готов' : 'До «' + N.name + '»: ещё ' + fmt(Math.max(0, N.thr - r.cups)) + ' 🏆') : 'Высшая лига!'}</div></div>
       <div class="rk-box">${status}${protect}</div>
+      ${seasonBox}
       <div class="rk-grid">
         <div class="rk-box"><small>🏆 Кубков</small><br><b>${cal ? '?' : fmt(r.cups)}</b></div><div class="rk-box"><small>🏅 Рекорд кубков</small><br><b>${fmt(r.bestCups)}</b></div>
         <div class="rk-box"><small>🎮 Матчей / побед</small><br><b>${fmt(r.matches)} / ${fmt(r.wins)}</b></div><div class="rk-box"><small>⭐ Лучший счёт</small><br><b>${fmt(r.best)}</b></div>
       </div>
-      <div class="rk-box"><b>Правила.</b> Сначала калибровка: ${CALIB_N} матчей без изменения кубков, по среднему результату игра выдаёт стартовое звание (перекалибровка — в настройках, раз в 7 дней). Лига идёт на одной общей Королевской арене, отдельно от обычных арен: без прокачки, бонусов, перков героя, XP и монет. Счёт сравнивается с планкой лиги. <b>Чем выше лига, тем меньше кубков за победу и тем больше теряешь за поражение</b>: в первой лиге до +${WIN_CAPS[0]} / −${LOSS_CAPS[0]}, в высшей до +${WIN_CAPS[8]} / −${LOSS_CAPS[8]}. Три победы подряд дают бонус. Набрав кубки на следующую лигу, сыграй матч повышения: нужна планка следующей лиги. После повышения 2 матча защиты от вылета. Раз в месяц кубки выше 1 500 сжимаются вдвое, а за высшую лигу сезона дают награду.</div>
-      <div class="sec-title">Все лиги</div>`;
+      <div class="rk-box"><b>Правила.</b> Сначала калибровка: ${CALIB_N} матчей без изменения кубков, по среднему результату игра выдаёт стартовое звание — любое, даже высшее. Лига идёт на одной общей Королевской арене, отдельно от обычных арен: без прокачки, бонусов, перков героя, XP и монет. Счёт сравнивается с планкой лиги. <b>Чем выше лига, тем меньше кубков за победу и тем больше теряешь за поражение</b>: в первой лиге до +${WIN_CAPS[0]} / −${LOSS_CAPS[0]}, в высшей до +${WIN_CAPS[8]} / −${LOSS_CAPS[8]}. Три победы подряд дают бонус. Набрав кубки на следующую лигу, сыграй матч повышения: нужна планка следующей лиги. После повышения 2 матча защиты от вылета. Сезон лиги длится 2 недели. В его конце кубки выше 1 500 частично сгорают, а за максимальное звание сезона ты получаешь эксклюзивный трофей (у каждого звания свой), монеты и сундуки. Трофеи копятся в коллекции.</div>
+      ${trophyHtml}<div class="sec-title">Все лиги</div>`;
     LEAGUES.forEach((x, i) => {
       html += `<div class="rk-row ${cal ? '' : i === li ? 'cur' : i > li ? 'far' : ''}"><canvas data-i="${i}" width="84" height="84"></canvas><div class="t"><b>${x.name}</b><small>от ${fmt(x.thr)} 🏆 · планка ${fmt(x.bar)}</small></div><div class="cp">+${WIN_CAPS[i]}<br>−${LOSS_CAPS[i]}</div>${!cal && i < li ? '<span>✓</span>' : ''}</div>`;
     });
@@ -1005,47 +1030,5 @@
     if (menuKey !== mk) { menuKey = mk; drawBadge(btn.querySelector('canvas'), cal ? -1 : li); }
   }
 
-  // ---------- перекалибровка (в настройках) ----------
-  const setBody = document.querySelector('#settingsMenu .settings-body');
-  const recalSec = document.createElement('div');
-  recalSec.className = 'set-section';
-  recalSec.innerHTML = '<div class="set-title">🏆 Калибровка лиги</div><p id="recalInfo" class="modal-sub"></p><button id="recalBtn" class="btn btn-purple btn-sm">🔄 Перекалибровка</button><div id="recalMsg" class="promo-msg"></div>';
-  setBody.insertBefore(recalSec, setBody.lastElementChild);
-  let recalArm = 0;
-  function recalLeft() { return RECAL_MS - (Date.now() - R().recalAt); }
-  function renderRecal() {
-    const r = R(), left = recalLeft(), cal = r.cal.on;
-    const busy = rankedLive;
-    let t = cal ? 'Калибровка идёт: сыграно ' + r.cal.n + ' из ' + CALIB_N + '.'
-      : 'Сейчас: «' + LEAGUES[leagueOf(r.cups)].name + '». Перекалибровка сбросит звание и кубки, и ты заново сыграешь ' + CALIB_N + ' матчей калибровки. Можно раз в 7 дней.';
-    if (!cal && left > 0 && r.recalAt) t += ' Доступна через ' + fmtLeft(left) + '.';
-    $('recalInfo').textContent = t;
-    const b = $('recalBtn');
-    b.disabled = cal || busy || (left > 0 && r.recalAt > 0);
-    b.textContent = recalArm && !b.disabled ? '⚠ Точно сбросить? Нажми ещё раз' : '🔄 Перекалибровка';
-  }
-  function recalMsg(text, ok) { const el = $('recalMsg'); el.textContent = text; el.className = 'promo-msg ' + (ok ? 'ok' : 'err'); }
-  $('recalBtn').addEventListener('click', () => {
-    const r = R();
-    if (rankedLive) { recalMsg('Нельзя во время матча лиги.', false); return; }
-    if (r.cal.on) return;
-    if (recalLeft() > 0 && r.recalAt) { recalMsg('Перекалибровка доступна раз в 7 дней.', false); playSound('break'); return; }
-    if (!recalArm) {
-      recalArm = 1; renderRecal(); playSound('click');
-      setTimeout(() => { recalArm = 0; renderRecal(); }, 4000);
-      return;
-    }
-    recalArm = 0;
-    r.cups = 0; r.promo = false; r.lock = false; r.fails = 0; r.protect = 0; r.streak = 0; r.maxL = 0;
-    r.cal = { on: true, scores: [], n: 0 };
-    r.recalAt = Date.now(); r.sentCups = -1;
-    writeSaveData(); flushCloud();
-    menuKey = ''; badgeKey = -9;
-    updateAllUI(); renderRecal();
-    recalMsg('✅ Звание сброшено. Сыграй ' + CALIB_N + ' матчей калибровки в режиме «Лига».', true);
-    playSound('powerup');
-    pushToServer();
-  });
-  ['openSettingsBtn', 'pauseSettingsBtn'].forEach((id) => $(id).addEventListener('click', () => { recalArm = 0; $('recalMsg').className = 'promo-msg'; $('recalMsg').textContent = ''; renderRecal(); }));
-  R(); configArena(leagueOf(R().cups)); updateMenuBtn(); applyModeUI();
+  R(); ensureSeason(true); configArena(leagueOf(R().cups)); updateMenuBtn(); applyModeUI();
 })();
