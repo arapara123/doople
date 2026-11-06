@@ -18,8 +18,8 @@
   ];
   const MAX_CUPS = 7000, K = 25;
   // Калибровка: 5 матчей без кубков, потом звание по среднему результату
-  const CALIB_N = 5;               // сколько матчей калибровки
-  const RESET_V = 2; // увеличь число, чтобы снова сбросить звания у всех
+  const CALIB_N = 10;              // сколько матчей калибровки
+  const RESET_V = 3; // увеличь число, чтобы снова сбросить звания у всех
   const CALIB_MAX = LEAGUES.length - 1; // калибровка может выдать любое звание, включая высшее
   const CALIB_DIFF = 2;            // жёсткость арены в калибровке (как в «Золотых мечах»)
   const CAL_BAR = ['#78828c', '#b8c0c8'];
@@ -1051,7 +1051,7 @@
     const r = R(), li = leagueOf(r.cups), N = LEAGUES[li + 1], hot = r.promo && !r.lock && N;
     const cal = r.cal.on;
     $('rkMenuName').textContent = cal ? 'Лига: калибровка' : 'Лига: ' + LEAGUES[li].name;
-    $('rkMenuSub').textContent = cal ? 'сыграно ' + r.cal.n + ' из ' + CALIB_N + ' · определим звание' : hot ? '🔥 Матч повышения готов!' : N ? 'до «' + N.name + '»: ' + fmt(Math.max(0, N.thr - r.cups)) : 'Высшая лига';
+    $('rkMenuSub').textContent = cal ? 'калибровка ' + r.cal.n + '/' + CALIB_N + ' · сезон ещё ' + fmtLeft(lgMsLeft()) : hot ? '🔥 Матч повышения готов!' : N ? 'до «' + N.name + '»: ' + fmt(Math.max(0, N.thr - r.cups)) : 'Высшая лига';
     $('rkMenuCups').textContent = cal ? '?' : fmt(r.cups);
     btn.classList.toggle('hot', !!hot);
     const mk = cal ? 'c' : String(li);
