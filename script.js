@@ -7095,14 +7095,9 @@ function renderFriendProfile(f) {
   }
   let lgSub = '';
   if (fk) lgSub = fk.next ? `До «${fk.next.name}»: ещё ${formatNum(Math.max(0, fk.next.thr - fk.cups))} 🏆` : 'Высшая лига достигнута!';
-  // сравнение с тобой
-  const mk = window.rankedInfo ? window.rankedInfo() : null;
-  const cmp = (ico, label, mine, theirs) => {
-    const d = mine - theirs;
-    const cls = d > 0 ? 'win' : d < 0 ? 'lose' : '';
-    const txt = d > 0 ? 'ты впереди на ' + formatNum(d) : d < 0 ? 'друг впереди на ' + formatNum(-d) : 'поровну';
-    return `<div class="fp-cmp ${cls}"><span>${ico} ${label}</span><div><b>${formatNum(mine)}</b><i>vs</i><b>${formatNum(theirs)}</b></div><small>${txt}</small></div>`;
-  };
+  const pickNum = (...ks) => { for (const k of ks) { const v = Number(f[k]); if (f[k] != null && isFinite(v) && v >= 0) return v; } return null; };
+  const fm = pickNum('matches', 'games', 'games_played', 'matches_played');
+  const fs = pickNum('secs', 'play_secs', 'time_played', 'playtime_sec', 'time_played_sec');
   body.innerHTML = `
   <div class="pf-hero" style="--c1:${c1};--c2:${c2}">
     <div class="pf-ava-box"><canvas id="fpAva" class="pf-ava" width="240" height="240"></canvas></div>
@@ -7142,10 +7137,11 @@ function renderFriendProfile(f) {
   </div>
 
   <div class="pf-card">
-    <div class="pf-card-t">⚔ Сравнение с тобой</div>
-    ${cmp('🏆', 'Лучший рекорд', saveData.bestScore || 0, f.best || 0)}
-    ${cmp('⭐', 'Опыт (XP)', Math.floor(saveData.totalXP || 0), xp)}
-    ${mk && !mk.cal && fk ? cmp('🥇', 'Кубки', mk.cups, fk.cups) : ''}
+    <div class="pf-card-t">📊 Игровая активность</div>
+    <div class="pf-grid">
+      ${pfStat('🎮', 'Сыграно матчей', fm == null ? '—' : formatNum(fm))}
+      ${pfStat('⏱', 'Время в игре', fs == null ? '—' : fmtPlay(fs))}
+    </div>
   </div>`;
   paintAvatarCanvas($id('fpAva'), f.skin, false);
   if (fk && window.rankedDrawBadge) window.rankedDrawBadge($id('fpBadge'), fk.li);
