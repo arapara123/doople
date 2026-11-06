@@ -7095,9 +7095,6 @@ function renderFriendProfile(f) {
   }
   let lgSub = '';
   if (fk) lgSub = fk.next ? `До «${fk.next.name}»: ещё ${formatNum(Math.max(0, fk.next.thr - fk.cups))} 🏆` : 'Высшая лига достигнута!';
-  const pickNum = (...ks) => { for (const k of ks) { const v = Number(f[k]); if (f[k] != null && isFinite(v) && v >= 0) return v; } return null; };
-  const fm = pickNum('matches', 'games', 'games_played', 'matches_played');
-  const fs = pickNum('secs', 'play_secs', 'time_played', 'playtime_sec', 'time_played_sec');
   body.innerHTML = `
   <div class="pf-hero" style="--c1:${c1};--c2:${c2}">
     <div class="pf-ava-box"><canvas id="fpAva" class="pf-ava" width="240" height="240"></canvas></div>
@@ -7134,14 +7131,6 @@ function renderFriendProfile(f) {
       ${pfStat('🎭', 'Герой', escHTML(sk.name))}
     </div>
     ${rows.length ? `<div class="pf-card-t small">Рекорды арен</div><div class="pf-recs">${rows.map((id) => `<span class="pf-rec" title="${escHTML(ARENAS[id - 1].name)}">${ARENAS[id - 1].icon} <b>${formatNum(sc[id])}</b></span>`).join('')}</div>` : ''}
-  </div>
-
-  <div class="pf-card">
-    <div class="pf-card-t">📊 Игровая активность</div>
-    <div class="pf-grid">
-      ${pfStat('🎮', 'Сыграно матчей', fm == null ? '—' : formatNum(fm))}
-      ${pfStat('⏱', 'Время в игре', fs == null ? '—' : fmtPlay(fs))}
-    </div>
   </div>`;
   paintAvatarCanvas($id('fpAva'), f.skin, false);
   if (fk && window.rankedDrawBadge) window.rankedDrawBadge($id('fpBadge'), fk.li);
