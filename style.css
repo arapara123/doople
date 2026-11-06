@@ -1887,3 +1887,79 @@ body { height: var(--tg-viewport-stable-height, 100dvh); }
 .fp-box b { font-size: 15px; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; }
 .fp-acts { display: flex; gap: 7px; flex-shrink: 0; }
 .fp-acts .btn { flex: 1; }
+
+
+/* ==========================================================
+   ПРОФИЛЬ ИГРОКА И ФОТО
+   ========================================================== */
+.mm-ava-wrap { position: relative; display: inline-block; flex-shrink: 0; cursor: pointer; }
+.mm-ava-wrap .mm-avatar { display: block; }
+.mm-ava-edit {
+  position: absolute; right: -4px; bottom: -4px; width: 18px; height: 18px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 10px; line-height: 1;
+  color: #14172a; background: var(--ac); box-shadow: 0 0 0 2px var(--mm-bg), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.mm-ava-wrap:active { transform: scale(0.93); }
+
+.pf-body { gap: 10px; }
+.pf-hero {
+  --c1: #7c4dff; --c2: #42a5f5;
+  position: relative; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 16px 12px 14px;
+  border-radius: 20px; overflow: hidden; text-align: center;
+  background:
+    radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--c2) 38%, transparent), transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--c1) 30%, #1b2139), #151a2e);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c2) 65%, transparent), 0 10px 28px -10px color-mix(in srgb, var(--c1) 70%, transparent);
+}
+.pf-ava-box { position: relative; width: 112px; height: 112px; padding: 4px; border-radius: 30px; background: linear-gradient(145deg, var(--c2), var(--c1)); box-shadow: 0 10px 26px -6px color-mix(in srgb, var(--c1) 80%, transparent); }
+.pf-ava { display: block; width: 104px; height: 104px; border-radius: 26px; cursor: pointer; background: radial-gradient(circle at 50% 40%, #fffaf0, #e9e1c8); }
+.pf-cam {
+  position: absolute; right: -6px; bottom: -6px; width: 34px; height: 34px; border: 0; border-radius: 50%; cursor: pointer; font-size: 16px; line-height: 1;
+  color: #1b1f33; background: linear-gradient(180deg, #ffe066, #ffb300); box-shadow: 0 0 0 3px #151a2e, 0 4px 10px rgba(0, 0, 0, 0.45);
+}
+.pf-cam:active { transform: scale(0.92); }
+.pf-name-row { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; max-width: 100%; }
+.pf-name-row b { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: -0.3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-name-row .fr-input { width: 160px; flex: none; text-align: center; }
+.pf-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; }
+.pf-chip { padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 800; color: #eef1ff; background: rgba(10, 12, 26, 0.5); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16); }
+.pf-chip.gold { color: #1b1f33; background: linear-gradient(180deg, #ffe066, #ffb300); box-shadow: 0 3px 10px -2px rgba(255, 179, 0, 0.6); }
+.pf-code { font-size: 12px; font-weight: 700; color: #b6bfe3; }
+.pf-code b { font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: 1.5px; color: #ffe08a; }
+.pf-btns { display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; margin-top: 3px; }
+.pf-btns .btn:disabled { opacity: 0.4; cursor: default; }
+
+.pf-card {
+  --c1: #7c4dff; --c2: #42a5f5;
+  flex-shrink: 0; padding: 12px; border-radius: 18px; text-align: left; background: #1b2139; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+.pf-card-t { font-size: 14px; font-weight: 900; color: #fff; margin-bottom: 8px; }
+.pf-card-t.small { font-size: 12px; margin: 12px 0 6px; color: #c4cbe8; }
+.pf-lg-top { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.pf-badge { width: 92px; height: 92px; flex-shrink: 0; filter: drop-shadow(0 6px 14px color-mix(in srgb, var(--c2) 60%, transparent)); }
+.pf-lg-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pf-lg-info small { font-size: 10px; font-weight: 900; letter-spacing: 1.4px; color: #8a93b8; }
+.pf-lg-info b { font-size: 19px; font-weight: 900; color: #fff; line-height: 1.15; }
+.pf-lg-cups { font-size: 20px; font-weight: 900; color: #ffe08a; font-variant-numeric: tabular-nums; }
+.pf-bar { height: 11px; border-radius: 99px; background: rgba(255, 255, 255, 0.09); overflow: hidden; }
+.pf-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--b1, #7c4dff), var(--b2, #42a5f5)); box-shadow: 0 0 12px color-mix(in srgb, var(--b2, #42a5f5) 60%, transparent); }
+.pf-sub { margin: 6px 0 10px; font-size: 12px; font-weight: 700; color: #b6bfe3; line-height: 1.35; }
+.pf-xp-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 7px; }
+.pf-xp-row b { font-size: 20px; font-weight: 900; color: #fff; }
+.pf-xp-row span { font-size: 11.5px; font-weight: 700; color: #9aa3c7; }
+.pf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.pf-stat { display: flex; align-items: center; gap: 8px; padding: 8px 9px; min-width: 0; border-radius: 13px; background: #151a2e; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06); }
+.pf-stat-ico { width: 30px; height: 30px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; border-radius: 9px; background: #252c49; }
+.pf-stat > div { min-width: 0; display: flex; flex-direction: column; }
+.pf-stat b { font-size: 14px; font-weight: 900; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.pf-stat small { font-size: 10.5px; font-weight: 700; color: #9aa3c7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pf-recs { display: flex; flex-wrap: wrap; gap: 5px; }
+.pf-rec { padding: 3px 9px; border-radius: 999px; font-size: 12px; color: #c4cbe8; background: #151a2e; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.pf-rec b { color: #fff; font-variant-numeric: tabular-nums; }
+@media (max-width: 360px) { .pf-grid { grid-template-columns: 1fr; } }
+
+/* обрезка фото */
+.crop-body { align-items: center; }
+.crop-stage { width: 100%; max-width: 280px; aspect-ratio: 1; margin: 4px auto 8px; border-radius: 26px; overflow: hidden; touch-action: none; cursor: grab; box-shadow: 0 0 0 3px #ffd54f, 0 14px 30px rgba(0, 0, 0, 0.5); background: #fff; }
+.crop-stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.crop-body .set-row { width: 100%; }

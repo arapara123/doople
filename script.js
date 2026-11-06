@@ -3725,6 +3725,7 @@ function normalizeMeta(out, parsed) {
   for (const k in EVENTS) out.eventCur[k] = num(ec[k], 0);
   out.wheelDay = str(p.wheelDay);
   out.metaSeen = !!p.metaSeen;
+  out.avatar = typeof p.avatar === 'string' && p.avatar.length <= 60000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(p.avatar) ? p.avatar : '';
   const nt = p.net && typeof p.net === 'object' ? p.net : {};
   const okId = typeof nt.id === 'string' && /^[0-9a-f-]{36}$/i.test(nt.id);
   out.net = {
@@ -3807,7 +3808,7 @@ function flushCloud() {
   clearTimeout(cloudTimer); cloudTimer = null;
   if (!cloud || !cloudDirty) return;
   cloudDirty = false;
-  try { cloud.setItem(CLOUD_KEY, JSON.stringify(saveData), () => {}); } catch (e) { console.warn('CloudStorage:', e); }
+  try { cloud.setItem(CLOUD_KEY, JSON.stringify(saveData, (k, v) => (k === 'avatar' ? undefined : v)), () => {}); } catch (e) { console.warn('CloudStorage:', e); }
 }
 let localTimer = null;
 let localDirty = false;
@@ -3848,6 +3849,7 @@ function loadFromCloud() {
       if (err || !value) { cloudDirty = true; flushCloud(); return; } // в облаке пусто — выгружаем локальное
       try {
         const remote = normalizeSave(JSON.parse(value));
+        if (!remote.avatar) remote.avatar = saveData.avatar;
         if (remote.savedAt > saveData.savedAt && gameState !== 'PLAYING') {
           saveData = remote;
           applySettings();
@@ -4822,17 +4824,39 @@ function updateArenaStrip() {
 // ---------- Аватар героя в шапке ----------
 const avatarCv = document.getElementById('mmAvatar');
 let avatarSkin = '';
-function updateAvatar() {
-  const sk = getSkin();
-  if (!avatarCv || avatarSkin === sk.id) return;
-  avatarSkin = sk.id;
-  const c = avatarCv.getContext('2d');
+// Своё фото профиля: загружается один раз и кэшируется
+let avatarImgEl = null, avatarImgSrc = '';
+function withAvatarImg(cb) {
+  const src = saveData.avatar;
+  if (!src) return;
+  if (!avatarImgEl || avatarImgSrc !== src) { avatarImgSrc = src; avatarImgEl = new Image(); avatarImgEl.src = src; }
+  const im = avatarImgEl;
+  if (im.complete && im.naturalWidth) cb(im); else im.addEventListener('load', () => cb(im), { once: true });
+}
+// Рисует аватар на холсте: своё фото, а если его нет — выбранного героя
+function paintAvatarCanvas(cv, skinId, useCustom) {
+  const c = cv.getContext('2d');
+  const sk = SKIN_MAP[skinId] || SKINS[0];
   c.setTransform(1, 0, 0, 1, 0, 0);
-  c.clearRect(0, 0, avatarCv.width, avatarCv.height);
-  const k = avatarCv.width / 44;
-  c.scale(k, k);
+  c.clearRect(0, 0, cv.width, cv.height);
+  c.scale(cv.width / 44, cv.height / 44);
   drawCharacter(c, sk, 22, 25, 1, { scale: 0.72, t: 0 });
   c.setTransform(1, 0, 0, 1, 0, 0);
+  if (useCustom && saveData.avatar) {
+    const src = saveData.avatar;
+    withAvatarImg((im) => {
+      if (saveData.avatar !== src) return;
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.drawImage(im, 0, 0, cv.width, cv.height);
+    });
+  }
+}
+function updateAvatar() {
+  const sk = getSkin();
+  const key = sk.id + '|' + (saveData.avatar ? saveData.avatar.length + saveData.avatar.slice(-16) : '');
+  if (!avatarCv || avatarSkin === key) return;
+  avatarSkin = key;
+  paintAvatarCanvas(avatarCv, sk.id, true);
 }
 
 function updateAllUI() {
@@ -6538,6 +6562,218 @@ refreshEvent();
 var metaUIReady = true;
 
 // ==========================================================
+// ПРОФИЛЬ ИГРОКА: своё фото (или герой), звание лиги, кубки, опыт и подробная статистика
+// ==========================================================
+const profileEl = $id('profileMenu');
+const cropEl = $id('avatarCropMenu');
+const pfFile = $id('pfFile');
+function fmtPlay(sec) {
+  sec = Math.floor(sec || 0);
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+  return h ? h + ' ч ' + m + ' мин' : m + ' мин';
+}
+function pfStat(ico, label, val) { return `<div class="pf-stat"><span class="pf-stat-ico">${ico}</span><div><b>${val}</b><small>${label}</small></div></div>`; }
+function pfBar(pct, c1, c2) { return `<div class="pf-bar"><i style="width:${clamp(pct, 0, 100).toFixed(1)}%;--b1:${c1};--b2:${c2}"></i></div>`; }
+function openProfile() {
+  playSound('click');
+  openModal(profileEl, renderProfile);
+}
+function renderProfile() {
+  const s = saveData.stats, N = saveData.net;
+  const rk = window.rankedInfo ? window.rankedInfo() : null;
+  const c1 = rk ? rk.c1 : '#7c4dff', c2 = rk ? rk.c2 : '#42a5f5';
+  const sk = getSkin();
+  const hi = ARENAS[saveData.highestUnlockedArena - 1], nx = ARENAS[saveData.highestUnlockedArena];
+  let xpPct = 100, xpLine = 'Все арены открыты!';
+  if (nx) {
+    xpPct = ((saveData.totalXP - hi.minXP) / Math.max(1, nx.minXP - hi.minXP)) * 100;
+    xpLine = `До арены ${nx.id}: ${nx.icon} ${nx.name}: ещё ${fmtXP(Math.max(0, Math.ceil(nx.minXP - saveData.totalXP)))} XP`;
+  }
+  const xc1 = nx ? nx.platNormal : hi.platNormal, xc2 = nx ? nx.platMoving : hi.platMoving;
+  let lgSub = '';
+  if (rk) {
+    if (rk.cal) lgSub = `Калибровка: сыграно ${rk.calN} из ${rk.calMax}. Звание выдаётся по среднему результату.`;
+    else if (rk.promo) lgSub = '🔥 Матч повышения готов: зайди в режим «Лига»';
+    else if (rk.next) lgSub = `До «${rk.next.name}»: ещё ${formatNum(Math.max(0, rk.next.thr - rk.cups))} 🏆`;
+    else lgSub = 'Высшая лига достигнута!';
+  }
+  const rate = rk && rk.matches ? Math.round((rk.wins / rk.matches) * 100) + '%' : '—';
+  const recs = ARENAS.filter((a) => saveData.arenaBest[a.id]).map((a) => `<span class="pf-rec" title="${escHTML(a.name)}">${a.icon} <b>${formatNum(saveData.arenaBest[a.id])}</b></span>`).join('');
+  const ach = ACHIEVEMENTS.filter((a) => saveData.ach[a.id]).length;
+  const body = $id('pfBody');
+  body.innerHTML = `
+  <div class="pf-hero" style="--c1:${c1};--c2:${c2}">
+    <div class="pf-ava-box"><canvas id="pfAva" class="pf-ava" width="240" height="240"></canvas><button id="pfCam" class="pf-cam" title="Сменить фото">📷</button></div>
+    <div class="pf-name-row" id="pfNameRow"><b>${escHTML(N.name || 'Без имени')}</b><button id="pfEditName" class="fr-mini" title="Изменить имя">✏</button></div>
+    <div class="pf-chips">
+      ${rk ? `<span class="pf-chip gold">🏆 ${rk.cal ? '?' : formatNum(rk.cups)}</span><span class="pf-chip">${escHTML(rk.name)}</span>` : ''}
+      <span class="pf-chip">${hi.icon} Арена ${hi.id}</span>
+      <span class="pf-chip">🎭 ${escHTML(sk.name)}</span>
+    </div>
+    ${N.code ? `<div class="pf-code">Код друга: <b>${escHTML(N.code)}</b></div>` : ''}
+    <div class="pf-btns">
+      <button id="pfUpload" class="btn btn-gold btn-sm">📷 Своё фото</button>
+      <button id="pfReset" class="btn btn-outline btn-sm" ${saveData.avatar ? '' : 'disabled'}>🎭 Вернуть героя</button>
+    </div>
+  </div>
+
+  ${rk ? `<div class="pf-card" style="--c1:${c1};--c2:${c2}">
+    <div class="pf-card-t">🏆 Лига и кубки</div>
+    <div class="pf-lg-top">
+      <canvas id="pfBadge" class="pf-badge" width="260" height="260"></canvas>
+      <div class="pf-lg-info"><small>ТВОЁ ЗВАНИЕ</small><b>${escHTML(rk.name)}</b><div class="pf-lg-cups">🏆 ${rk.cal ? '?' : formatNum(rk.cups)}</div></div>
+    </div>
+    ${pfBar(rk.frac * 100, c1, c2)}
+    <div class="pf-sub">${lgSub}</div>
+    <div class="pf-grid">
+      ${pfStat('🏅', 'Рекорд кубков', formatNum(rk.bestCups))}
+      ${pfStat('⭐', 'Лучший счёт лиги', formatNum(rk.best))}
+      ${pfStat('🎮', 'Матчей лиги', formatNum(rk.matches))}
+      ${pfStat('✅', 'Побед', formatNum(rk.wins))}
+      ${pfStat('📈', 'Процент побед', rate)}
+      ${pfStat('🔥', 'Серия побед', formatNum(rk.streak))}
+      ${pfStat('👑', 'Высшее звание сезона', escHTML(rk.cal ? '—' : rk.maxName))}
+      ${pfStat('🏺', 'Трофеев сезонов', formatNum(rk.trophies))}
+    </div>
+  </div>` : ''}
+
+  <div class="pf-card" style="--c1:${xc1};--c2:${xc2}">
+    <div class="pf-card-t">⭐ Опыт и арены</div>
+    <div class="pf-xp-row"><b>${fmtXP(Math.floor(saveData.totalXP))} XP</b><span>открыто арен: ${saveData.highestUnlockedArena} из ${ARENAS.length}</span></div>
+    ${pfBar(xpPct, xc1, xc2)}
+    <div class="pf-sub">${xpLine}</div>
+    ${recs ? `<div class="pf-card-t small">Рекорды арен</div><div class="pf-recs">${recs}</div>` : ''}
+  </div>
+
+  <div class="pf-card">
+    <div class="pf-card-t">📊 Подробная статистика</div>
+    <div class="pf-grid">
+      ${pfStat('🏆', 'Лучший счёт', formatNum(saveData.bestScore))}
+      ${pfStat('🎮', 'Сыграно матчей', formatNum(s.gamesPlayed))}
+      ${pfStat('⏱', 'Время в игре', fmtPlay(s.timePlayedSec))}
+      ${pfStat('👾', 'Убито монстров', formatNum(s.monstersKilled))}
+      ${pfStat('🦘', 'Прыжков', formatNum(s.totalJumps))}
+      ${pfStat('🪙', 'Собрано монет', formatNum(s.totalCoinsCollected))}
+      ${pfStat('🔥', 'Лучшее комбо', formatNum(s.maxCombo || 0))}
+      ${pfStat('🏅', 'Достижений', ach + ' из ' + ACHIEVEMENTS.length)}
+      ${pfStat('👕', 'Скинов', saveData.ownedSkins.length + ' из ' + SKINS.length)}
+      ${pfStat('🎖', 'Уровень пропуска', passLevel() + ' из ' + PASS_LEVELS)}
+      ${pfStat('📅', 'Лучшая серия входов', formatNum(s.maxStreak || 0) + ' дн.')}
+      ${pfStat('🎯', 'Заданий выполнено', formatNum(s.questsDone || 0))}
+    </div>
+  </div>`;
+
+  paintAvatarCanvas($id('pfAva'), saveData.selectedSkin, true);
+  if (rk && window.rankedDrawBadge) window.rankedDrawBadge($id('pfBadge'), rk.cal ? -1 : rk.li);
+  const pick = () => { playSound('click'); pfFile.click(); };
+  $id('pfCam').addEventListener('click', pick);
+  $id('pfUpload').addEventListener('click', pick);
+  $id('pfAva').addEventListener('click', pick);
+  $id('pfReset').addEventListener('click', () => {
+    if (!saveData.avatar) return;
+    saveData.avatar = '';
+    metaSave(); playSound('click');
+    metaToast('🎭', 'Теперь показывается твой герой', '');
+    updateAllUI(); renderProfile();
+  });
+  $id('pfEditName').addEventListener('click', () => {
+    const row = $id('pfNameRow');
+    row.innerHTML = `<input id="pfNameInput" class="fr-input" maxlength="16" value="${escHTML(N.name || '')}" placeholder="Твоё имя"><button id="pfNameOk" class="fr-mini ok">✓</button>`;
+    const inp = $id('pfNameInput');
+    inp.focus(); inp.select();
+    const done = () => {
+      const v = cleanName(inp.value);
+      if (v.length >= 2 && v !== N.name) { N.name = v; writeSaveData(); netSync(false); metaToast('✏', 'Имя сохранено', v); }
+      renderProfile();
+    };
+    $id('pfNameOk').addEventListener('click', done);
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') done(); if (e.key === 'Escape') renderProfile(); });
+  });
+}
+
+// ---------- Выбор и обрезка фото ----------
+const crop = { im: null, sx: 0, sy: 0, side: 0, m: 0, drag: null };
+const cropCv = $id('cropCanvas');
+function cropDraw() {
+  if (!crop.im) return;
+  const c = cropCv.getContext('2d');
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.fillStyle = '#fff'; c.fillRect(0, 0, cropCv.width, cropCv.height);
+  c.drawImage(crop.im, crop.sx, crop.sy, crop.side, crop.side, 0, 0, cropCv.width, cropCv.height);
+}
+function cropClamp() {
+  const w = crop.im.naturalWidth, h = crop.im.naturalHeight;
+  crop.sx = clamp(crop.sx, 0, Math.max(0, w - crop.side));
+  crop.sy = clamp(crop.sy, 0, Math.max(0, h - crop.side));
+}
+function openCrop(im) {
+  const w = im.naturalWidth, h = im.naturalHeight, m = Math.min(w, h);
+  crop.im = im; crop.m = m; crop.side = m; crop.sx = (w - m) / 2; crop.sy = (h - m) / 2;
+  $id('cropZoom').value = 100;
+  openModal(cropEl, cropDraw);
+}
+$id('cropZoom').addEventListener('input', (e) => {
+  if (!crop.im) return;
+  const cx = crop.sx + crop.side / 2, cy = crop.sy + crop.side / 2;
+  crop.side = crop.m / (Number(e.target.value) / 100);
+  crop.sx = cx - crop.side / 2; crop.sy = cy - crop.side / 2;
+  cropClamp(); cropDraw();
+});
+cropCv.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  try { cropCv.setPointerCapture(e.pointerId); } catch (err) {}
+  crop.drag = { x: e.clientX, y: e.clientY };
+});
+cropCv.addEventListener('pointermove', (e) => {
+  if (!crop.drag || !crop.im) return;
+  const k = crop.side / cropCv.getBoundingClientRect().width;
+  crop.sx -= (e.clientX - crop.drag.x) * k;
+  crop.sy -= (e.clientY - crop.drag.y) * k;
+  crop.drag = { x: e.clientX, y: e.clientY };
+  cropClamp(); cropDraw();
+});
+const cropEnd = () => { crop.drag = null; };
+cropCv.addEventListener('pointerup', cropEnd);
+cropCv.addEventListener('pointercancel', cropEnd);
+$id('cropCancel').addEventListener('click', () => { playSound('click'); crop.im = null; openProfile(); });
+$id('cropSave').addEventListener('click', () => {
+  if (!crop.im) return;
+  const S = 160, out = document.createElement('canvas');
+  out.width = out.height = S;
+  const c = out.getContext('2d');
+  c.fillStyle = '#fff'; c.fillRect(0, 0, S, S);
+  c.imageSmoothingQuality = 'high';
+  c.drawImage(crop.im, crop.sx, crop.sy, crop.side, crop.side, 0, 0, S, S);
+  let q = 0.86, data = out.toDataURL('image/jpeg', q);
+  while (data.length > 30000 && q > 0.4) { q -= 0.08; data = out.toDataURL('image/jpeg', q); }
+  if (data.length > 58000) { metaToast('⚠', 'Не удалось сжать фото', 'Попробуй другую картинку'); return; }
+  saveData.avatar = data;
+  crop.im = null;
+  metaSave(); playSound('powerup');
+  metaToast('📷', 'Фото профиля сохранено', 'Оно останется после перезапуска');
+  updateAllUI();
+  openProfile();
+});
+pfFile.addEventListener('change', () => {
+  const f = pfFile.files && pfFile.files[0];
+  pfFile.value = '';
+  if (!f) return;
+  if (!/^image\//.test(f.type) && !/\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(f.name)) { metaToast('⚠', 'Нужна картинка', 'Выбери фото JPG или PNG'); return; }
+  if (f.size > 25000000) { metaToast('⚠', 'Файл слишком большой', 'Выбери картинку поменьше'); return; }
+  const url = URL.createObjectURL(f);
+  const im = new Image();
+  im.onload = () => { URL.revokeObjectURL(url); openCrop(im); };
+  im.onerror = () => { URL.revokeObjectURL(url); metaToast('⚠', 'Не получилось открыть фото', 'Попробуй JPG или PNG'); };
+  im.src = url;
+});
+(function () {
+  const b = $id('mmProfileBtn');
+  if (!b) return;
+  b.addEventListener('click', openProfile);
+  b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProfile(); } });
+})();
+
+// ==========================================================
 // 14.9. ДРУЗЬЯ И РЕЙТИНГ (Supabase). Сначала офлайн:
 // всё хранится на устройстве, а когда есть интернет — отправляется на сервер и подтягивается обратно.
 // Действия без сети (добавить друга, подарок) ждут в очереди и уходят при первом подключении.
@@ -6740,9 +6976,10 @@ function challengeResultText(sc) {
   return `🎯 До рекорда ${challenge.name}: ещё ${formatNum(challenge.target - sc + 1)}`;
 }
 
-function avatarCanvasHTML(skin, size) { return `<canvas class="fr-ava" data-skin="${skin || 'classic'}" width="${size * 2}" height="${size * 2}"></canvas>`; }
+function avatarCanvasHTML(skin, size, me) { return `<canvas class="fr-ava" data-skin="${skin || 'classic'}"${me ? ' data-me="1"' : ''} width="${size * 2}" height="${size * 2}"></canvas>`; }
 function paintAvatars(root) {
   root.querySelectorAll('canvas.fr-ava').forEach((cv) => {
+    if (cv.dataset.me === '1') { paintAvatarCanvas(cv, saveData.selectedSkin, true); return; }
     const sk = SKIN_MAP[cv.dataset.skin] || SKINS[0];
     const c = cv.getContext('2d');
     c.scale(cv.width / 44, cv.height / 44);
@@ -6758,13 +6995,14 @@ function renderFriendsProfile() {
     : net.lastError ? 'сервер недоступен' : (net.cache.at ? 'онлайн · обновлено ' + agoText(net.cache.at) : 'онлайн');
   const dot = (net.lastError || !navigator.onLine) ? 'off' : 'on';
   $id('frProfile').innerHTML = `
-    ${avatarCanvasHTML(saveData.selectedSkin, 52)}
+    ${avatarCanvasHTML(saveData.selectedSkin, 52, true)}
     <div class="fr-me">
       <div class="fr-name-row"><b id="frName">${escHTML(N.name || 'Без имени')}</b><button id="frEditName" class="fr-mini" title="Изменить имя">✏</button></div>
       <div class="fr-code-row">${N.code ? `Твой код: <b class="fr-code">${N.code}</b> <button id="frCopyCode" class="fr-mini" title="Скопировать">📤</button>` : 'Код появится, когда игра подключится к интернету'}</div>
       <div class="fr-status ${dot}"><i></i>${st}</div>
     </div>`;
   paintAvatars($id('frProfile'));
+  { const fa = $id('frProfile').querySelector('.fr-ava'); if (fa) { fa.style.cursor = 'pointer'; fa.addEventListener('click', openProfile); } }
   $id('frEditName').addEventListener('click', () => {
     const row = $id('frProfile').querySelector('.fr-name-row');
     row.innerHTML = `<input id="frNameInput" class="fr-input" maxlength="16" value="${escHTML(N.name || '')}" placeholder="Твоё имя"><button id="frNameOk" class="fr-mini ok">✓</button>`;
@@ -6903,8 +7141,8 @@ function renderBoard(body) {
     html += `<div class="fr-empty"><b>${net.boardBusy ? 'Загружаем…' : (navigator.onLine ? 'Пока пусто' : 'Нет интернета')}</b><span>${net.boardBusy ? '' : navigator.onLine ? 'Сыграй матч — и твой результат появится здесь.' : 'Рейтинг загрузится, когда появится сеть.'}</span></div>`;
   } else {
     html += '<div class="lb">' + rows.map((r) => `<div class="lb-row ${r.me ? 'me' : ''} ${r.rank <= 3 ? 'top' + r.rank : ''}">
-      <span class="lb-rank">${r.rank}</span>${avatarCanvasHTML(r.skin, 30)}<span class="lb-name">${escHTML(r.name)}${r.me ? ' <i>ты</i>' : ''}</span><b class="lb-score">${formatNum(r.best)}</b></div>`).join('') + '</div>';
-    if (me && !rows.some((r) => r.me)) html += `<div class="lb-row me lb-mine"><span class="lb-rank">${me.rank}</span>${avatarCanvasHTML(saveData.selectedSkin, 30)}<span class="lb-name">${escHTML(saveData.net.name || 'Ты')} <i>ты</i></span><b class="lb-score">${formatNum(me.best)}</b></div>`;
+      <span class="lb-rank">${r.rank}</span>${avatarCanvasHTML(r.me ? saveData.selectedSkin : r.skin, 30, r.me)}<span class="lb-name">${escHTML(r.name)}${r.me ? ' <i>ты</i>' : ''}</span><b class="lb-score">${formatNum(r.best)}</b></div>`).join('') + '</div>';
+    if (me && !rows.some((r) => r.me)) html += `<div class="lb-row me lb-mine"><span class="lb-rank">${me.rank}</span>${avatarCanvasHTML(saveData.selectedSkin, 30, true)}<span class="lb-name">${escHTML(saveData.net.name || 'Ты')} <i>ты</i></span><b class="lb-score">${formatNum(me.best)}</b></div>`;
     if (net.board !== 'friends') html += `<div class="fr-note">Всего игроков: ${formatNum(total)}${at ? ' · обновлено ' + agoText(at) : ''}${net.boardBusy ? ' · обновляем…' : ''}</div>`;
   }
   body.innerHTML = html;

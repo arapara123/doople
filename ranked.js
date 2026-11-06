@@ -300,6 +300,18 @@
     });
   };
   window.rankedLeagueName = function (cups) { return LEAGUES[leagueOf(Number(cups) || 0)].name; };
+  // данные лиги для окна профиля игрока
+  window.rankedInfo = function () {
+    const r = R(), cal = r.cal.on, li = leagueOf(r.cups), L = LEAGUES[li], N = LEAGUES[li + 1];
+    const c = cal ? CAL_BAR : LEAGUE_BAR[li];
+    return {
+      cal, calN: r.cal.n, calMax: CALIB_N, li, name: cal ? 'Калибровка' : L.name, cups: r.cups,
+      next: N ? { name: N.name, thr: N.thr } : null, frac: cal ? r.cal.n / CALIB_N : frac(r.cups, li),
+      promo: !!(r.promo && !r.lock && N), matches: r.matches, wins: r.wins, best: r.best, bestCups: r.bestCups,
+      maxName: LEAGUES[r.maxL].name, trophies: r.trophies.length, streak: r.streak, c1: c[0], c2: c[1], total: LEAGUES.length
+    };
+  };
+  window.rankedDrawBadge = function (cv, li) { drawBadge(cv, li); };
   function drawBadge(cv, idx) {
     const c = cv.getContext('2d');
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height);

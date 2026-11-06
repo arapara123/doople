@@ -56,7 +56,7 @@
       <div class="mm">
         <header class="mm-top">
           <div class="mm-brand">
-            <canvas id="mmAvatar" class="mm-avatar" width="88" height="88"></canvas>
+            <span class="mm-ava-wrap" id="mmProfileBtn" role="button" tabindex="0" title="Мой профиль"><canvas id="mmAvatar" class="mm-avatar" width="88" height="88"></canvas><i class="mm-ava-edit">👤</i></span>
             <div>
               <h1 class="mm-title">Doodle Jump</h1>
               <div class="mm-sub">Ultimate Edition</div>
@@ -424,6 +424,32 @@
         <div class="modal-footer"><button id="fpBack" class="btn btn-secondary">⬅ К друзьям</button></div>
       </div>
     </div>
+
+    <!-- Мой профиль -->
+    <div id="profileMenu" class="overlay hidden">
+      <div class="notebook-card modal-card">
+        <div class="modal-header"><h2>👤 Мой профиль</h2><div class="stat-pill">🪙 <span class="js-coins">0</span></div></div>
+        <div id="pfBody" class="scroll-list pf-body"></div>
+        <div class="modal-footer"><button class="btn btn-secondary js-back">⬅ Назад в меню</button></div>
+      </div>
+    </div>
+
+    <!-- Настройка фото профиля -->
+    <div id="avatarCropMenu" class="overlay hidden">
+      <div class="notebook-card modal-card">
+        <div class="modal-header"><h2>📷 Фото профиля</h2></div>
+        <div class="scroll-list crop-body">
+          <p class="modal-sub">Перетащи картинку пальцем или мышью и подбери масштаб. В игре фото будет в рамке.</p>
+          <div class="crop-stage"><canvas id="cropCanvas" width="320" height="320"></canvas></div>
+          <label class="set-row"><span>Масштаб</span><input id="cropZoom" type="range" min="100" max="400" step="5" value="100"></label>
+        </div>
+        <div class="modal-footer">
+          <button id="cropSave" class="btn btn-primary">✔ Сохранить фото</button>
+          <button id="cropCancel" class="btn btn-secondary">⬅ Отмена</button>
+        </div>
+      </div>
+    </div>
+    <input id="pfFile" type="file" accept="image/*" class="hidden">
 
     <!-- Окно с добычей -->
     <div id="lootBox" class="loot hidden">
