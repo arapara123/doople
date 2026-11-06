@@ -7081,24 +7081,74 @@ function renderFriendProfile(f) {
   const body = $id('fpBody');
   const sc = f.scores || {};
   const a = ARENAS[(f.arena || 1) - 1] || ARENAS[0];
+  const nx = ARENAS[a.id];
+  const xp = Math.floor(f.xp || 0);
+  const fk = window.rankedFriendInfo ? window.rankedFriendInfo(f.cups) : null;
+  const c1 = fk ? fk.c1 : '#7c4dff', c2 = fk ? fk.c2 : '#42a5f5';
+  const xc1 = a.platNormal, xc2 = a.platMoving;
+  const sk = SKIN_MAP[f.skin] || SKINS[0];
   const rows = Object.keys(sc).map(Number).filter((id) => ARENAS[id - 1] && sc[id] > 0).sort((x, y) => x - y);
+  let xpPct = 100, xpLine = 'Все арены открыты!';
+  if (nx) {
+    xpPct = ((xp - a.minXP) / Math.max(1, nx.minXP - a.minXP)) * 100;
+    xpLine = `До арены ${nx.id}: ${nx.icon} ${nx.name}: ещё ${fmtXP(Math.max(0, Math.ceil(nx.minXP - xp)))} XP`;
+  }
+  let lgSub = '';
+  if (fk) lgSub = fk.next ? `До «${fk.next.name}»: ещё ${formatNum(Math.max(0, fk.next.thr - fk.cups))} 🏆` : 'Высшая лига достигнута!';
+  // сравнение с тобой
+  const mk = window.rankedInfo ? window.rankedInfo() : null;
+  const cmp = (ico, label, mine, theirs) => {
+    const d = mine - theirs;
+    const cls = d > 0 ? 'win' : d < 0 ? 'lose' : '';
+    const txt = d > 0 ? 'ты впереди на ' + formatNum(d) : d < 0 ? 'друг впереди на ' + formatNum(-d) : 'поровну';
+    return `<div class="fp-cmp ${cls}"><span>${ico} ${label}</span><div><b>${formatNum(mine)}</b><i>vs</i><b>${formatNum(theirs)}</b></div><small>${txt}</small></div>`;
+  };
   body.innerHTML = `
-    <div class="fp-head">${avatarCanvasHTML(f.skin, 84)}<div><div class="fr-nm"><b>${escHTML(f.name)}</b>${typeof f.cups === 'number' ? `<canvas class="fr-badge" data-cups="${f.cups}" width="52" height="52"></canvas>` : ''}</div>
-      <small>Код: ${escHTML(f.code || '—')}</small><small>${f.last_seen ? 'был(а) ' + agoText(f.last_seen) : ''}</small></div></div>
-    <div class="fp-grid">
-      <div class="fp-box"><small>🏆 Лучший рекорд</small><b>${formatNum(f.best || 0)}</b></div>
-      <div class="fp-box"><small>🏟 Открыто арен</small><b>${a.id} из ${ARENAS.length}</b></div>
-      <div class="fp-box"><small>⭐ Опыт</small><b>${fmtXP(Math.floor(f.xp || 0))} XP</b></div>
-      <div class="fp-box"><small>🎭 Герой</small><b>${escHTML((SKIN_MAP[f.skin] || SKINS[0]).name)}</b></div>
+  <div class="pf-hero" style="--c1:${c1};--c2:${c2}">
+    <div class="pf-ava-box"><canvas id="fpAva" class="pf-ava" width="240" height="240"></canvas></div>
+    <div class="pf-name-row"><b>${escHTML(f.name)}</b></div>
+    <div class="pf-chips">
+      ${fk ? `<span class="pf-chip gold">🏆 ${formatNum(fk.cups)}</span><span class="pf-chip">${escHTML(fk.name)}</span>` : ''}
+      <span class="pf-chip">${a.icon} Арена ${a.id}</span>
+      <span class="pf-chip">🎭 ${escHTML(sk.name)}</span>
     </div>
-    <div class="sec-title">Рекорды по аренам</div>
-    ${rows.length ? rows.map((id) => `<div class="list-card"><div class="card-title">${ARENAS[id - 1].icon} ${escHTML(ARENAS[id - 1].name)}</div><b>${formatNum(sc[id])}</b></div>`).join('') : '<div class="fr-empty"><span>Пока нет рекордов.</span></div>'}
-    <div class="fp-acts">
+    <div class="pf-code">Код друга: <b>${escHTML(f.code || '—')}</b>${f.last_seen ? ' · был(а) ' + escHTML(agoText(f.last_seen)) : ''}</div>
+    <div class="pf-btns">
       <button class="btn btn-gold btn-sm js-fp-gift" ${f.gifted ? 'disabled' : ''}>🎁 Подарить 50</button>
       <button class="btn btn-purple btn-sm js-fp-ch">🎯 Вызов</button>
-    </div>`;
-  paintAvatars(body);
-  if (window.rankedPaintBadges) window.rankedPaintBadges(body);
+    </div>
+  </div>
+
+  ${fk ? `<div class="pf-card" style="--c1:${c1};--c2:${c2}">
+    <div class="pf-card-t">🏆 Лига и кубки</div>
+    <div class="pf-lg-top">
+      <canvas id="fpBadge" class="pf-badge" width="260" height="260"></canvas>
+      <div class="pf-lg-info"><small>ЗВАНИЕ</small><b>${escHTML(fk.name)}</b><div class="pf-lg-cups">🏆 ${formatNum(fk.cups)}</div></div>
+    </div>
+    ${pfBar(fk.frac * 100, c1, c2)}
+    <div class="pf-sub">${lgSub}</div>
+  </div>` : ''}
+
+  <div class="pf-card" style="--c1:${xc1};--c2:${xc2}">
+    <div class="pf-card-t">⭐ Опыт и арены</div>
+    <div class="pf-xp-row"><b>${fmtXP(xp)} XP</b><span>открыто арен: ${a.id} из ${ARENAS.length}</span></div>
+    ${pfBar(xpPct, xc1, xc2)}
+    <div class="pf-sub">${xpLine}</div>
+    <div class="pf-grid">
+      ${pfStat('🏆', 'Лучший рекорд', formatNum(f.best || 0))}
+      ${pfStat('🎭', 'Герой', escHTML(sk.name))}
+    </div>
+    ${rows.length ? `<div class="pf-card-t small">Рекорды арен</div><div class="pf-recs">${rows.map((id) => `<span class="pf-rec" title="${escHTML(ARENAS[id - 1].name)}">${ARENAS[id - 1].icon} <b>${formatNum(sc[id])}</b></span>`).join('')}</div>` : ''}
+  </div>
+
+  <div class="pf-card">
+    <div class="pf-card-t">⚔ Сравнение с тобой</div>
+    ${cmp('🏆', 'Лучший рекорд', saveData.bestScore || 0, f.best || 0)}
+    ${cmp('⭐', 'Опыт (XP)', Math.floor(saveData.totalXP || 0), xp)}
+    ${mk && !mk.cal && fk ? cmp('🥇', 'Кубки', mk.cups, fk.cups) : ''}
+  </div>`;
+  paintAvatarCanvas($id('fpAva'), f.skin, false);
+  if (fk && window.rankedDrawBadge) window.rankedDrawBadge($id('fpBadge'), fk.li);
   body.querySelector('.js-fp-gift').addEventListener('click', async () => { await sendGift(f); renderFriendProfile(f); });
   body.querySelector('.js-fp-ch').addEventListener('click', () => { playSound('click'); startChallenge(f); });
 }

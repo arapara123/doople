@@ -300,6 +300,13 @@
     });
   };
   window.rankedLeagueName = function (cups) { return LEAGUES[leagueOf(Number(cups) || 0)].name; };
+  // звание и цвета лиги по кубкам (для профиля друга)
+  window.rankedFriendInfo = function (cups) {
+    cups = Number(cups);
+    if (!isFinite(cups)) return null;
+    const li = leagueOf(cups), N = LEAGUES[li + 1];
+    return { li, name: LEAGUES[li].name, cups, next: N ? { name: N.name, thr: N.thr } : null, frac: frac(cups, li), c1: LEAGUE_BAR[li][0], c2: LEAGUE_BAR[li][1] };
+  };
   // данные лиги для окна профиля игрока
   window.rankedInfo = function () {
     const r = R(), cal = r.cal.on, li = leagueOf(r.cups), L = LEAGUES[li], N = LEAGUES[li + 1];
